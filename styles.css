@@ -18,6 +18,10 @@ body {
     font-family: 'Source Sans Pro', sans-serif;
 }
 
+a {
+    text-decoration: none;
+}
+
 .page {
     height: 100vh;
     text-align: center;
