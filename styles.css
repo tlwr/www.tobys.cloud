@@ -1,0 +1,82 @@
+@import url(//fonts.googleapis.com/css?family=Source+Sans+Pro);
+
+html, body {
+    margin: 0;
+    padding: 0;
+}
+
+html {
+    height: 100%;
+}
+
+body {
+    min-height: 100%;
+}
+
+* {
+    color: ghostwhite;
+    font-family: 'Source Sans Pro', sans-serif;
+}
+
+.page {
+    height: 100vh;
+    text-align: center;
+}
+
+.pos-middle>*:not(:first-child) {
+    padding: 25px;
+}
+
+.pos-middle {
+    position: absolute;
+    width: 100%;
+    top: 50%;
+    left: 50%;
+    transform: translateX(-50%) translateY(-50%);
+    -webkit-transform: translateX(-50%) translateY(-50%);
+    -moz-transform: translateX(-50%) translateY(-50%);
+    -ms-transform: translateX(-50%) translateY(-50%);
+}
+
+.bg-dark-grey {
+    background-color: #323232;
+    background-image: url('/assets/congruent_outline.png');
+    background-repeat: repeat;
+}
+
+.text-tomato {
+    color: tomato;
+}
+
+.text-big {
+    font-size: 10vmin;
+    line-height: 10vmin;
+}
+
+.text-upcase {
+    text-transform: uppercase;
+}
+
+.text-space-wide {
+    letter-spacing: 1.5vmin;
+}
+
+.link-ghost {
+    color: currentcolor;
+    text-decoration: none;
+    border-bottom: 1px outset tomato;
+}
+
+.btn {
+    padding: 25px;
+    border: 1px solid;
+    border-color: tomato;
+    border-radius: 1px;
+    background-color: rgba(255,255,255,0);
+    transition: all linear 0.33s;
+}
+
+.btn:hover {
+    background-color: rgba(255,255,255,0.5);
+    color: #323232;
+}
