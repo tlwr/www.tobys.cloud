@@ -68,7 +68,7 @@ a {
 .link-ghost {
     color: currentcolor;
     text-decoration: none;
-    border-bottom: 1px outset tomato;
+    border-bottom: 1px solid tomato;
 }
 
 .btn {
