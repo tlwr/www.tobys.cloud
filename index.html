@@ -3,29 +3,40 @@
     <head>
         <link rel='stylesheet' href='/styles.css'/>
         <link rel='icon' href='/assets/favicon.ico'/>
+        <link href='https://api.tiles.mapbox.com/mapbox.js/v2.2.2/mapbox.css' rel='stylesheet' />
         <title>toby.codes</title>
         <meta name='description'
-              content='Personal website of Toby Lorne. toby.codes / lorne.io'/>
-        <meta name="viewport" content="width=device-width, initial-scale=1">
+              content='Personal website of Toby Lorne. toby.codes'/>
+        <meta name='viewport' content='width=device-width, initial-scale=1'>
     </head>
     <body>
-        <section class='page bg-dark-grey'>
-            <div class='pos-middle'>
-                <div class='text-big text-upcase text-space-wide'>
-                    toby<span class='text-tomato'>lorne</span>
+        <section class='map-container'>
+            <section id='map' class='map'></section>
+            <section id='map-overlay' class='map-overlay text-center text-upcase'>
+                <div class='pos-middle'>
+                    <div class='text-big'>
+                        toby lorne
+                    </div>
+                    <div class='spacer'></div>
+                    <div class='text-tiny'>
+                        coo @
+                        <a href='http://macromeasures.com' class='link-ghost'>macromeasures</a>
+                    </div>
+                    <div>
+                        <a class='' href='mailto:toby@macromeasures.com'>
+                          email
+                        </a>
+                        &middot;
+                        <a class='' href='//twitter.com/tlornewr'>
+                          twitter
+                        </a>
+                    </div>
                 </div>
-                <div class='text-tiny text-upcase text-space-wide'>
-                    <span class='text-tomato'>full stack dev</span>
-                    <a href='http://macromeasures.com' class='link-ghost'>macromeasures</a>
-                </div>
-                <div>
-                    <a class='btn text-upcase text-space-wide' href='mailto:toby@macromeasures.com'>
-                        send a message
-                    </a>
-                </div>
-            </div>
-            <!-- linkedin csrf -->
-            <img style="filter: opacity(0); width: 1px; height: 1px;" src="//www.linkedin.com/profile/view?id=245938307"/>
+                <!-- linkedin csrf -->
+                <img style='visibility: hidden' src='//www.linkedin.com/profile/view?id=245938307'/>
+            </section>
         </section>
+        <script src='https://api.tiles.mapbox.com/mapbox.js/v2.2.2/mapbox.js'></script>
+        <script src='app.js'></script>
     </body>
 </html>

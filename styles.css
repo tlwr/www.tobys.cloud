@@ -1,4 +1,4 @@
-@import url(//fonts.googleapis.com/css?family=Source+Sans+Pro);
+@import url(//fonts.googleapis.com/css?family=Strait);
 
 html, body {
     margin: 0;
@@ -15,15 +15,13 @@ body {
 
 * {
     color: ghostwhite;
-    font-family: 'Source Sans Pro', sans-serif;
+    font-family: 'Strait', sans-serif;
 }
 
 a {
-    text-decoration: none;
 }
 
 .page {
-    height: 100vh;
     text-align: center;
 }
 
@@ -42,16 +40,6 @@ a {
     -ms-transform: translateX(-50%) translateY(-50%);
 }
 
-.bg-dark-grey {
-    background-color: #323232;
-    background-image: url('/assets/congruent_outline.png');
-    background-repeat: repeat;
-}
-
-.text-tomato {
-    color: tomato;
-}
-
 .text-big {
     font-size: 10vmin;
     line-height: 10vmin;
@@ -65,22 +53,34 @@ a {
     letter-spacing: 1.5vmin;
 }
 
+.text-center {
+    text-align: center;
+}
+
 .link-ghost {
     color: currentcolor;
-    text-decoration: none;
-    border-bottom: 1px solid tomato;
 }
 
-.btn {
-    padding: 25px;
-    border: 1px solid;
-    border-color: tomato;
-    border-radius: 1px;
-    background-color: rgba(255,255,255,0);
-    transition: all linear 0.33s;
+.spacer {}
+
+#map {
+  position: absolute;
+  width: 100%;
+  height: 100%;
 }
 
-.btn:hover {
-    background-color: rgba(255,255,255,0.5);
-    color: #323232;
+.map-container {
+}
+
+.map-container>.map {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+}
+
+.map-container>.map-overlay {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0,0,0,0.5);
 }
