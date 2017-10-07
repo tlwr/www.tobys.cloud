@@ -5,7 +5,7 @@ html, body {
 
 main {
   font-family: monospace;
-  font-size: 1.25em;
+  font-size: 2em;
   font-weight: bold;
 
   margin: 0 auto 0 auto;
@@ -13,6 +13,10 @@ main {
   width: 100%;
 }
 
+main p {
+  margin: 10px;
+}
+
 a {
-  text-decoration-style: wavy;
+  text-decoration: none;
 }
