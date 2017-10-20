@@ -13,10 +13,20 @@ main {
   width: 100%;
 }
 
-main p {
+p {
   margin: 10px;
+}
+
+p.words + p.words {
+  margin-top: 50px;
 }
 
 a {
   text-decoration: none;
+}
+
+hr {
+  background-color: black;
+  height: 3px;
+  border: none;
 }
