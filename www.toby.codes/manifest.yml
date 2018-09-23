@@ -1,6 +1,6 @@
 ---
 applications:
-  - name: personal-website
+  - name: www-toby-codes
     buildpack: staticfile_buildpack
     memory: 64M
     routes:
