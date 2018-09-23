@@ -8,3 +8,5 @@ applications:
       - route: tlwr-nginx.cfapps.io
       - route: tobys.cloud
       - route: www.tobys.cloud
+      - route: toby.codes
+      - route: www.toby.codes
