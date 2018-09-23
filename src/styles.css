@@ -1,32 +1,50 @@
 html, body {
-  padding: 0;
+  padding: 5px;
   margin: 0;
+  background-color: #222;
+  color: ghostwhite;
+  font-family: monospace;
+  line-height: 1.33em;
 }
 
-main {
-  font-family: monospace;
-  font-size: 2em;
-  font-weight: bold;
+a {
+  color: ghostwhite;
+  text-decoration-style: dotted;
+}
 
+p {
   margin: 0 auto 0 auto;
+  padding: 0 10px 10px 10px;
   max-width: 800px;
   width: 100%;
 }
 
-p {
-  margin: 10px;
+p.term {
+  white-space: pre-wrap;
 }
 
-p.words + p.words {
-  margin-top: 50px;
+p.term.cmd {
+  color: dodgerblue;
 }
 
-a {
-  text-decoration: none;
+p.term.motd {
+  color: mediumseagreen;
 }
 
-hr {
-  background-color: black;
-  height: 3px;
-  border: none;
+@media (min-width: 600px) {
+  p.term.mobile {
+    display: none;
+  }
+  p.term.no-mobile {
+    display: block;
+  }
+}
+
+@media (max-width: 600px) {
+  p.term.mobile {
+    display: block;
+  }
+  p.term.no-mobile {
+    display: none;
+  }
 }

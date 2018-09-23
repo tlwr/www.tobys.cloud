@@ -2,75 +2,65 @@
 <html>
   <head>
     <title>tlwr</title>
+    <link href="reset.css" rel="stylesheet"/>
     <link href="styles.css" rel="stylesheet"/>
     <link href="favicon.ico" rel="icon"/>
     <meta name="viewport" content="width=device-width, initial-scale=1">
   </head>
   <body>
-    <main>
-      <p>
-        &#x1f468;&#x200d;&#x1f4bb; tlwr
-      </p>
+    <p class="no-mobile term motd">
+   __            __                                     __
+  / /_  ____    / /_    __  __       _____  ____   ____/ / ___    _____
+ / __/ / __ \  / __ \  / / / /      / ___/ / __ \ / __  / / _ \  / ___/
+/ /_  / /_/ / / /_/ / / /_/ /  _   / /__  / /_/ // /_/ / /  __/ (__  )
+\__/  \____/ /_.___/  \__, /  (_)  \___/  \____/ \__,_/  \___/ /____/
+                     /____/
+    </p>
+    <p class="mobile term motd">
+   __            __
+  / /_  ____    / /_    __  __
+ / __/ / __ \  / __ \  / / / /
+/ /_  / /_/ / / /_/ / / /_/ /
+\__/  \____/ /_.___/  \__, /
+ _                   /____/
+(_)                  __
+  _____  ____   ____/ /  ___    _____
+ / ___/ / __ \ / __  /  / _ \  / ___/
+/ /__  / /_/ // /_/ /  /  __/ (__  )
+\___/  \____/ \__,_/   \___/ /____/
+    </p>
 
-      <hr>
+    <p class="term cmd">$ cat /toby/about.txt</p>
+    <p>
+      toby is a site-reliability/operations engineer working at the
+      <a href="https://gds.blog.gov.uk/">government digital service</a>.
+    </p>
 
-      <p>
-        &#x2709;
-        <a href="mailto:toby@toby.codes">
-	  toby@toby.codes
-        </a>
-      </p>
-      <p>
-        &#x2601;
-        <a href="https://gds.blog.gov.uk">
-	  @ gds
-        </a>
-      </p>
-      <p>
-        &#x1f511;
-        <a href="https://www.keybase.io/tlwr">
-	  keybase.io/tlwr
-        </a>
-      </p>
-      <p>
-        &#x1f525;
-        <a href="https://www.github.com/tlwr">
-	  github.com/tlwr
-        </a>
-      </p>
-      <p>
-        &#x1f4f7;
-        <a href="https://photos.toby.codes">
-	  photos
-        </a>
-      </p>
+    <p class="term cmd">$ cat /toby/contact.yml</p>
+    <p class="term">---
+- icon:  &#9729;
+  name:  email
+  value: <a href="mailto:toby@toby.codes">toby@toby.codes</a>
 
-      <hr>
+- icon:  &#128273;
+  name:  keybase
+  value: <a href="https://keybase.io/tlwr">@tlwr</a>
 
-      <p>
-        open source
-      </p>
+- icon:  &#128187;
+  name:  github
+  value: <a href="https://github.com/tlwr">@tlwr</a>
+    </p>
 
-      <p>
-        &#x1f52a;
-        <a href="https://github.com/gchq/cyberchef">
-	  cyberchef
-        </a>
-      </p>
+    <p class="term cmd">$ cat /toby/open-source.yml</p>
+    <p class="term">---
+- name: <a href="https://github.com/gchq/cyberchef">cyberchef</a>
+  org:  gchq
 
-      <hr>
+- name: <a href="https://github.com/alphagov/fourth-wall">fourthwall</a>
+  org:  alphagov
 
-      <p>
-        posts
-      </p>
-
-      <p>
-        &#x1f455;
-        <a href="/post-enlaundriment.html">
-	  the dialectic of enlaundriment
-        </a>
-      </p>
-
-    </main>
+- name: <a href="https://github.com/tlwr/paas-terraform-provider">paas-terraform-provider</a>
+  org:  personal
+    </p>
   </body>
 </html>
