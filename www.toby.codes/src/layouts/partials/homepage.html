@@ -1,0 +1,10 @@
+{{ $baseurl := .Site.BaseURL }}
+<main role="main" class="homepage">
+  {{ partial "hero.html" . }}
+
+  <h3>Posts</h3>
+
+  {{ range (where .Data.Pages "Section" "post") }}
+    {{ partial "article-list-item.html" . }}
+  {{ end }}
+</main>
