@@ -28,7 +28,7 @@ VPC &rarr; Virtual Private Cloud - an AWS abstraction for a virtual network.
 
 EC2 &rarr; Elastic Compute Cloud - on-demand virtual machines from AWS.
 
-ECS &rarr; Elastic Compute Cloud - AWS cloud-native container scheduler.
+ECS &rarr; Elastic Container Service - AWS cloud-native container scheduler.
 
 ## Requirements
 
