@@ -1,0 +1,90 @@
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: www-tobys-cloud
+  namespace: static-sites
+spec:
+  ports:
+  - port: 80
+    targetPort: 80
+  selector:
+    app: www-tobys-cloud
+...
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: www-tobys-cloud
+  namespace: static-sites
+spec:
+  selector:
+    matchLabels:
+      app: www-tobys-cloud
+  replicas: 2
+  template:
+    metadata:
+      labels:
+        app: www-tobys-cloud
+    spec:
+      containers:
+      - name: nginx
+        image: registry.hub.docker.com/tlwr/www.tobys.cloud
+        ports:
+        - containerPort: 80
+...
+
+---
+apiVersion: certmanager.k8s.io/v1alpha1
+kind: Certificate
+metadata:
+  name: www-tobys-cloud
+  namespace: static-sites
+spec:
+  secretName: www-tobys-cloud-tls
+  dnsNames:
+  - tobys.cloud
+  - www.tobys.cloud
+  acme:
+    config:
+    - http01:
+        ingressClass: nginx
+      domains:
+      - tobys.cloud
+      - www.tobys.cloud
+  issuerRef:
+    name: letsencrypt-prod
+    kind: ClusterIssuer
+...
+
+---
+apiVersion: extensions/v1beta1
+kind: Ingress
+metadata:
+  name: www-tobys-cloud
+  namespace: static-sites
+  annotations:
+    kubernetes.io/ingress.class: "nginx"
+    certmanager.k8s.io/issuer: "letsencrypt-prod"
+    certmanager.k8s.io/acme-challenge-type: http01
+spec:
+  tls:
+    - hosts:
+      - tobys.cloud
+      - www.tobys.cloud
+      secretName: www-tobys-cloud-tls
+  rules:
+  - host: tobys.cloud
+    http:
+      paths:
+      - backend:
+          serviceName: www-tobys-cloud
+          servicePort: 80
+  - host: www.tobys.cloud
+    http:
+      paths:
+      - backend:
+          serviceName: www-tobys-cloud
+          servicePort: 80
+...
