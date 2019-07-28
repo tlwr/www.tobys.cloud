@@ -7,7 +7,7 @@ metadata:
 spec:
   ports:
   - port: 80
-    targetPort: 80
+    targetPort: 3000
   selector:
     app: www-toby-codes
 ...
@@ -29,10 +29,10 @@ spec:
         app: www-toby-codes
     spec:
       containers:
-      - name: nginx
+      - name: app
         image: registry.hub.docker.com/tlwr/www.toby.codes
         ports:
-        - containerPort: 80
+        - containerPort: 3000
 ...
 
 ---
@@ -80,11 +80,11 @@ spec:
       paths:
       - backend:
           serviceName: www-toby-codes
-          servicePort: 80
+          servicePort: 3000
   - host: www.toby.codes
     http:
       paths:
       - backend:
           serviceName: www-toby-codes
-          servicePort: 80
+          servicePort: 3000
 ...
