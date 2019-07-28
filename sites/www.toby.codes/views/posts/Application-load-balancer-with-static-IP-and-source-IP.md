@@ -1,11 +1,5 @@
----
-title: "ALB with static IP and source IP preservation"
-date: 2019-03-16T11:53:56Z
-draft: false
----
-
-This is a post about getting an AWS ALB to have static IP addresses, whilst
-maintaining the original source IP of the user.
+This is a post about getting an AWS application load balancer to have static IP
+addresses, whilst maintaining the original source IP of the user.
 
 ## Jargon
 
@@ -34,9 +28,8 @@ ECS &rarr; Elastic Container Service - AWS cloud-native container scheduler.
 
 This work was done on the infrastructure for [GOV.UK
 Verify](https://www.verify.service.gov.uk/), whilst we were reworking the
-infrastructure to use
-[Amazon ECS](http://localhost:1313/post/alb-with-static-ip-and-source-ip/).
-Most of the terraform source code is now open and can be found
+infrastructure to use [Amazon ECS](https://aws.amazon.com/ecs/).  Most of the
+terraform source code is now open and can be found
 [here](https://github.com/alphagov/verify-infrastructure).
 
 The following requirements had to be met:

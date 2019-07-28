@@ -1,0 +1,47 @@
+<main role="main" class="homepage">
+  <h3>About</h3>
+  <p>
+    Toby is a site-reliability engineer working at the UK
+    <a href="https://gds.blog.gov.uk/">Government Digital Service</a>.
+  </p>
+
+  <h3>Contact</h3>
+  <p>
+    &#x1f4e7; <a href="mailto:toby@toby.codes">toby@toby.codes</a>
+  </p>
+  <p>
+    &#128273; <a href="https://keybase.io/tlwr">keybase.io/tlwr</a>
+  </p>
+  <p>
+    &#128187; <a href="https://github.com/tlwr">github.com/tlwr</a>
+  </p>
+
+  <h3>Open source</h3>
+  <p>
+    <a href="https://github.com/gchq/cyberchef">gchq/cyberchef</a>
+  </p>
+
+  <p>
+    <a href="https://github.com/alphagov/fourth-wall">alphagov/fourth-wall</a>
+  </p>
+
+  <p>
+    <a href="https://github.com/alphagov/terraform-provider-concourse">
+      alphagov/terraform-provider-concourse
+    </a>
+  </p>
+
+  <p>
+    <a href="https://github.com/tlwr/boshfind">tlwr/boshfind</a>
+  </p>
+
+  <h3>Posts</h3>
+
+  <% posts.each do |post, _| %>
+    <p itemprop="headline">
+      <a href="/posts/<%= post %>">
+        <%= post.gsub(/-/, " ") %>
+      </a>
+    </p>
+  <% end %>
+</main>
