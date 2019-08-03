@@ -1,3 +1,5 @@
+_Written on 2019-07-28_
+
 This is a post about doing bad things in order to do good things, using a BOSH
 release.
 

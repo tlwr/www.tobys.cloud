@@ -1,3 +1,5 @@
+_Written on 2019-03-16_
+
 This is a post about getting an AWS application load balancer to have static IP
 addresses, whilst maintaining the original source IP of the user.
 
