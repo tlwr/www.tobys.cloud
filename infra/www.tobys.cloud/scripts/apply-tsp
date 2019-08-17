@@ -1,0 +1,8 @@
+#!/usr/bin/env bash
+
+script_dir="$(cd $(dirname "$0") ; pwd)"
+infra_dir="${script_dir}/.."
+tsp_dir="${infra_dir}/tsp-system"
+
+kubectl config set-context --current --namespace tsp-system
+helm template --name tsp-system "$tsp_dir" | kubectl apply -f -

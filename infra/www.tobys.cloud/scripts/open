@@ -17,30 +17,29 @@ end
 
 case ARGV.first
 
+when /^conc/
+  cross_platform_open_url '127.0.0.1:8080'
+  Process.wait spawn(
+    "kubectl --namespace tsp-system port-forward svc/tsp-system-concourse-web 8080",
+    in: STDIN, out: STDOUT, err: STDERR,
+  )
 when /^graf/
   cross_platform_open_url 'localhost:3000'
   Process.wait spawn(
-    "kubectl --namespace monitoring port-forward svc/grafana 3000",
+    "kubectl --namespace tsp-system port-forward svc/tsp-system-grafana 3000:80",
     in: STDIN, out: STDOUT, err: STDERR,
   )
 when /^prom/
   cross_platform_open_url 'localhost:9090'
   Process.wait spawn(
-    "kubectl --namespace monitoring port-forward svc/prometheus-k8s 9090",
-    in: STDIN, out: STDOUT, err: STDERR,
-  )
-
-when /^alert/
-  cross_platform_open_url 'localhost:9093'
-  Process.wait spawn(
-    "kubectl --namespace monitoring port-forward svc/alertmanager-main 9093",
+    "kubectl --namespace tsp-system port-forward svc/tsp-system-prometheus-oper-prometheus 9090",
     in: STDIN, out: STDOUT, err: STDERR,
   )
 
 when /^monzo/
   cross_platform_open_url 'localhost:9036'
   Process.wait spawn(
-    "kubectl --namespace monitoring port-forward svc/monzo-exporter 9036",
+    "kubectl --namespace tsp-system port-forward svc/monzo-exporter 9036",
     in: STDIN, out: STDOUT, err: STDERR,
   )
 
@@ -51,10 +50,11 @@ when /tobys.cloud/, /cloud/
 
 else
   puts <<~HELP
-    $0 usage:
+    #{$0} usage:
 
     You can open the following mgmt apps via forwarding:
 
+     - $0 concourse
      - $0 grafana
      - $0 prometheus
      - $0 alertmanager

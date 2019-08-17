@@ -1,0 +1,34 @@
+{{- $clusterName := .Values.global.cluster.name }}
+
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: tsp-system-main
+  labels:
+    namespace: tsp-system-main
+
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: tsp-concourse
+  namespace: tsp-system
+data:
+  config.yaml: ""
+
+---
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: concourse-web
+  namespace: tsp-system
+  labels:
+    app: tsp-system-concourse-web
+spec:
+  selector:
+    matchLabels:
+      app: tsp-system-concourse-web
+  endpoints:
+    - interval: 15s
+      port: prometheus
