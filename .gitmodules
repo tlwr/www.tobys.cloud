@@ -1,3 +1,0 @@
-[submodule "infra/www.tobys.cloud/submodules/kube-prometheus"]
-	path = infra/www.tobys.cloud/submodules/kube-prometheus
-	url = https://github.com/coreos/kube-prometheus.git
