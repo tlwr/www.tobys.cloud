@@ -36,7 +36,7 @@ spec:
 ...
 
 ---
-apiVersion: certmanager.k8s.io/v1alpha1
+apiVersion: cert-manager.io/v1alpha2
 kind: Certificate
 metadata:
   name: www-toby-codes
@@ -46,13 +46,6 @@ spec:
   dnsNames:
   - toby.codes
   - www.toby.codes
-  acme:
-    config:
-    - http01:
-        ingressClass: nginx
-      domains:
-      - toby.codes
-      - www.toby.codes
   issuerRef:
     name: letsencrypt-prod
     kind: ClusterIssuer
