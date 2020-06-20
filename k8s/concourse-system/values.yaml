@@ -141,8 +141,11 @@ concourse:
       duration: 24h
 
       mainTeam:
-        github:
-          user: ["tlwr"]
+        config: |
+          roles:
+            - name: owner
+              github:
+                users: ["tlwr"]
 
       github:
         enabled: true
