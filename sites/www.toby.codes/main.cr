@@ -12,7 +12,7 @@ end
 
 macro posts
  Dir
-    .glob("views/posts/*.md")
+    .glob("#{__DIR__}/views/posts/*.md")
     .map { |path| [File.basename(path).gsub(/[.]md$/, ""), render_post(path)] }
     .to_h
 end
