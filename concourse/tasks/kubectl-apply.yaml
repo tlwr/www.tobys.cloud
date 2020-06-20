@@ -11,12 +11,11 @@ inputs:
   - name: kubeyaml
 
 params:
-  NAMESPACE:
   KUBEYAML_PATH:
-  SERVER:
-  TOKEN:
 
-  CLUSTER_NAME: default
+  KUBE_CONFIG:
+
+  NAMESPACE:
 
 run:
   path: bash
@@ -27,9 +26,8 @@ run:
     - pipefail
     - -c
     - |
-      kubectl config \
-        set-cluster "$CLUSTER_NAME" \
-        --server="$SERVER"
+      mkdir /.kube
+      echo "$KUBE_CONFIG" > /.kube/config
 
       kubectl apply \
         -n "$NAMESPACE" \
