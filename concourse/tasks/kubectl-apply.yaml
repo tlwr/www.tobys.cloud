@@ -12,17 +12,19 @@ inputs:
 
 params:
   NAMESPACE:
-  PATH:
+  KUBEYAML_PATH:
   SERVER:
   TOKEN:
 
   CLUSTER_NAME: default
 
 run:
-  path: sh
+  path: bash
   args:
     - -e
     - -u
+    - -o
+    - pipefail
     - -c
     - |
       kubectl config \
@@ -31,4 +33,4 @@ run:
 
       kubectl apply \
         -n "$NAMESPACE" \
-        -f "kubeyaml/$PATH"
+        -f "kubeyaml/$KUBEYAML_PATH"
