@@ -1,8 +1,8 @@
-require "markdown"
+require "markd"
 require "kemal"
 
 macro render_post(path)
-  content = Markdown.to_html(File.read(path))
+  content = Markd.to_html(File.read(path))
   ECR.render("views/layout.ecr")
 end
 

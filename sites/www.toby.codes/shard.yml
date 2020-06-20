@@ -1,6 +1,10 @@
 name: www-toby-codes
-version: 0.1.0
+version: 0.2.0
 
 dependencies:
   kemal:
     github: kemalcr/kemal
+    commit: a8c0f09b858162bd13c96663febef5527b322a32
+  markd:
+    github: icyleaf/markd
+    commit: 620845abb6776d1765d20d86cc0220aa40f89a91
