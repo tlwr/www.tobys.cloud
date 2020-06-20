@@ -1,0 +1,34 @@
+---
+platform: linux
+
+image_resource:
+  type: docker-image
+  source:
+    repository: bitnami/kubectl
+    tag: 1.16
+
+inputs:
+  - name: kubeyaml
+
+params:
+  NAMESPACE:
+  PATH:
+  SERVER:
+  TOKEN:
+
+  CLUSTER_NAME: default
+
+run:
+  path: sh
+  args:
+    - -e
+    - -u
+    - -c
+    - |
+      kubectl config \
+        set-cluster "$CLUSTER_NAME" \
+        --server="$SERVER"
+
+      kubectl apply \
+        -n "$NAMESPACE" \
+        -f "kubeyaml/$PATH"
