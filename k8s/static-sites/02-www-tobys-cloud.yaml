@@ -28,6 +28,8 @@ spec:
       labels:
         app: www-tobys-cloud
     spec:
+      imagePullSecrets:
+      - name: pull-docker-images
       containers:
       - name: nginx
         image: registry.hub.docker.com/tlwr/www.tobys.cloud
