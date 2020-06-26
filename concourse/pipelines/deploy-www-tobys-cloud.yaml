@@ -129,3 +129,10 @@ jobs:
           KUBEYAML_PATH: kubeyaml.yaml
           KUBE_CONFIG: ((static-sites-k8s.kube-config))
           NAMESPACE: static-sites
+
+      - task: kubectl-rollout-restart
+        file: cloud-cfg/concourse/tasks/kubectl-rollout-restart.yaml
+        params:
+          KUBE_CONFIG: ((static-sites-k8s.kube-config))
+          RESOURCE: deployment/www-tobys-cloud
+          NAMESPACE: static-sites
