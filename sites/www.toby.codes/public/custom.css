@@ -1,0 +1,58 @@
+::selection {
+  background: mediumseagreen;
+  color: ghostwhite;
+}
+::-moz-selection {
+  background: mediumseagreen;
+  color: ghostwhite;
+}
+
+a {
+  color: ghostwhite;
+  text-decoration-color: transparent;
+  border-bottom: 1px dotted ghostwhite;
+}
+
+hr {
+  height: 0;
+  border: none;
+  border-bottom: 1px dotted ghostwhite;
+}
+
+p.term {
+  white-space: pre-wrap;
+}
+
+p.term.cmd {
+  color: dodgerblue;
+}
+
+p.term.motd {
+  color: mediumseagreen;
+  font-size: 0.6em;
+}
+
+@media (min-width: 600px) {
+  p.term.mobile {
+    display: none;
+  }
+  p.term.no-mobile {
+    display: block;
+  }
+}
+
+@media (max-width: 600px) {
+  p.term.mobile {
+    display: block;
+  }
+  p.term.no-mobile {
+    display: none;
+  }
+}
+
+@media (max-width: 52em) {
+  header, main.homepage {
+    padding-left: 2rem;
+    padding-right: 2rem;
+  }
+}
