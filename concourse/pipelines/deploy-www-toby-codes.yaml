@@ -35,8 +35,8 @@ jobs:
       - get: cloud-cfg
         trigger: true
 
-      - set_pipeline: deploy-toby-codes
-        file: cloud-cfg/concourse/pipelines/deploy-toby-codes.yaml
+      - set_pipeline: deploy-www-toby-codes
+        file: cloud-cfg/concourse/pipelines/deploy-www-toby-codes.yaml
 
   - name: build
     serial: true
