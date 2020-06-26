@@ -1,0 +1,131 @@
+---
+resources:
+  - name: www-toby-codes-src
+    type: git
+    icon: git
+    source:
+      branch: main
+      uri: https://github.com/tlwr/www.tobys.cloud.git
+
+      paths:
+        - sites/www.toby.codes
+
+  - name: cloud-cfg
+    type: git
+    icon: git
+    source:
+      branch: main
+      uri: https://github.com/tlwr/www.tobys.cloud.git
+
+      paths:
+        - k8s/static-sites/02-www-toby-codes.yaml
+        - concourse
+
+  - name: www-toby-codes-img
+    type: registry-image
+    icon: docker
+    source:
+      repository: ((docker-secrets.registry))/www.toby.codes
+      username: ((docker-secrets.username))
+      password: ((docker-secrets.password))
+
+jobs:
+  - name: set-pipeline
+    plan:
+      - get: cloud-cfg
+        trigger: true
+
+      - set_pipeline: deploy-toby-codes
+        file: cloud-cfg/concourse/pipelines/deploy-toby-codes.yaml
+
+  - name: build
+    serial: true
+    plan:
+      - get: www-toby-codes-src
+        trigger: true
+
+      - task: build
+        privileged: true
+        config:
+          platform: linux
+
+          image_resource:
+            type: registry-image
+            source:
+              repository: vito/oci-build-task
+
+          inputs:
+            - name: www-toby-codes-src
+              path: .
+
+          outputs:
+            - name: image
+
+          params:
+            CONTEXT: sites/www.toby.codes
+
+          run:
+            path: build
+
+      - put: www-toby-codes-img
+        params:
+          image: image/image.tar
+          additional_tags: www-toby-codes-src/.git/ref
+        get_params:
+          skip_download: true
+
+  - name: deploy
+    serial: true
+    plan:
+      - get: www-toby-codes-img
+        trigger: true
+        passed: [build]
+        params:
+          skip_download: true
+
+      - get: www-toby-codes-src
+        passed: [build]
+
+      - get: cloud-cfg
+        passed: [set-pipeline]
+        trigger: true
+
+      - task: add-tag-to-kubeyaml
+        privileged: true
+        config:
+          platform: linux
+
+          image_resource:
+            type: registry-image
+            source:
+              repository: alpine
+              tag: 3.12
+
+          inputs:
+            - name: cloud-cfg
+            - name: www-toby-codes-src
+
+          outputs:
+            - name: kubeyaml
+
+          run:
+            path: ash
+            args:
+              - -e
+              - -u
+              - -x
+              - -c
+              - |
+                tag="$(cat www-toby-codes-src/.git/ref)"
+
+                sed \
+                  "s/@tag/$tag/" \
+                  cloud-cfg/k8s/static-sites/02-www-toby-codes.yaml \
+                  > kubeyaml/kubeyaml.yaml
+
+      - task: kubectl-apply
+        file: cloud-cfg/concourse/tasks/kubectl-apply.yaml
+        params:
+          KUBEYAML_PATH: kubeyaml.yaml
+          KUBE_CONFIG: ((static-sites-k8s.kube-config))
+          NAMESPACE: static-sites
