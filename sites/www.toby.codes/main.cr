@@ -10,7 +10,7 @@ macro render_view(filepath)
   render "views/#{{{filepath}}}.ecr", "views/layout.ecr"
 end
 
-macro posts
+macro rendered_posts
  Dir
     .glob("#{__DIR__}/views/posts/*.md")
     .map { |path| [File.basename(path).gsub(/[.]md$/, ""), render_post(path)] }
@@ -26,18 +26,19 @@ error 500 do
 end
 
 get "/" do
+  posts = rendered_posts
   render_view "index"
 end
 
 get "/posts/:slug" do |env|
   slug = env.params.url["slug"]
 
-  unless posts.has_key?(slug)
+  unless rendered_posts.has_key?(slug)
     env.response.status_code = 404
     next
   end
 
-  posts[slug]
+  rendered_posts[slug]
 end
 
 Kemal.run
