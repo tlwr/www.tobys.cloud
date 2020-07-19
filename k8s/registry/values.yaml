@@ -1,0 +1,2 @@
+persistence.enabled: true
+persistence.size: 32Gi

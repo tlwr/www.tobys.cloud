@@ -1,0 +1,38 @@
+---
+apiVersion: cert-manager.io/v1alpha2
+kind: Certificate
+metadata:
+  name: registry-tobys-cloud
+  namespace: registry
+spec:
+  secretName: registry-tobys-cloud-tls
+  dnsNames:
+  - registry.tobys.cloud
+  issuerRef:
+    name: letsencrypt-prod
+    kind: ClusterIssuer
+...
+
+---
+apiVersion: extensions/v1beta1
+kind: Ingress
+metadata:
+  name: registry-tobys-cloud
+  namespace: registry
+  annotations:
+    kubernetes.io/ingress.class: "nginx"
+    certmanager.k8s.io/issuer: "letsencrypt-prod"
+    certmanager.k8s.io/acme-challenge-type: http01
+spec:
+  tls:
+    - hosts:
+      - registry.tobys.cloud
+      secretName: registry-tobys-cloud-tls
+  rules:
+  - host: registry.tobys.cloud
+    http:
+      paths:
+      - backend:
+          serviceName: registry-tobys-cloud-docker-registry
+          servicePort: 5000
+...
