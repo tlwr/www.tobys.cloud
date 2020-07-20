@@ -1,10 +1,13 @@
 @font-face {
-  font-family: 'Alte DIN 1451 Mittelschrift';
-  src: url(din1451alt.ttf);
+    font-family: 'd-dinregular';
+    src: url('d-din-webfont.woff2') format('woff2'),
+         url('d-din-webfont.woff') format('woff');
+    font-weight: normal;
+    font-style: normal;
 }
 
 body{
-  font-family: 'Alte DIN 1451 Mittelschrift', monospace;
+  font-family: 'd-dinregular', monospace;
 }
 
 ::selection {
