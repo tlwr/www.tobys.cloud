@@ -1,0 +1,13 @@
+<main role="main" class="homepage">
+  <h1>Posts</h1>
+
+  <ul class="no-bullet">
+  <% posts.each do |post, _| %>
+    <li itemprop="headline">
+      <a href="/posts/<%= post %>">
+        <%= post.gsub(/-/, " ") %>
+      </a>
+    </li>
+  <% end %>
+  </ul>
+</main>

@@ -1,3 +1,12 @@
+@font-face {
+  font-family: 'Alte DIN 1451 Mittelschrift';
+  src: url(din1451alt.ttf);
+}
+
+body{
+  font-family: 'Alte DIN 1451 Mittelschrift', monospace;
+}
+
 ::selection {
   background: mediumseagreen;
   color: ghostwhite;
@@ -21,15 +30,17 @@ hr {
 
 p.term {
   white-space: pre-wrap;
-}
-
-p.term.cmd {
-  color: dodgerblue;
+  font-family: monospace;
 }
 
 p.term.motd {
-  color: mediumseagreen;
+  color: var(--base07);
   font-size: 0.6em;
+}
+
+ul.no-bullet {
+  list-style-type: none;
+  padding-left: 0;
 }
 
 @media (min-width: 600px) {
@@ -45,9 +56,7 @@ p.term.motd {
   p.term.mobile {
     display: block;
   }
-  p.term.no-mobile {
-    display: none;
-  }
+  p.term.no-mobile { display: none; }
 }
 
 @media (max-width: 52em) {

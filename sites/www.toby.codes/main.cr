@@ -26,8 +26,12 @@ error 500 do
 end
 
 get "/" do
-  posts = rendered_posts
   render_view "index"
+end
+
+get "/posts" do
+  posts = rendered_posts
+  render_view "posts"
 end
 
 get "/posts/:slug" do |env|
