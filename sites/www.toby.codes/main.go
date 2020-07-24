@@ -13,12 +13,18 @@ import (
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/sethvargo/go-signalcontext"
 	"github.com/sirupsen/logrus"
+	"github.com/unrolled/render"
 	nsecure "github.com/unrolled/secure"
 	"github.com/urfave/negroni"
 	nprom "github.com/zbindenren/negroni-prometheus"
 )
 
 func main() {
+	renderer := render.New(render.Options{
+		Directory: "templates",
+		Layout:    "layout",
+	})
+
 	mux := http.NewServeMux()
 
 	mux.HandleFunc("/health", func(w http.ResponseWriter, req *http.Request) {
@@ -26,7 +32,7 @@ func main() {
 	})
 
 	mux.HandleFunc("/", func(w http.ResponseWriter, req *http.Request) {
-		fmt.Fprintf(w, "Welcome to the home page!")
+		renderer.HTML(w, http.StatusOK, "index", nil)
 	})
 
 	mux.Handle("/metrics", promhttp.Handler())

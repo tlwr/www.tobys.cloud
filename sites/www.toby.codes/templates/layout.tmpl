@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="{{ with .Site.LanguageCode }}{{ . }}{{ else }}en-GB{{ end }}">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" href="/styles.css" type="text/css">
+    <link rel="stylesheet" href="/custom.css" type="text/css">
+    <link rel="icon" href="/favicon.ico">
+    <title>www.toby.codes</title>
+  </head>
+
+
+  <body>
+    <div class="container">
+      <header>
+        <p class="no-mobile term motd">
+   __            __                                     __
+  / /_  ____    / /_    __  __       _____  ____   ____/ / ___    _____
+ / __/ / __ \  / __ \  / / / /      / ___/ / __ \ / __  / / _ \  / ___/
+/ /_  / /_/ / / /_/ / / /_/ /  _   / /__  / /_/ // /_/ / /  __/ (__  )
+\__/  \____/ /_.___/  \__, /  (_)  \___/  \____/ \__,_/  \___/ /____/
+                     /____/
+  </p>
+  <p class="mobile term motd">
+   __            __
+  / /_  ____    / /_    __  __
+ / __/ / __ \  / __ \  / / / /
+/ /_  / /_/ / / /_/ / / /_/ /
+\__/  \____/ /_.___/  \__, /
+ _                   /____/
+(_)                  __
+  _____  ____   ____/ /  ___    _____
+ / ___/ / __ \ / __  /  / _ \  / ___/
+/ /__  / /_/ // /_/ /  /  __/ (__  )
+\___/  \____/ \__,_/   \___/ /____/
+        </p>
+        <nav>
+          <a href="/">About</a>
+          <a href="/posts">Posts</a>
+        </nav>
+      </header>
+    </div>
+
+    <div class="container">
+      <h1>toby.codes</h1>
+      {{ yield }}
+    </div>
+  </body>
+</html>
