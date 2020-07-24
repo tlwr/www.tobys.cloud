@@ -3,11 +3,17 @@ package main
 import (
 	"context"
 	"fmt"
+	html "html/template"
+	"io/ioutil"
 	"net/http"
 	"os"
+	"path/filepath"
+	"regexp"
+	"strings"
 	"syscall"
 	"time"
 
+	"github.com/gomarkdown/markdown"
 	nlogrus "github.com/meatballhat/negroni-logrus"
 	"github.com/phyber/negroni-gzip/gzip"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
@@ -29,6 +35,53 @@ func main() {
 
 	mux.HandleFunc("/health", func(w http.ResponseWriter, req *http.Request) {
 		fmt.Fprintf(w, "healthy")
+	})
+
+	mux.HandleFunc("/posts", func(w http.ResponseWriter, req *http.Request) {
+		files, err := filepath.Glob("posts/*.md")
+		if err != nil {
+			renderer.HTML(w, http.StatusInternalServerError, "500", nil)
+			return
+		}
+
+		posts := [][]string{}
+
+		for _, file := range files {
+			filename := strings.ReplaceAll(file, "posts/", "")
+			slug := strings.ReplaceAll(filename, ".md", "")
+			title := strings.ReplaceAll(slug, "-", " ")
+			posts = append(posts, []string{slug, title})
+		}
+
+		renderer.HTML(w, http.StatusOK, "posts", posts)
+	})
+
+	mux.HandleFunc("/posts/", func(w http.ResponseWriter, req *http.Request) {
+		pathRx := regexp.MustCompile("^/posts/(?P<post>[-_a-zA-Z0-9]+)$")
+
+		if !pathRx.MatchString(req.URL.Path) {
+			renderer.HTML(w, http.StatusNotFound, "404", nil)
+			return
+		}
+
+		matches := pathRx.FindAllStringSubmatch(req.URL.Path, -1)
+		post := matches[0][1]
+
+		path := "posts/" + post + ".md"
+
+		if _, err := os.Stat(path); err != nil {
+			renderer.HTML(w, http.StatusNotFound, "404", nil)
+			return
+		}
+
+		contents, err := ioutil.ReadFile(path)
+		if err != nil {
+			renderer.HTML(w, http.StatusInternalServerError, "500", nil)
+			return
+		}
+
+		rendered := html.HTML(markdown.ToHTML(contents, nil, nil))
+		renderer.HTML(w, http.StatusOK, "post", rendered)
 	})
 
 	mux.HandleFunc("/", func(w http.ResponseWriter, req *http.Request) {

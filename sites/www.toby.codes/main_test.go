@@ -72,4 +72,34 @@ var _ = Describe("Server", func() {
 			Expect(body).To(ContainSubstring(`negroni_requests_total`))
 		})
 	})
+
+	Describe("/posts", func() {
+		Context("when listing all posts", func() {
+			It("should list posts", func() {
+				err, code, body := GetPage("/posts")
+				Expect(err).NotTo(HaveOccurred())
+				Expect(code).To(Equal(200))
+				Expect(body).To(ContainSubstring(`FOSDEM 2020`))
+				Expect(body).NotTo(ContainSubstring(`FOSDEM-2020.md`))
+			})
+		})
+
+		Context("when viewing a post", func() {
+			It("should list posts", func() {
+				err, code, body := GetPage("/posts/FOSDEM-2020")
+				Expect(err).NotTo(HaveOccurred())
+				Expect(code).To(Equal(200))
+				Expect(body).To(ContainSubstring(`Eurostar`))
+			})
+		})
+
+		Context("when viewing a post which does not exist", func() {
+			It("should list posts", func() {
+				err, code, body := GetPage("/posts/FOSDEM-1993")
+				Expect(err).NotTo(HaveOccurred())
+				Expect(code).To(Equal(404))
+				Expect(body).To(ContainSubstring(`404`))
+			})
+		})
+	})
 })

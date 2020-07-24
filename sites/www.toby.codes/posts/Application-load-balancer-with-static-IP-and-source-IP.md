@@ -5,26 +5,26 @@ addresses, whilst maintaining the original source IP of the user.
 
 ## Jargon
 
-TLS &rarr; Transport Layer Security - the protocol for securing TCP.
+TLS → Transport Layer Security - the protocol for securing TCP.
 [Wikipedia](https://en.wikipedia.org/wiki/Transport_Layer_Security)
 
-DNS &rarr; Domain Name System - the protocol for naming things on the internet.
+DNS → Domain Name System - the protocol for naming things on the internet.
 [Wikipedia](https://en.wikipedia.org/wiki/Domain_Name_System)
 
-AWS &rarr; Amazon Web Services.
+AWS → Amazon Web Services.
 
-ALB &rarr; Application load balancer - an AWS managed HTTP(s) load balancer.
+ALB → Application load balancer - an AWS managed HTTP(s) load balancer.
 
-NLB &rarr; Network load balancer - an AWS managed TCP (or TLS) load balancer.
+NLB → Network load balancer - an AWS managed TCP (or TLS) load balancer.
 
-ACM &rarr; Amazon Certificate Manager - an AWS service that manages TLS
+ACM → Amazon Certificate Manager - an AWS service that manages TLS
 certs/keys.
 
-VPC &rarr; Virtual Private Cloud - an AWS abstraction for a virtual network.
+VPC → Virtual Private Cloud - an AWS abstraction for a virtual network.
 
-EC2 &rarr; Elastic Compute Cloud - on-demand virtual machines from AWS.
+EC2 → Elastic Compute Cloud - on-demand virtual machines from AWS.
 
-ECS &rarr; Elastic Container Service - AWS cloud-native container scheduler.
+ECS → Elastic Container Service - AWS cloud-native container scheduler.
 
 ## Requirements
 
@@ -49,7 +49,7 @@ the organisation does not have to buy TLS certificates and rotate them, or to
 set up LetsEncrypt.
 
 - All traffic between components is encrypted using TLS.
-Any EC2 &lrarr; load balancer connection inside the VPC should use TLS.  Any
+Any EC2 &→ load balancer connection inside the VPC should use TLS.  Any
 connection into the VPC should use TLS, except for redirecting users to use
 HTTPS instead of HTTP (which is done using HTTP).
 
@@ -75,7 +75,7 @@ Proxy Protocol TCP connections).
 
 ## Solution
 
-AWS NLB &xrarr; HAProxy &xrarr; AWS ALB &xrarr; the web services
+AWS NLB → HAProxy → AWS ALB → the web services
 
 The NLB terminates TLS using an ACM certificate. The user sees a publicly
 valid TLS certificate issued by Starfield, which is Amazon's certificate

@@ -3,6 +3,7 @@ module github.com/tlwr/www.tobys.cloud/sites/www.toby.codes
 go 1.14
 
 require (
+	github.com/gomarkdown/markdown v0.0.0-20200609195525-3f9352745725
 	github.com/meatballhat/negroni-logrus v1.1.0
 	github.com/onsi/ginkgo v1.14.0
 	github.com/onsi/gomega v1.10.1

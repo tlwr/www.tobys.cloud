@@ -1,0 +1,11 @@
+<main role="main" class="homepage">
+  <h1>Posts</h1>
+
+  <ul class="no-bullet">
+  {{ range $index, $post := . }}
+    <li itemprop="headline">
+      <a href="/posts/{{ index $post 0 }}">{{ index $post 1 }}</a>
+    </li>
+  {{ end }}
+  </ul>
+</main>
