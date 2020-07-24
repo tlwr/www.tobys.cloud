@@ -12,6 +12,14 @@
   --highlight: mediumseagreen;
 }
 
+@media (prefers-color-scheme: dark) {
+  :root {
+    --light: #2d2d2d;
+    --dark: #f2f0ec;
+    --highlight: mediumseagreen;
+  }
+}
+
 body{
   background-color: var(--light);
   color: var(--dark);
