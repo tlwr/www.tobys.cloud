@@ -7,7 +7,7 @@ metadata:
 spec:
   ports:
   - port: 80
-    targetPort: 3000
+    targetPort: 8080
   selector:
     app: www-toby-codes
 ...
@@ -34,7 +34,7 @@ spec:
       - name: app
         image: docker.pkg.github.com/tlwr/www.tobys.cloud/www.toby.codes:@tag
         ports:
-        - containerPort: 3000
+        - containerPort: 8080
 ...
 
 ---
@@ -75,11 +75,11 @@ spec:
       paths:
       - backend:
           serviceName: www-toby-codes
-          servicePort: 3000
+          servicePort: 8080
   - host: www.toby.codes
     http:
       paths:
       - backend:
           serviceName: www-toby-codes
-          servicePort: 3000
+          servicePort: 8080
 ...

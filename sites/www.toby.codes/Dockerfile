@@ -17,4 +17,5 @@ COPY --from=build /app/posts /app/posts
 COPY --from=build /app/public /app/public
 COPY --from=build /app/server /app/server
 COPY --from=build /app/templates /app/templates
+EXPOSE 8080
 ENTRYPOINT ["/app/server"]
