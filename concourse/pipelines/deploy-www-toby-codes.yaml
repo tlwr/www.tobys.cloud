@@ -44,6 +44,28 @@ jobs:
       - get: www-toby-codes-src
         trigger: true
 
+      - task: test
+        config: &test-config
+          platform: linux
+
+          image_resource:
+            type: registry-image
+            source:
+              repository: golang
+              tag: 1.14
+
+          inputs:
+            - name: www-toby-codes-src
+
+          run:
+            dir: www-toby-codes-src/sites/www.toby.codes
+            path: sh
+            args:
+              - -c
+              - |
+                set -eu
+                go test -ginkgo.v
+
       - task: build
         privileged: true
         config:
