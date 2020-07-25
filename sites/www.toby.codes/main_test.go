@@ -4,11 +4,17 @@ import (
 	"os"
 	"os/exec"
 	"syscall"
+	"testing"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"github.com/onsi/gomega/gexec"
 )
+
+func TestSuite(t *testing.T) {
+	RegisterFailHandler(Fail)
+	RunSpecs(t, "www.toby.codes")
+}
 
 var (
 	serverURL        string
