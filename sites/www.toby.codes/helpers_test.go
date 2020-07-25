@@ -3,6 +3,8 @@ package main_test
 import (
 	"io/ioutil"
 	"net/http"
+
+	. "github.com/onsi/ginkgo"
 )
 
 func IsHealthy() bool {
@@ -16,6 +18,7 @@ func IsHealthy() bool {
 }
 
 func GetPage(path string) (error, int, string) {
+	By("Making request to " + serverURL + path)
 	resp, err := http.Get(serverURL + path)
 
 	if err != nil {
@@ -28,5 +31,6 @@ func GetPage(path string) (error, int, string) {
 	}
 	resp.Body.Close()
 
+	By("Received response from " + serverURL + path + " of " + resp.Status)
 	return nil, resp.StatusCode, string(body)
 }

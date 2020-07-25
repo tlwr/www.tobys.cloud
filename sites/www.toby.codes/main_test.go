@@ -1,6 +1,7 @@
 package main_test
 
 import (
+	"os"
 	"os/exec"
 	"syscall"
 
@@ -9,8 +10,9 @@ import (
 	"github.com/onsi/gomega/gexec"
 )
 
-const (
-	serverURL = "http://localhost:8080"
+var (
+	serverURL        string
+	defaultServerURL = "http://localhost:8080"
 )
 
 var _ = Describe("Server", func() {
@@ -21,12 +23,21 @@ var _ = Describe("Server", func() {
 	)
 
 	BeforeSuite(func() {
-		pkg := "github.com/tlwr/www.tobys.cloud/sites/www.toby.codes"
 
-		pathToServer, err = gexec.Build(pkg)
+		customServerURL := os.Getenv("SERVER_URL")
+		if customServerURL != "" {
+			serverURL = customServerURL
+		} else {
+			serverURL = defaultServerURL
 
-		Expect(err).NotTo(HaveOccurred())
-		Expect(pathToServer).NotTo(Equal(""))
+			By("Compiling")
+			pkg := "github.com/tlwr/www.tobys.cloud/sites/www.toby.codes"
+			pathToServer, err = gexec.Build(pkg)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(pathToServer).NotTo(Equal(""))
+		}
+
+		By("Using server URL: " + serverURL)
 	})
 
 	AfterSuite(func() {
@@ -34,16 +45,25 @@ var _ = Describe("Server", func() {
 	})
 
 	BeforeEach(func() {
-		command := exec.Command(pathToServer)
-		session, err = gexec.Start(command, GinkgoWriter, GinkgoWriter)
-		Expect(err).NotTo(HaveOccurred())
+		if serverURL == defaultServerURL {
+			By("Running server")
 
-		Eventually(IsHealthy).Should(Equal(true))
+			command := exec.Command(pathToServer)
+			session, err = gexec.Start(command, GinkgoWriter, GinkgoWriter)
+			Expect(err).NotTo(HaveOccurred())
+
+			Eventually(IsHealthy).Should(Equal(true))
+			By("Server is healthy")
+		}
 	})
 
 	AfterEach(func() {
-		session.Signal(syscall.SIGTERM)
-		Eventually(session).Should(gexec.Exit(0))
+		if serverURL == defaultServerURL {
+			By("Stopping server")
+			session.Signal(syscall.SIGTERM)
+			Eventually(session).Should(gexec.Exit(0))
+			By("Server is stopped")
+		}
 	})
 
 	Describe("/", func() {
