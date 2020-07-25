@@ -71,7 +71,7 @@ var _ = Describe("Server", func() {
 			err, code, body := GetPage("/")
 			Expect(err).NotTo(HaveOccurred())
 			Expect(code).To(Equal(200))
-			Expect(body).To(ContainSubstring(`<h1>toby.codes</h1>`))
+			Expect(body).To(ContainSubstring(`Toby Lorne`))
 		})
 	})
 
