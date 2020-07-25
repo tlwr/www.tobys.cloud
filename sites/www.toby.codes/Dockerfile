@@ -1,13 +1,20 @@
-FROM crystallang/crystal:0.35.0
+ARG go_version=1.14-alpine
+FROM golang:$go_version AS build
 
 WORKDIR /app
 
-COPY $PWD/shard.yml /app
-RUN shards install
+COPY $PWD/go.mod /app
+COPY $PWD/go.sum /app
+RUN go mod download
 
 COPY $PWD /app
-RUN crystal build --static main.cr -o www.toby.codes
+RUN CGO_ENABLED=0 go build -o server
 
-EXPOSE 3000
-ENV KEMAL_ENV "production"
-ENTRYPOINT ["/app/www.toby.codes"]
+FROM scratch AS run
+
+WORKDIR /app
+COPY --from=build /app/posts /app/posts
+COPY --from=build /app/public /app/public
+COPY --from=build /app/server /app/server
+COPY --from=build /app/templates /app/templates
+ENTRYPOINT ["/app/server"]
