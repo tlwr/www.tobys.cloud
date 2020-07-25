@@ -104,8 +104,8 @@ distribute UAA is unpacked, some files (stylesheets and HTML templates) are
 updated. The WAR file is re-assembled, and then UAA is started again,
 healthchecked, and then the instance is re-registered.
 
-This is a filthy hack and should not be used (which is coincidentaly [what it
-says](https://github.com/18F/uaa-customized-boshrelease/blob/master/jobs/uaa-customized/templates/pre-start#L4)
+This is a filthy hack and should not be used (which is coincidentally
+[what it says](https://github.com/18F/uaa-customized-boshrelease/blob/master/jobs/uaa-customized/templates/pre-start#L4)
 in 18F's original repository). However, like most awful hacks that end up
 getting used in production: it serves a purpose, and doing it this way was
 better than doing it properly (for some definition of better). Not all software
