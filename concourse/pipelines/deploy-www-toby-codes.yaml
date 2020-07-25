@@ -158,3 +158,16 @@ jobs:
           KUBE_CONFIG: ((static-sites-k8s.kube-config))
           RESOURCE: deployment/www-toby-codes
           NAMESPACE: static-sites
+
+  - name: acceptance-test
+    serial: true
+    plan:
+      - get: www-toby-codes-src
+        trigger: true
+        passed: [deploy]
+
+      - task: acceptance-test
+        config:
+          <<: *test-config
+          params:
+            SERVER_URL: https://www.toby.codes
