@@ -1,0 +1,20 @@
+---
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: petitions-exporter
+  namespace: prometheus-system
+  labels:
+    release:  prometheus-tobys-cloud
+spec:
+  jobLabel: petitions-exporter
+  selector:
+    matchLabels:
+      app: petitions-exporter
+  namespaceSelector:
+    matchNames:
+    - metrics
+  endpoints:
+  - port: http
+    interval: 1m
+...
