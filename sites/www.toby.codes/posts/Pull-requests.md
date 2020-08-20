@@ -1,6 +1,18 @@
 In this post I am collecting pull requests that I author that I enjoyed
 writing, or I found particularly interesting to work on.
 
+## July 2020
+
+### GOV.UK PaaS
+
+Each GOV.UK PaaS developer has their own development environment, which we
+endeavour to turn off unless they are needed. The development environments can
+be quite expensive, so now we use AWS spot instances:
+
+- [Fix BOSH instance creation when using tags](https://github.com/cloudfoundry/bosh-aws-cpi-release/pull/105)
+- [Resurrect instances that are unresponsive](https://github.com/alphagov/paas-bootstrap/pull/376)
+- [Use spot instances in development environments](https://github.com/alphagov/paas-cf/pull/2377)
+
 ## June 2020
 
 ### GOV.UK Notify incident
