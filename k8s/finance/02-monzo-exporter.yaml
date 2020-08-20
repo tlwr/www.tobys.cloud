@@ -1,0 +1,133 @@
+---
+apiVersion: cert-manager.io/v1alpha2
+kind: Certificate
+metadata:
+  name: monzo-tobys-cloud
+  namespace: finance
+spec:
+  secretName: monzo-tobys-cloud-tls
+  dnsNames:
+  - monzo.tobys.cloud
+  issuerRef:
+    name: letsencrypt-prod
+    kind: ClusterIssuer
+...
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: monzo
+  namespace: finance
+spec:
+  selector:
+    matchLabels:
+      app: monzo
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: monzo
+    spec:
+      imagePullSecrets:
+      - name: pull-docker-images
+      containers:
+      - name: monzo
+        image: registry.tobys.cloud/monzo-exporter:latest
+        imagePullPolicy: Always
+
+        ports:
+        - containerPort: 8090
+        - containerPort: 9036
+
+        env:
+        - name: MONZO_OAUTH_EXTERNAL_URL
+          value: "https://monzo.tobys.cloud"
+
+        - name: MONZO_OAUTH_REFRESH_INTERVAL
+          value: "1800"
+
+        - name: MONZO_OAUTH_PORT
+          value: "8090"
+
+        - name: MONZO_OAUTH_CLIENT_ID
+          valueFrom:
+            secretKeyRef:
+              name: monzo-oauth-credentials
+              key: MONZO_OAUTH_CLIENT_ID
+
+        - name: MONZO_OAUTH_CLIENT_SECRET
+          valueFrom:
+            secretKeyRef:
+              name: monzo-oauth-credentials
+              key: MONZO_OAUTH_CLIENT_SECRET
+...
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: monzo-exporter
+  namespace: finance
+  labels:
+    app: monzo-exporter
+spec:
+  type: ClusterIP
+  ports:
+  - name: http
+    protocol: TCP
+    port: 9036
+    targetPort: 9036
+  selector:
+    app: monzo
+...
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: monzo-tobys-cloud
+  namespace: finance
+  labels:
+    app: monzo-tobys-cloud
+spec:
+  type: ClusterIP
+  ports:
+  - name: http
+    protocol: TCP
+    port: 8090
+    targetPort: 8090
+  selector:
+    app: monzo
+...
+
+---
+apiVersion: extensions/v1beta1
+kind: Ingress
+metadata:
+  name: monzo-tobys-cloud
+  namespace: finance
+  annotations:
+    kubernetes.io/ingress.class: "nginx"
+    certmanager.k8s.io/issuer: "letsencrypt-prod"
+    certmanager.k8s.io/acme-challenge-type: http01
+spec:
+  tls:
+    - hosts:
+      - monzo.tobys.cloud
+      secretName: monzo-tobys-cloud-tls
+  rules:
+  - host: monzo.tobys.cloud
+    http:
+      paths:
+      - backend:
+          serviceName: monzo-tobys-cloud
+          servicePort: 8090
+  - host: monzo.tobys.cloud
+    http:
+      paths:
+      - backend:
+          serviceName: monzo-tobys-cloud
+          servicePort: 8090
+...
+

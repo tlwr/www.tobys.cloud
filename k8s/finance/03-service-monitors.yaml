@@ -1,0 +1,20 @@
+---
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: monzo-exporter
+  namespace: prometheus-system
+  labels:
+    release:  prometheus-tobys-cloud
+spec:
+  jobLabel: monzo-exporter
+  selector:
+    matchLabels:
+      app: monzo-exporter
+  namespaceSelector:
+    matchNames:
+    - finance
+  endpoints:
+  - port: http
+    interval: 1m
+...
