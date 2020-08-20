@@ -1,6 +1,26 @@
 In this post I am collecting pull requests that I author that I enjoyed
 writing, or I found particularly interesting to work on.
 
+## August 2020
+
+### Cloud Foundry
+
+I had a great deal of fun implementing a feature where a Cloud Foundry operator
+can customise the error pages within the routing subsystem:
+[gorouter HTML error templates](https://github.com/cloudfoundry/gorouter/pull/271).
+
+### GOV.UK PaaS
+
+We released autoscaling using the
+[app-autoscaler](https://github.com/cloudfoundry/app-autoscaler).
+It was a great deal of fun to
+[deploy the autoscaler within GOV.UK PaaS](https://github.com/alphagov/paas-cf/pull/2408)
+and to
+[document how GOV.UK PaaS users can autoscale their apps](https://github.com/alphagov/paas-tech-docs/pull/334).
+
+Prometheus is nifty, and I will never pass up a chance to
+[use the `predict_linear` function to generate alerts](https://github.com/alphagov/paas-cf/pull/2407).
+
 ## July 2020
 
 ### GOV.UK PaaS
