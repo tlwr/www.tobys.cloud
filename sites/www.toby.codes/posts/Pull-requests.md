@@ -9,6 +9,8 @@ I had a great deal of fun implementing a feature where a Cloud Foundry operator
 can customise the error pages within the routing subsystem:
 [gorouter HTML error templates](https://github.com/cloudfoundry/gorouter/pull/271).
 
+![A Windows 98 themed Gorouter error page](/images/gorouter-404.png)
+
 ### GOV.UK PaaS
 
 We released autoscaling using the
