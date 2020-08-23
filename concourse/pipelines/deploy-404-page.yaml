@@ -1,0 +1,160 @@
+---
+resources:
+  - name: 404-page-src
+    type: git
+    icon: git
+    source:
+      branch: main
+      uri: https://github.com/tlwr/www.tobys.cloud.git
+
+      paths:
+        - sites/404-page
+
+  - name: cloud-cfg
+    type: git
+    icon: git
+    source:
+      branch: main
+      uri: https://github.com/tlwr/www.tobys.cloud.git
+
+      paths:
+        - k8s/static-sites/02-404-page.yaml
+        - concourse
+
+  - name: 404-page-img
+    type: registry-image
+    icon: docker
+    source:
+      repository: ((docker-secrets.registry))/404-page
+      username: ((docker-secrets.username))
+      password: ((docker-secrets.password))
+
+jobs:
+  - name: set-pipeline
+    plan:
+      - get: cloud-cfg
+        trigger: true
+
+      - set_pipeline: deploy-404-page
+        file: cloud-cfg/concourse/pipelines/deploy-404-page.yaml
+
+  - name: build
+    serial: true
+    plan:
+      - get: 404-page-src
+        trigger: true
+
+      - task: test
+        config: &test-config
+          platform: linux
+
+          image_resource:
+            type: registry-image
+            source:
+              repository: golang
+              tag: 1.14
+
+          inputs:
+            - name: 404-page-src
+
+          run:
+            dir: 404-page-src/sites/404-page
+            path: sh
+            args:
+              - -c
+              - |
+                set -eu
+                go test -ginkgo.v
+
+      - task: build
+        privileged: true
+        config:
+          platform: linux
+
+          image_resource:
+            type: registry-image
+            source:
+              repository: vito/oci-build-task
+
+          inputs:
+            - name: 404-page-src
+              path: .
+
+          outputs:
+            - name: image
+
+          params:
+            CONTEXT: sites/404-page
+
+          run:
+            path: build
+
+      - put: 404-page-img
+        params:
+          image: image/image.tar
+          additional_tags: 404-page-src/.git/ref
+        get_params:
+          skip_download: true
+
+  - name: deploy
+    serial: true
+    plan:
+      - get: 404-page-img
+        trigger: true
+        passed: [build]
+        params:
+          skip_download: true
+
+      - get: 404-page-src
+        passed: [build]
+
+      - get: cloud-cfg
+        passed: [set-pipeline]
+        trigger: true
+
+      - task: add-tag-to-kubeyaml
+        privileged: true
+        config:
+          platform: linux
+
+          image_resource:
+            type: registry-image
+            source:
+              repository: alpine
+              tag: 3.12
+
+          inputs:
+            - name: cloud-cfg
+            - name: 404-page-src
+
+          outputs:
+            - name: kubeyaml
+
+          run:
+            path: ash
+            args:
+              - -e
+              - -u
+              - -x
+              - -c
+              - |
+                tag="$(cat 404-page-src/.git/ref)"
+
+                sed \
+                  "s/@tag/$tag/" \
+                  cloud-cfg/k8s/static-sites/02-404-page.yaml \
+                  > kubeyaml/kubeyaml.yaml
+
+      - task: kubectl-apply
+        file: cloud-cfg/concourse/tasks/kubectl-apply.yaml
+        params:
+          KUBEYAML_PATH: kubeyaml.yaml
+          KUBE_CONFIG: ((static-sites-k8s.kube-config))
+          NAMESPACE: static-sites
+
+      - task: kubectl-rollout-restart
+        file: cloud-cfg/concourse/tasks/kubectl-rollout-restart.yaml
+        params:
+          KUBE_CONFIG: ((static-sites-k8s.kube-config))
+          RESOURCE: deployment/404-page
+          NAMESPACE: static-sites
