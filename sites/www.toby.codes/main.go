@@ -85,6 +85,11 @@ func main() {
 	})
 
 	mux.HandleFunc("/", func(w http.ResponseWriter, req *http.Request) {
+		if req.URL.Path != "" && req.URL.Path != "/" {
+			renderer.HTML(w, http.StatusNotFound, "404", nil)
+			return
+		}
+
 		renderer.HTML(w, http.StatusOK, "index", nil)
 	})
 
