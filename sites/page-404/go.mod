@@ -1,4 +1,4 @@
-module github.com/tlwr/www.tobys.cloud/sites/404-page
+module github.com/tlwr/www.tobys.cloud/sites/page-404
 
 go 1.14
 
