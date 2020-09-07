@@ -23,6 +23,11 @@ and to
 Prometheus is nifty, and I will never pass up a chance to
 [use the `predict_linear` function to generate alerts](https://github.com/alphagov/paas-cf/pull/2407).
 
+Ruby is a sharp knife, and has a few ergonomic features that can be dangerous, eg
+execution strings: `echo hello world` or `%x(echo hello world)`.
+[Rubocop](https://rubocop.org/) is a ruby linter which can be customised.
+I added [a linting rule which rejects code using execution strings dangerously](https://github.com/alphagov/paas-cf/pull/2420).
+
 ## July 2020
 
 ### GOV.UK PaaS
