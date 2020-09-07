@@ -33,7 +33,7 @@ spec:
       - name: pull-docker-images
       containers:
       - name: monzo
-        image: registry.tobys.cloud/monzo-exporter:latest
+        image: ghcr.io/tlwr/monzo-exporter:latest
         imagePullPolicy: Always
 
         ports:
