@@ -28,11 +28,9 @@ spec:
       labels:
         app: www-toby-codes
     spec:
-      imagePullSecrets:
-      - name: pull-docker-images
       containers:
       - name: app
-        image: docker.pkg.github.com/tlwr/www.tobys.cloud/www.toby.codes:@tag
+        image: ghcr.io/tlwr/www.toby.codes:@tag
         ports:
         - containerPort: 8080
 ...

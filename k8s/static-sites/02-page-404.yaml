@@ -28,11 +28,9 @@ spec:
       labels:
         app: "page-404"
     spec:
-      imagePullSecrets:
-      - name: pull-docker-images
       containers:
       - name: app
-        image: docker.pkg.github.com/tlwr/www.tobys.cloud/page-404:@tag
+        image: ghcr.io/tlwr/page-404:@tag
         ports:
         - containerPort: 8080
 ...
