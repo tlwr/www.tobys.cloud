@@ -50,3 +50,12 @@ prometheus:
     logFormat: logfmt
 
     additionalScrapeConfigs: []
+
+    storageSpec:
+      volumeClaimTemplate:
+        spec:
+          accessModes: ["ReadWriteOnce"]
+          storageClassName: do-block-storage
+          resources:
+            requests:
+              storage: 100Gi
