@@ -31,11 +31,9 @@ spec:
       labels:
         app: petitions-exporter
     spec:
-      imagePullSecrets:
-      - name: pull-docker-images
       containers:
       - name: app
-        image: registry.tobys.cloud/petitions-exporter:latest
+        image: ghcr.io/tlwr/petitions-exporter:latest
         imagePullPolicy: Always
 
         ports:
