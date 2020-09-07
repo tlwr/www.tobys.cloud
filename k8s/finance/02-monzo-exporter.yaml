@@ -29,8 +29,6 @@ spec:
       labels:
         app: monzo
     spec:
-      imagePullSecrets:
-      - name: pull-docker-images
       containers:
       - name: monzo
         image: ghcr.io/tlwr/monzo-exporter:latest
