@@ -25,7 +25,7 @@ resources:
     type: registry-image
     icon: docker
     source:
-      repository: ((docker-secrets.registry))/www.tobys.cloud
+      repository: ghcr.io/tlwr/www.tobys.cloud
       username: ((docker-secrets.username))
       password: ((docker-secrets.password))
 
