@@ -5,6 +5,7 @@
 | Name | Pipeline |
 | ---- | -------- |
 | [monzo-exporter](https://github.com/tlwr/monzo-exporter) | [![pipeline](https://concourse.tobys.cloud/api/v1/teams/main/pipelines/monzo-exporter/badge)](https://concourse.tobys.cloud/teams/main/pipelines/monzo-exporter) |
+| [operator-tools](https://github.com/tlwr/operator-tools) | [![pipeline](https://concourse.tobys.cloud/api/v1/teams/main/pipelines/operator-tools/badge)](https://concourse.tobys.cloud/teams/main/pipelines/operator-tools) |
 | [petitions-exporter](https://github.com/tlwr/petitions-exporter) | [![pipeline](https://concourse.tobys.cloud/api/v1/teams/main/pipelines/petitions-exporter/badge)](https://concourse.tobys.cloud/teams/main/pipelines/petitions-exporter) |
 | [registry-tag-resource](https://github.com/tlwr/registry-tag-resource/) | [![pipeline](https://concourse.tobys.cloud/api/v1/teams/main/pipelines/registry-tag-resource/badge)](https://concourse.tobys.cloud/teams/main/pipelines/registry-tag-resource) |
 | [todo-aggregator](https://github.com/tlwr/todo-aggregator/) | [![pipeline](https://concourse.tobys.cloud/api/v1/teams/main/pipelines/todo-aggregator/badge)](https://concourse.tobys.cloud/teams/main/pipelines/todo-aggregator) |
