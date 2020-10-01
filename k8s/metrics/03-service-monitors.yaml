@@ -18,3 +18,24 @@ spec:
   - port: http
     interval: 1m
 ...
+
+---
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: todo-tobys-cloud
+  namespace: prometheus-system
+  labels:
+    release:  prometheus-tobys-cloud
+spec:
+  jobLabel: todos-tobys-cloud
+  selector:
+    matchLabels:
+      app: todos-tobys-cloud
+  namespaceSelector:
+    matchNames:
+    - static-sites
+  endpoints:
+  - port: http
+    interval: 1m
+...
