@@ -23,7 +23,7 @@ spec:
 apiVersion: monitoring.coreos.com/v1
 kind: ServiceMonitor
 metadata:
-  name: todo-tobys-cloud
+  name: todos-tobys-cloud
   namespace: prometheus-system
   labels:
     release:  prometheus-tobys-cloud
