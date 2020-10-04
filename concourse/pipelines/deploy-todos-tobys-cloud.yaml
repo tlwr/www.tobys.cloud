@@ -11,7 +11,7 @@ resources:
         - k8s/static-sites/02-todos.tobys.cloud.yaml
         - concourse
 
-  - name: todos-tobys-cloud-img
+  - name: todo-aggregator-img
     type: registry-image
     icon: docker
     source:
@@ -31,7 +31,7 @@ jobs:
   - name: deploy
     serial: true
     plan:
-      - get: todos-tobys-cloud-img
+      - get: todo-aggregator-img
         trigger: true
         params:
           skip_download: true
@@ -53,6 +53,7 @@ jobs:
 
           inputs:
             - name: cloud-cfg
+            - name: todo-aggregator-img
 
           outputs:
             - name: kubeyaml
@@ -65,7 +66,7 @@ jobs:
               - -x
               - -c
               - |
-                tag="$(cat todos-tobys-cloud-img/tag)"
+                tag="$(cat todo-aggregator-img/tag)"
 
                 sed \
                   "s/@tag/$tag/" \
