@@ -1,0 +1,138 @@
+---
+resources:
+  - name: assets-tobys-cloud-src
+    type: git
+    icon: git
+    source:
+      branch: main
+      uri: https://github.com/tlwr/www.tobys.cloud.git
+
+      paths:
+        - sites/assets.tobys.cloud
+
+  - name: cloud-cfg
+    type: git
+    icon: git
+    source:
+      branch: main
+      uri: https://github.com/tlwr/www.tobys.cloud.git
+
+      paths:
+        - k8s/static-sites/02-assets.tobys.cloud.yaml
+        - concourse
+
+  - name: assets-tobys-cloud-img
+    type: registry-image
+    icon: docker
+    source:
+      repository: ghcr.io/tlwr/assets.tobys.cloud
+      username: ((docker-secrets.username))
+      password: ((docker-secrets.password))
+
+jobs:
+  - name: set-pipeline
+    plan:
+      - get: cloud-cfg
+        trigger: true
+
+      - set_pipeline: deploy-assets-tobys-cloud
+        file: cloud-cfg/concourse/pipelines/deploy-assets-tobys-cloud.yaml
+
+  - name: build
+    serial: true
+    plan:
+      - get: assets-tobys-cloud-src
+        trigger: true
+
+      - task: build
+        privileged: true
+        config:
+          platform: linux
+
+          image_resource:
+            type: registry-image
+            source:
+              repository: vito/oci-build-task
+
+          inputs:
+            - name: assets-tobys-cloud-src
+              path: .
+
+          outputs:
+            - name: image
+
+          params:
+            CONTEXT: sites/assets.tobys.cloud
+
+          run:
+            path: build
+
+      - put: assets-tobys-cloud-img
+        params:
+          image: image/image.tar
+          additional_tags: assets-tobys-cloud-src/.git/ref
+        get_params:
+          skip_download: true
+
+  - name: deploy
+    serial: true
+    plan:
+      - get: assets-tobys-cloud-img
+        trigger: true
+        passed: [build]
+        params:
+          skip_download: true
+
+      - get: assets-tobys-cloud-src
+        passed: [build]
+
+      - get: cloud-cfg
+        passed: [set-pipeline]
+        trigger: true
+
+      - task: add-tag-to-kubeyaml
+        privileged: true
+        config:
+          platform: linux
+
+          image_resource:
+            type: registry-image
+            source:
+              repository: alpine
+              tag: 3.12
+
+          inputs:
+            - name: cloud-cfg
+            - name: assets-tobys-cloud-src
+
+          outputs:
+            - name: kubeyaml
+
+          run:
+            path: ash
+            args:
+              - -e
+              - -u
+              - -x
+              - -c
+              - |
+                tag="$(cat assets-tobys-cloud-src/.git/ref)"
+
+                sed \
+                  "s/@tag/$tag/" \
+                  cloud-cfg/k8s/static-sites/02-assets-tobys-cloud.yaml \
+                  > kubeyaml/kubeyaml.yaml
+
+      - task: kubectl-apply
+        file: cloud-cfg/concourse/tasks/kubectl-apply.yaml
+        params:
+          KUBEYAML_PATH: kubeyaml.yaml
+          KUBE_CONFIG: ((static-sites-k8s.kube-config))
+          NAMESPACE: static-sites
+
+      - task: kubectl-rollout-restart
+        file: cloud-cfg/concourse/tasks/kubectl-rollout-restart.yaml
+        params:
+          KUBE_CONFIG: ((static-sites-k8s.kube-config))
+          RESOURCE: deployment/assets-tobys-cloud
+          NAMESPACE: static-sites
