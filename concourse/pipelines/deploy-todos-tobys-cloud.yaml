@@ -33,8 +33,6 @@ jobs:
     plan:
       - get: todo-aggregator-img
         trigger: true
-        params:
-          skip_download: true
 
       - get: cloud-cfg
         passed: [set-pipeline]
