@@ -1,0 +1,33 @@
+{{ define "stat" }}
+{{ end }}
+
+<!DOCTYPE html>
+<html lang="en-GB">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" href="https://assets.tobys.cloud/styles.css" type="text/css">
+    <link rel="icon" href="https://assets.tobys.cloud/favicon.ico">
+    <title>stats</title>
+    <meta http-equiv="refresh" content="30">
+  </head>
+
+  <body>
+    <div class="container">
+      <header>
+        <h1>stats</h1>
+        <p>updated {{ .SecondsAgo }} seconds ago</p>
+      </header>
+    </div>
+
+    <main class="container">
+    {{ range $index, $stat := .Stats }}
+      <h2 id="{{ $stat.ID }}">{{ $stat.Name }}</h2>
+      <p>{{ $stat.Description }}</p>
+      {{ $stat.SVG }}
+      <p><a href="#{{ $stat.ID }}">🔗</a></p>
+    {{ end }}
+    </main>
+  </body>
+</html>
+
