@@ -31,7 +31,7 @@ spec:
       containers:
       - name: nginx
         image: ghcr.io/tlwr/stats.tobys.cloud:@tag
-        command: /app/server
+        command: [/app/server]
         args:
           - -prometheus-url
           - prometheus-operated.prometheus-system.svc.cluster.local
