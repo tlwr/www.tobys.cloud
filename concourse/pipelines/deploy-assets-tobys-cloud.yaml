@@ -18,7 +18,7 @@ resources:
       uri: https://github.com/tlwr/www.tobys.cloud.git
 
       paths:
-        - k8s/static-sites/02-assets.tobys.cloud.yaml
+        - k8s/static-sites/02-assets-tobys-cloud.yaml
         - concourse
 
   - name: assets-tobys-cloud-img
