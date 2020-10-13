@@ -35,6 +35,7 @@ spec:
         imagePullPolicy: Always
         ports:
         - containerPort: 8080
+          name: http
         command: ['todo-aggregator']
         args: ['-github-username', 'tlwr']
 ...
