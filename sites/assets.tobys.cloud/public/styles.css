@@ -20,6 +20,12 @@
   }
 }
 
+.no-dark-mode * {
+  --dark: #2d2d2d;
+  --light: #f2f0ec;
+  --highlight: mediumseagreen;
+}
+
 body{
   background-color: var(--light);
   color: var(--dark);
