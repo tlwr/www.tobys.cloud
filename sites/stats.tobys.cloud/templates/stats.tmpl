@@ -22,10 +22,9 @@
 
     <main class="container">
     {{ range $index, $stat := .Stats }}
-      <h2 id="{{ $stat.ID }}">{{ $stat.Name }}</h2>
-      <p>{{ $stat.Description }}</p>
+      <h2>&ldquo;{{ $stat.Name }}&rdquo;</h2>
       {{ $stat.SVG }}
-      <p><a href="#{{ $stat.ID }}">🔗</a></p>
+      <p>via {{ $stat.Source }}</p>
     {{ end }}
     </main>
   </body>

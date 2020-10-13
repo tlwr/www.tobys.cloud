@@ -4,14 +4,16 @@ import (
 	"context"
 	"flag"
 	"fmt"
-	"html/template"
 	"net/http"
 	"os"
+	"sync"
 	"syscall"
 	"time"
 
 	nlogrus "github.com/meatballhat/negroni-logrus"
 	"github.com/phyber/negroni-gzip/gzip"
+	prom "github.com/prometheus/client_golang/api"
+	promapi "github.com/prometheus/client_golang/api/prometheus/v1"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/sethvargo/go-signalcontext"
 	"github.com/sirupsen/logrus"
@@ -34,6 +36,35 @@ func main() {
 		logger.Fatal("-prometheus-url flag is required")
 	}
 
+	promClient, err := prom.NewClient(prom.Config{Address: *promURL})
+	if err != nil {
+		logger.Fatalf("Could not create Prometheus API client: %s", err)
+	}
+	promAPI := promapi.NewAPI(promClient)
+
+	updatedAt := time.Now()
+	stats := []Stat{}
+	statsMu := sync.RWMutex{}
+
+	go func() {
+		for {
+			logger.Info("get-petitions")
+			latestStats, err := chartAll(promAPI)
+			if err != nil {
+				logger.Errorf("Could not query Prometheus: %s", err)
+				time.Sleep(30 * time.Second)
+			}
+			logger.Info("got-petitions")
+
+			statsMu.Lock()
+			stats = latestStats
+			updatedAt = time.Now()
+			statsMu.Unlock()
+
+			time.Sleep(3 * time.Minute)
+		}
+	}()
+
 	renderer := render.New(render.Options{
 		Directory: "templates",
 	})
@@ -45,35 +76,15 @@ func main() {
 	})
 
 	mux.HandleFunc("/", func(w http.ResponseWriter, req *http.Request) {
+		statsMu.RLock()
+		defer statsMu.RUnlock()
+
 		renderer.HTML(
 			w, http.StatusOK,
 			"stats",
-			struct {
-				SecondsAgo int64
-				Stats      []struct {
-					ID          string
-					Name        string
-					Description string
-					SVG         template.HTML
-				}
-			}{
-				SecondsAgo: int64(0),
-				Stats: []struct {
-					ID          string
-					Name        string
-					Description string
-					SVG         template.HTML
-				}{
-					{
-						ID:          "stat",
-						Name:        "Stat",
-						Description: "A stat",
-						SVG: `
-<svg height="100" width="100">
-  <circle cx="50" cy="50" r="40" stroke="black" stroke-width="3" fill="red" />
-</svg> `,
-					},
-				},
+			StatPage{
+				SecondsAgo: int64(time.Now().Sub(updatedAt).Seconds()),
+				Stats:      stats,
 			},
 		)
 	})
@@ -96,6 +107,7 @@ func main() {
 	server := &http.Server{Addr: ":8080", Handler: n}
 
 	go func() {
+		logger.Info("listening")
 		server.ListenAndServe()
 	}()
 

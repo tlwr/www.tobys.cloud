@@ -5,10 +5,12 @@ import (
 	"os/exec"
 	"syscall"
 	"testing"
+	"time"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"github.com/onsi/gomega/gexec"
+	"github.com/onsi/gomega/ghttp"
 )
 
 func TestSuite(t *testing.T) {
@@ -26,6 +28,8 @@ var _ = Describe("Server", func() {
 		err          error
 		pathToServer string
 		session      *gexec.Session
+
+		prometheusServer *ghttp.Server
 	)
 
 	BeforeSuite(func() {
@@ -44,17 +48,24 @@ var _ = Describe("Server", func() {
 		}
 
 		By("Using server URL: " + serverURL)
+		prometheusServer = ghttp.NewServer()
 	})
 
 	AfterSuite(func() {
 		gexec.CleanupBuildArtifacts()
+		prometheusServer.Close()
 	})
 
 	BeforeEach(func() {
 		if serverURL == defaultServerURL {
+			prometheusServer.AppendHandlers(
+				ghttp.RespondWith(200, top5PetitionsResponse),
+				ghttp.RespondWith(200, top5PetitionsSeriesResponse),
+			)
+
 			By("Running server")
 
-			command := exec.Command(pathToServer)
+			command := exec.Command(pathToServer, "-prometheus-url", prometheusServer.URL())
 			session, err = gexec.Start(command, GinkgoWriter, GinkgoWriter)
 			Expect(err).NotTo(HaveOccurred())
 
@@ -92,15 +103,19 @@ var _ = Describe("Server", func() {
 
 	Describe("/", func() {
 		It("should display an example svg", func() {
-			err, code, body := GetPage("/")
-			Expect(err).NotTo(HaveOccurred())
-			Expect(code).To(Equal(200))
-
-			Expect(body).To(ContainSubstring(`href="#stat"`))
-			Expect(body).To(MatchRegexp(`<h2.*Stat</h2>`))
-			Expect(body).To(MatchRegexp(`<p.*A stat</p>`))
-			Expect(body).To(ContainSubstring(`<svg`))
-			Expect(body).To(ContainSubstring(`</svg>`))
+			Eventually(func() string {
+				err, code, body := GetPage("/")
+				if err != nil {
+					return ""
+				}
+				if code != 200 {
+					return ""
+				}
+				return body
+			}, 1*time.Minute, 1*time.Second).Should(SatisfyAll(
+				ContainSubstring(`<svg`),
+				ContainSubstring(`</svg>`),
+			))
 		})
 	})
 })
