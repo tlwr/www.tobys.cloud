@@ -34,7 +34,7 @@ spec:
         command: [/app/server]
         args:
           - -prometheus-url
-          - prometheus-operated.prometheus-system.svc.cluster.local
+          - http://prometheus-operated.prometheus-system.svc.cluster.local:9090
         ports:
         - containerPort: 8080
 ...
