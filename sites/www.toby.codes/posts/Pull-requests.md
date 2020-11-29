@@ -10,7 +10,7 @@ them, and
 ### GOV.UK PaaS
 
 November was my last month with GOV.UK PaaS. I spent some time with the irreplaceable
-[@https://github.com/cmcnallygds](https://github.com/cmcnallygds)
+[@cmcnallygds](https://github.com/cmcnallygds)
 and she rendered readable my attempt at
 [English words describing isolation segments](https://github.com/alphagov/paas-tech-docs/pull/356).
 
