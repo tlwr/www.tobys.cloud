@@ -1,6 +1,76 @@
 In this post I am collecting pull requests that I author that I enjoyed
 writing, or I found particularly interesting to work on.
 
+## November 2020
+
+November was my last month with GDS. I hope I left things better than I found
+them, and
+[I know that I learned a lot along the way](https://ourincrediblejourney.tumblr.com/).
+
+### GOV.UK PaaS
+
+November was my last month with GOV.UK PaaS. I spent some time with the irreplaceable
+[@https://github.com/cmcnallygds](https://github.com/cmcnallygds)
+and she rendered readable my attempt at
+[English words describing isolation segments](https://github.com/alphagov/paas-tech-docs/pull/356).
+
+### GOV.UK Notify
+
+The cell broadcasting work started to move faster, with a spare of PRs:
+
+* [Creating alerts](https://github.com/alphagov/notifications-api/pull/3003)
+* [Sending them to geographies](https://github.com/alphagov/notifications-api/pull/3011)
+* [Canaries and link tests](https://github.com/alphagov/notifications-api/pull/3018)
+
+I'm very excited to see where this notification channel goes. As above,
+November is my last month with GDS. Notify will continue upwards and to the
+right, and it has been my privilege to work in the orbit of the core team.
+
+## October 2020
+
+### GOV.UK PaaS
+
+RDS database users can now get RDS to
+[upgrade their database to the latest minor version](https://github.com/alphagov/paas-rds-broker/pull/123),
+Amazon doesn't do this for you during the maintenance window unless the minor
+upgrade is a severe security CVE.
+
+The GOV.UK PaaS metrics exporter is an interesting codebase, and previously I
+added some _not very good_ integration tests,
+[a pull request using Gomega's `Eventually`](https://github.com/alphagov/paas-cf/pull/2469)
+was overdue.
+
+[BOSH](https://bosh.io] was not cleaning up tasks often enough, and when it did it ran out of memory.
+After manually clearing out the tasks using the BOSH ruby console, we
+[ensured that BOSH task cleanup runs daily](https://github.com/alphagov/paas-bootstrap/pull/404).
+Bonus points for PR number.
+
+We finally as a team got around to merging
+[our work on isolation segments](https://github.com/alphagov/paas-cf/pull/2465),
+and we
+[subsequently enabled egress restricted isolation segments in London](https://github.com/alphagov/paas-cf/pull/2486)
+for the
+[Document Checking Service](https://www.gov.uk/government/collections/document-checking-service-pilot).
+
+I finally had enough of manually doing point-in-time restores for our tenants,
+and I'm sure our tenants were tired of raising support tickets for
+point-in-time restores. We added
+[point-in-time database restores](https://github.com/alphagov/paas-rds-broker/pull/124)
+as a feature using the RDS native feature.
+
+## September 2020
+
+### GOV.UK PaaS
+
+We allowed users to create
+[read-only bindings](https://github.com/alphagov/paas-cf/pull/2449)
+to their postgres databases, and
+[enabled the conduit plugin to specify bind parameters](https://github.com/alphagov/paas-cf-conduit/pull/48).
+
+It is always fun writing RSpec tests for your YAML configuration of your cloud
+of choice, I added some
+[tests to ensure that all our components are highly available](https://github.com/alphagov/paas-cf/pull/2451/files).
+
 ## August 2020
 
 ### Cloud Foundry
