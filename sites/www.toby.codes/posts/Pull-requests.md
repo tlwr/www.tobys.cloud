@@ -14,6 +14,11 @@ November was my last month with GOV.UK PaaS. I spent some time with the irreplac
 and she rendered readable my attempt at
 [English words describing isolation segments](https://github.com/alphagov/paas-tech-docs/pull/356).
 
+I also
+[added `set-pipeline` support](https://github.com/alphagov/paas-cf/pull/2512)
+to [`pipecleaner`](https://github.com/alphagov/paas-cf/tree/master/tools/pipecleaner)
+which is a tool for linting [Concourse](https://concourse-ci.org) pipelines.
+
 ### GOV.UK Notify
 
 The cell broadcasting work started to move faster, with a spare of PRs:
