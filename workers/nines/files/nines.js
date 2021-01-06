@@ -44,10 +44,26 @@ async function handle(req) {
   // sort keys
   downtime = Object
     .keys(downtime)
-    .sort().reduce(
+    .sort((a, b) => {
+      let [aTime, aDuration] = a.split("_", 2);
+      let [bTime, bDuration] = b.split("_", 2);
+
+      let aTimeC = aTime.charCodeAt(0);
+      let bTimeC = bTime.charCodeAt(0);
+
+      if (aTimeC - bTimeC != 0) {
+        return aTimeC - bTimeC;
+      }
+
+      aDuration = parseInt(aDuration.replace(/[a-z]/, ""));
+      bDuration = parseInt(bDuration.replace(/[a-z]/, ""));
+      return aDuration - bDuration;
+    })
+    .reduce(
       (r, k) => (r[k] = downtime[k], r),
       {},
     )
+  ;
 
   return new Response(
     JSON.stringify(downtime, null, 2),
