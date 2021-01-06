@@ -10,9 +10,11 @@ async function handle(req) {
 
   let reliability = parseFloat(path, 10);
 
-  if (reliability < 0 || reliability > 100) {
+  if (isNaN(reliability) || reliability < 0 || reliability > 100) {
     return new Response(
-      "Reliability should be between 0 and 100",
+      JSON.stringify({
+        error: "reliability should be between 0 and 100",
+      }, null, 2),
       {status: 400},
     );
   }
