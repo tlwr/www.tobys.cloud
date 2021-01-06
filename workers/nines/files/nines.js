@@ -15,7 +15,12 @@ async function handle(req) {
       JSON.stringify({
         error: "reliability should be between 0 and 100",
       }, null, 2),
-      {status: 400},
+      {
+        status: 400,
+        headers: {
+          "Content-Type": "application/json",
+        },
+      },
     );
   }
 
@@ -67,7 +72,12 @@ async function handle(req) {
 
   return new Response(
     JSON.stringify(downtime, null, 2),
-    {status: 200},
+    {
+      status: 200,
+      headers: {
+        "Content-Type": "application/json",
+      },
+    },
   );
 }
 
