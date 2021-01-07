@@ -6,7 +6,7 @@ if (typeof Response === "undefined") {
 async function handle(req) {
   let path = req.url;
   path = path.replace(/http(s)?:[/]{2}/, "");
-  path = path.split("/").slice(1).join("/")
+  path = path.split("/").slice(1).join("/");
 
   let reliability = parseFloat(path, 10);
 
