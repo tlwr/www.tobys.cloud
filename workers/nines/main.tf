@@ -28,6 +28,6 @@ resource "cloudflare_worker_script" "nines" {
 
 resource "cloudflare_worker_route" "nines_tobys_cloud" {
   zone_id = local.tobys_cloud_zone_id
-  pattern = "nines.tobys.cloud"
+  pattern = "nines.tobys.cloud/*"
   script_name = cloudflare_worker_script.nines.name
 }
