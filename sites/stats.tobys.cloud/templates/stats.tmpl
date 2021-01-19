@@ -2,7 +2,7 @@
 {{ end }}
 
 <!DOCTYPE html>
-<html lang="en-GB" class="no-dark-mode">
+<html lang="en-GB">
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -10,6 +10,29 @@
     <link rel="icon" href="https://assets.tobys.cloud/favicon.ico">
     <title>stats</title>
     <meta http-equiv="refresh" content="30">
+
+    <style>
+      .chart line {
+        stroke-width: 0.5;
+        stroke: var(--light);
+      }
+
+      .chart path {
+        stroke-width: 1;
+        stroke: var(--dark);
+        fill: none;
+      }
+
+      .chart circle {
+        stroke: none;
+        fill: var(--dark);
+      }
+
+      .chart text {
+        stroke: none;
+        fill: var(--dark);
+      }
+    </style>
   </head>
 
   <body>
