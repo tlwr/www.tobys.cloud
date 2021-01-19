@@ -20,8 +20,8 @@ func chartPetitions(api promapi.API) ([]Stat, error) {
 		Step:  1 * time.Hour,
 	}
 
-	top5PetitionsQuery := `topk(15, delta(petitions_signatures[24h]))`
-	result, warnings, err := api.Query(promctx, top5PetitionsQuery, time.Now())
+	top15PetitionsQuery := `topk(15, delta(petitions_signatures[24h]))`
+	result, warnings, err := api.Query(promctx, top15PetitionsQuery, time.Now())
 
 	if err != nil {
 		return nil, err
