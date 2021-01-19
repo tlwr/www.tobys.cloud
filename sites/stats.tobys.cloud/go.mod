@@ -3,7 +3,6 @@ module github.com/tlwr/www.tobys.cloud/sites/stats.tobys.cloud
 go 1.14
 
 require (
-	github.com/golang/freetype v0.0.0-20170609003504-e2365dfdc4a0 // indirect
 	github.com/meatballhat/negroni-logrus v1.1.0
 	github.com/onsi/ginkgo v1.14.2
 	github.com/onsi/gomega v1.10.3
@@ -15,7 +14,5 @@ require (
 	github.com/unrolled/render v1.0.3
 	github.com/unrolled/secure v1.0.8
 	github.com/urfave/negroni v1.0.0
-	github.com/wcharczuk/go-chart v2.0.1+incompatible
 	github.com/zbindenren/negroni-prometheus v0.1.1
-	golang.org/x/image v0.0.0-20200927104501-e162460cd6b5 // indirect
 )

@@ -1,13 +1,12 @@
 package main
 
 import (
-	"bytes"
 	"fmt"
 	"html/template"
+	"strings"
 	"time"
 
 	prommodel "github.com/prometheus/common/model"
-	"github.com/wcharczuk/go-chart"
 )
 
 func makeChart(
@@ -16,7 +15,45 @@ func makeChart(
 	stream *prommodel.SampleStream,
 ) (Stat, error) {
 	name := string(stream.Metric["action"])
-	series := make([]chart.Series, 0)
+
+	// 0 0
+	// |----------------- w ---------------------------|
+	//  |          |       |- yLabelWidth -||-- hPad --|
+	//  |          |
+	//  h        vPad
+	//  |          |
+	//  |          |
+	//  |          _
+	//  |           ******* <- where the data path goes
+	//  |           *******
+	//  |           *******
+	//  |           *******
+	//  |           *******
+	//  |           *******
+	//  |           *******
+	// |+- hPad --| ####### <- where the date labels go
+	//  | -
+	//  | |
+	//  | |
+	//  | xLabelHeight
+	//  | |
+	//  | |
+	//  | _
+	//  | -
+	//  | |
+	//  | |
+	//  | vPad
+	//  | |
+	//  | |
+	//  | _
+	//  _
+
+	w := 500.0
+	h := 100.0
+	vPad := 5.0
+	hPad := 5.0
+	yLabelWidth := 40.0
+	xLabelHeight := 15.0
 
 	xv := make([]time.Time, 0)
 	yv := make([]float64, 0)
@@ -26,71 +63,122 @@ func makeChart(
 		yv = append(yv, float64(pair.Value))
 	}
 
-	series = append(series, chart.TimeSeries{
-		Name:    string(name),
-		XValues: xv,
-		YValues: yv,
-	})
+	dpc := len(xv)
 
-	chart.DefaultBackgroundColor = chart.ColorTransparent
-	chart.DefaultBackgroundColor = chart.ColorTransparent
-	chart.DefaultCanvasColor = chart.ColorTransparent
+	// domain
+	xMin := xv[0]
+	xMax := xv[0]
+	yMin := yv[0]
+	yMax := yv[0]
 
-	graph := chart.Chart{
-		Width:  800,
-		Height: 300,
+	for i, _ := range xv {
+		x := xv[i]
+		y := yv[i]
 
-		Background: chart.Style{
-			Padding: chart.Box{
-				Top: 25, Left: 25, Right: 25, Bottom: 25,
-			},
-		},
+		if x.Unix() < xMin.Unix() {
+			xMin = x
+		}
+		if x.Unix() > xMax.Unix() {
+			xMax = x
+		}
 
-		TitleStyle: chart.Style{
-			Show:                true,
-			Padding:             chart.NewBox(0, 0, 1000, 1000),
-			TextRotationDegrees: -90,
-			TextHorizontalAlign: chart.TextHorizontalAlignLeft,
-			TextVerticalAlign:   chart.TextVerticalAlignTop,
-		},
-		XAxis: chart.XAxis{
-			Name: "Time",
-			NameStyle: chart.Style{
-				Show: true,
-			},
-			Style: chart.Style{
-				Show: true,
-			},
-			ValueFormatter: chart.TimeValueFormatterWithFormat("01-02 03:04"),
-		},
-		YAxis: chart.YAxis{
-			Name: unit,
-			NameStyle: chart.Style{
-				Show: true,
-			},
-			Style: chart.Style{
-				Show: true,
-			},
-			AxisType: chart.YAxisSecondary,
-			ValueFormatter: func(v interface{}) string {
-				if vf, isFloat := v.(float64); isFloat {
-					return fmt.Sprintf("%.0f", vf)
-				}
-				return ""
-			},
-		},
-
-		Series: series,
+		if y < yMin {
+			yMin = y
+		}
+		if y > yMax {
+			yMax = y
+		}
 	}
 
-	buffer := bytes.NewBufferString("")
-	err := graph.Render(chart.SVG, buffer)
-	if err != nil {
-		return Stat{}, nil
+	xDomain := func(t time.Time) float64 {
+		band := w - (2 * hPad) - yLabelWidth
+
+		numerator := t.Unix() - xMin.Unix()
+		denominator := xMax.Unix() - xMin.Unix()
+
+		return float64(band) * (float64(numerator) / float64(denominator))
 	}
+
+	yDomain := func(v float64) float64 {
+		band := h - (2 * vPad) - xLabelHeight
+
+		numerator := v - yMin
+		denominator := yMax - yMin
+
+		// invert because upside down grid
+		return band - float64(band)*(numerator/denominator)
+	}
+
+	// svg path of the data
+	path := ""
+	for i, _ := range xv {
+		x := xv[i]
+		y := yv[i]
+
+		var instruction string
+		if i == 0 {
+			instruction = "M"
+		} else {
+			instruction = "L"
+		}
+
+		path += fmt.Sprintf("%s %.2f %.2f", instruction, hPad+xDomain(x), vPad+yDomain(y))
+	}
+	tsPath := fmt.Sprintf(`<path d="%s"></path>`, path)
+
+	// circle over the start and end of the data path
+	tsCapSrc := fmt.Sprintf(`<circle cx="%.2f" cy="%.2f" r="1"/>`, hPad+xDomain(xv[0]), vPad+yDomain(yv[0]))
+	tsCapDst := fmt.Sprintf(`<circle cx="%.2f" cy="%.2f" r="1"/>`, hPad+xDomain(xv[dpc-1]), vPad+yDomain(yv[dpc-1]))
+
+	// datestamp labels
+	xLabels := fmt.Sprintf(
+		`<g>%s %s</g>`,
+		fmt.Sprintf(
+			`<text alignment-baseline="bottom" text-anchor="begin" x="%.2f" y="%.2f">%s</text>`,
+			hPad, h-vPad,
+			xv[0].Format("02 Jan 06 15:04"),
+		),
+		fmt.Sprintf(
+			`<text alignment-baseline="bottom" text-anchor="end" x="%.2f" y="%.2f">%s</text>`,
+			hPad+xDomain(xv[dpc-1]), h-vPad,
+			xv[dpc-1].Format("02 Jan 15:04"),
+		),
+	)
+
+	// value labels
+	yLabels := fmt.Sprintf(
+		`<g>%s %s</g>`,
+		fmt.Sprintf(`<text alignment-baseline="hanging" text-anchor="end" x="%.2f" y="%.2f">%.0f</text>`, w-hPad, vPad+yDomain(yMax), yMax),
+		fmt.Sprintf(`<text alignment-baseline="bottom" text-anchor="end" x="%.2f" y="%.2f">%.0f</text>`, w-hPad, vPad+yDomain(yMin), yMin),
+	)
+
+	midnights := []string{}
+	for _, x := range xv {
+		if x.Hour() != 0 && x.Minute() != 0 {
+			continue
+		}
+
+		vLine := fmt.Sprintf(
+			`<line x1="%.2f" y1="%.2f" x2="%.2f" y2="%.2f"/>`,
+			hPad+xDomain(x), vPad,
+			hPad+xDomain(x), h-vPad-xLabelHeight,
+		)
+
+		midnights = append(midnights, vLine)
+	}
+
+	svg := fmt.Sprintf(`<svg class="chart" viewBox="0 0 %f %f">`, w, h) +
+		strings.Join(midnights, " ") + // midnights must come before the tsPath otherwise it covers it
+		tsPath +
+		tsCapSrc +
+		tsCapDst +
+		xLabels +
+		yLabels +
+		`</svg>`
+
 	return Stat{
 		Name:   name,
 		Source: source,
-		SVG:    template.HTML(buffer.String()),
+		SVG:    template.HTML(svg),
 	}, nil
 }
