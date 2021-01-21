@@ -131,17 +131,18 @@ func makeChart(
 	tsCapDst := fmt.Sprintf(`<circle cx="%.2f" cy="%.2f" r="1"/>`, hPad+xDomain(xv[dpc-1]), vPad+yDomain(yv[dpc-1]))
 
 	// datestamp labels
+	dsFormat := "02 Jan 15:04"
 	xLabels := fmt.Sprintf(
 		`<g>%s %s</g>`,
 		fmt.Sprintf(
 			`<text alignment-baseline="bottom" text-anchor="begin" x="%.2f" y="%.2f">%s</text>`,
 			hPad, h-vPad,
-			xv[0].Format("02 Jan 06 15:04"),
+			xv[0].Format(dsFormat),
 		),
 		fmt.Sprintf(
 			`<text alignment-baseline="bottom" text-anchor="end" x="%.2f" y="%.2f">%s</text>`,
 			hPad+xDomain(xv[dpc-1]), h-vPad,
-			xv[dpc-1].Format("02 Jan 15:04"),
+			xv[dpc-1].Format(dsFormat),
 		),
 	)
 
