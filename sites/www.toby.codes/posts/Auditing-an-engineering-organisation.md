@@ -274,11 +274,11 @@ for anonymous submission. Some topics to look at include:
 
 Informal 1:1 interviews where attribution is anonymised can produce high
 quality information (which you should independently verify) at low cost,
-providing your colleagues trust you. Explaining up front why your are
-conducting an audit is important: people can fear for their product or job when
-in fact all you are doing is attempting to provide clarity and reprioritise
-work to reduce risk. You should take detailed notes or, if you have consent,
-record the interviews for future reference.
+providing your colleagues trust you. Explaining up front why you are conducting
+an audit is important: people can fear for their product or job when in fact
+all you are doing is attempting to provide clarity and reprioritise work to
+reduce risk. You should take detailed notes or, if you have consent, record the
+interviews for future reference.
 
 A very informal interview could consist of:
 
