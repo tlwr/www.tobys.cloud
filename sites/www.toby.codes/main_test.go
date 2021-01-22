@@ -117,6 +117,11 @@ var _ = Describe("Server", func() {
 				Expect(code).To(Equal(200))
 				Expect(body).To(ContainSubstring(`Eurostar`))
 			})
+
+			It("should not contain a non-breaking space", func() {
+				_, _, body := GetPage("/posts/FOSDEM-2020")
+				Expect(body).NotTo(ContainSubstring(" ")) // this non-breaking char is caused by pressing alt + space on Mac OS
+			})
 		})
 
 		Context("when viewing a post which does not exist", func() {
