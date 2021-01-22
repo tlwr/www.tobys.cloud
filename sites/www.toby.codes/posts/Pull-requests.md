@@ -1,5 +1,7 @@
-In this post I am collecting pull requests that I author that I enjoyed
-writing, or I found particularly interesting to work on.
+# Pull requests
+
+_In this post I am collecting pull requests that I author that I enjoyed
+writing, or I found particularly interesting to work on._
 
 ## November 2020
 
