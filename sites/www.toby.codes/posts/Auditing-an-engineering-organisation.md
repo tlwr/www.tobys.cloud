@@ -144,7 +144,7 @@ Whether this goal can be achieved is an assumption, and depending on the cost
 of doing so, it can be prudent to attempt to pre-emptively de-risk this
 assumption with some analysis.
 
-An engineering audit can provide clarify such an assumption by identifying:
+An engineering audit can clarify such an assumption by identifying:
 
 * how good/bad the situation is within an engineering organisation or a product team
 * how much work has to be done to alleviate a bad situation
