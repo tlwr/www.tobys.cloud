@@ -17,8 +17,8 @@ auditing the books was called "exchequer".
 
 ## Context
 
-In software engineering and information technology there are number of auditing
-practices one can observe within the industry:
+In software engineering and information technology there are several common
+auditing practices:
 
 * software/hardware/kit audit -
   what do we have,
@@ -162,10 +162,10 @@ to onboard new engineers. Priorities and delivery deadlines may have to
 change to ensure new engineers are happy and productive.
 
 An audit may completely contradict an assumption that reducing headcount is an
-intelligent allocative decision. Likewise, an audit could contradict an
-assumption that the organisation should increase headcount by 50%: if it takes
-an engineer 6 months to get up to speed, should you hire 10 people, or hire 3
-engineers and spend 3 months improving the onboarding situation.
+intelligent allocative decision. An audit could contradict an assumption that
+the organisation should increase headcount by 50%: if it takes an engineer 6
+months to get up to speed, should you hire 10 people, or hire 3 engineers and
+spend 3 months improving the onboarding situation.
 
 Alternatively, if your organisation assumes it needs more engineers because of
 a lack of capability to do X, an audit looking at the learning and development
@@ -192,7 +192,7 @@ Before you start, work out who is going to look at your audit results:
 
 ### How you will communicate with your audience 
 
-Likewise, how you present your results will influence how you proceed:
+How you present your results will influence how you proceed:
 
 * if the results are directly going to become an epic or a list of stories then
   you may want to spend less time quantifying or costing risks
@@ -375,7 +375,7 @@ For example:
 Organisations change size and shape over time. For future readers it can be
 useful to summarise the size/shape of the organisation at the time of the
 audit. Significant changes in organisational structure may invalidate
-recommendations made in the audit report. Likewise, the audit report may have
+recommendations made in the audit report. The audit report may have
 an influence on the shape of the organisation in future, and such detail can be
 informative for future readers reviewing the report retrospectively.
 
