@@ -58,7 +58,7 @@ h6 { font-size: .75rem }
 button {
   background-color: var(--light);
   border-radius: 5px;
-  border: 2px solid var(--dark));
+  border: 2px solid var(--dark);
   color: var(--dark);
   font-weight: 600;
 }
