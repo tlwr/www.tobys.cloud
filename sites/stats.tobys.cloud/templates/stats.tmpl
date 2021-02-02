@@ -56,6 +56,7 @@
           <th style="mid-width: 400px; width: 50%">Chart</th>
         </tr>
         {{ range $index, $stat := .Stats }}
+        {{ if $stat.Source eq "petitions exporter" }}
         <tr>
           <td>
             <p><em>&ldquo;{{ $stat.Name }}&rdquo;</em></p>
@@ -64,6 +65,28 @@
             {{ $stat.SVG }}
           </td>
         </tr>
+        {{ end }}
+        {{ end }}
+        </table>
+
+      <h2>weather</h2>
+      <p>weather in london, uk</p>
+      <table>
+        <tr>
+          <th style="width: 50%%">Metric</th>
+          <th style="mid-width: 400px; width: 50%">Chart</th>
+        </tr>
+        {{ range $index, $stat := .Stats }}
+        {{ if $stat.Source eq "weather exporter" }}
+        <tr>
+          <td>
+            <p><em>&ldquo;{{ $stat.Name }}&rdquo;</em></p>
+          </td>
+          <td>
+            {{ $stat.SVG }}
+          </td>
+        </tr>
+        {{ end }}
         {{ end }}
         </table>
     </main>

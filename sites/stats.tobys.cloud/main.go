@@ -48,13 +48,14 @@ func main() {
 
 	go func() {
 		for {
-			logger.Info("get-petitions")
+			logger.Info("get-stats")
 			latestStats, err := chartAll(promAPI)
 			if err != nil {
 				logger.Errorf("Could not query Prometheus: %s", err)
 				time.Sleep(30 * time.Second)
+				continue
 			}
-			logger.Info("got-petitions")
+			logger.Info("got-stats")
 
 			statsMu.Lock()
 			stats = latestStats
