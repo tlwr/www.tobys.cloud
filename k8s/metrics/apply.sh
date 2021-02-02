@@ -14,5 +14,9 @@ kubectl apply \
   -f "$wd/02-petitions-exporter.yaml"
 
 kubectl apply \
+  --namespace "$ns" \
+  -f "$wd/02-weather-exporter.yaml"
+
+kubectl apply \
   --namespace prometheus-system \
   -f "$wd/03-service-monitors.yaml"
