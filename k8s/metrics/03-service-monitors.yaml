@@ -39,3 +39,24 @@ spec:
   - port: http
     interval: 1m
 ...
+
+---
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: weather-exporter
+  namespace: prometheus-system
+  labels:
+    release:  prometheus-tobys-cloud
+spec:
+  jobLabel: weather-exporter
+  selector:
+    matchLabels:
+      app: weather-exporter
+  namespaceSelector:
+    matchNames:
+    - metrics
+  endpoints:
+  - port: http
+    interval: 1m
+...

@@ -1,0 +1,87 @@
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: weather-exporter
+  namespace: metrics
+  labels:
+    app: weather-exporter
+spec:
+  ports:
+  - port: 8080
+    targetPort: 8080
+    name: http
+  selector:
+    app: weather-exporter
+...
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: weather-exporter
+  namespace: metrics
+spec:
+  selector:
+    matchLabels:
+      app: weather-exporter
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: weather-exporter
+    spec:
+      containers:
+      - name: app
+        image: ghcr.io/tlwr/weather-exporter:latest
+        imagePullPolicy: Always
+
+        ports:
+        - containerPort: 8080
+
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 8080
+          initialDelaySeconds: 3
+          periodSeconds: 15
+...
+
+---
+apiVersion: cert-manager.io/v1alpha2
+kind: Certificate
+metadata:
+  name: weather-tobys-cloud
+  namespace: metrics
+spec:
+  secretName: weather-tobys-cloud-tls
+  dnsNames:
+  - weather.tobys.cloud
+  issuerRef:
+    name: letsencrypt-prod
+    kind: ClusterIssuer
+...
+
+---
+apiVersion: extensions/v1beta1
+kind: Ingress
+metadata:
+  name: weather-tobys-cloud
+  namespace: metrics
+  annotations:
+    kubernetes.io/ingress.class: "nginx"
+    certmanager.k8s.io/issuer: "letsencrypt-prod"
+    certmanager.k8s.io/acme-challenge-type: http01
+spec:
+  tls:
+    - hosts:
+      - weather.tobys.cloud
+      secretName: weather-tobys-cloud-tls
+  rules:
+  - host: weather.tobys.cloud
+    http:
+      paths:
+      - backend:
+          serviceName: weather-exporter
+          servicePort: 8080
+...
