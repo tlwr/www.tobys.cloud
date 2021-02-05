@@ -55,8 +55,11 @@ For simple web applications it is difficult to beat
 [curl](https://curl.se) is always useful, I've also written my own [HTTP
 waterfall profiler](https://github.com/tlwr/operator-tools#http).
 
-In addition to the usual suspects: _dig, ping, traceroute, tcpdump_;
+In addition to the usual suspects:
+_dig, ss, netstat, ping, traceroute, tcpdump_;
 [_mtr_](https://www.bitwizard.nl/mtr/) is especially useful.
+
+[_socat_](https://linux.die.net/man/1/socat) is an extremely versatile tool.
 
 ## Operations
 
