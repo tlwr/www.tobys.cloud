@@ -36,10 +36,10 @@ factors include (non-exhaustively):
 There are also factors which provide a more accurate signal of your value
 to a potential employer:
 
-* your ability to write a CV
-* your written and verbal communication skills
-* your ability to write software (not just code)
-* your to design a distributed system
+* the ability to write a CV
+* written and verbal communication skills
+* the ability to write software (not just code)
+* the ability to design a distributed system
 * demonstration of domain specific knowledge (security, unix, debugging)
 
 I picked 8 companies that I thought were:
