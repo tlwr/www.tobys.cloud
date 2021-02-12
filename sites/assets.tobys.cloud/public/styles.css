@@ -10,20 +10,19 @@
   --dark: #2d2d2d;
   --light: #f2f0ec;
   --highlight: mediumseagreen;
+  --highlight-text: #f2f0ec;
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
     --light: #2d2d2d;
     --dark: #f2f0ec;
-    --highlight: mediumseagreen;
   }
 }
 
 .no-dark-mode * {
   --dark: #2d2d2d;
   --light: #f2f0ec;
-  --highlight: mediumseagreen;
 }
 
 body{
@@ -76,11 +75,11 @@ button:hover {
 
 ::selection {
   background: var(--highlight);
-  color: var(--light);
+  color: var(--highlight-text);
 }
 ::-moz-selection {
   background: var(--highlight);
-  color: var(--light);
+  color: var(--highlight-text);
 }
 
 a {
