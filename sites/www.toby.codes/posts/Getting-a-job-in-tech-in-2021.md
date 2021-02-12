@@ -153,7 +153,7 @@ culture fit interviews.
    pressure.
 
 1. For the SWE interviews, the most valuable interview preparation was to brush
-   up on my university CS principles: Depth and breadth first search; trees,
+   up on my university CS principles: depth and breadth first search; trees,
    tries, stacks, queues; big-O notation for time and space; sorting
    algorithms. For my actual job I rarely have to write these myself, the most
    valuable data structures I use are arrays, maps, sets, distributed counters
