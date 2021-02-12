@@ -1,5 +1,7 @@
 # Getting a job in tech in 2021
 
+_Written on 2021-02-12_
+
 _For transparency, I am sharing my experience of switching jobs as a software
 engineer in London in Jan/Feb 2021_
 
