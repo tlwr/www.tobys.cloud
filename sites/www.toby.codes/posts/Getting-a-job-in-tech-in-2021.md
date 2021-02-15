@@ -67,7 +67,7 @@ The companies can be summarised as:
 
 * 4 fintech companies (2 referrals, 4 responses) (London is full of fintech)
 * 1 travel company (1 response)
-* 1 internetworking and security company (1 referral, no response)
+* 1 internetworking and security company (1 referral)
 * 2 logistics companies (1 response)
 
 All but two of the companies were London/US/Remote, 2 were European.
@@ -104,8 +104,8 @@ up technical interviews, which can be summarised as:
 | Stage                  | Count | Drop-off |
 | -----                  | ----- | -------- | 
 | Submission             | 8     | -        | 
-| CV sift                | 6     | 2        | 
-| Phone screen           | 6     | 0        | 
+| CV sift                | 6     | 1        |
+| Phone screen           | 7     | 0        |
 | Take home              | 2     | 0        | 
 | Engineering interviews | 6     | 0        | 
 
@@ -197,3 +197,6 @@ roles for which you are applying, we can schedule practice interview sessions.
 
 1. [Cracking the Coding Interview](https://www.crackingthecodinginterview.com)
    is good preparation for companies who use "Google" style coding interviews.
+
+1. 2021-02-15 - I updated this post, as the internetworking company responded;
+   previously they were listed as no response.
