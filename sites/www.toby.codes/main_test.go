@@ -112,7 +112,7 @@ var _ = Describe("Server", func() {
 
 		Context("when viewing a post", func() {
 			It("should list posts", func() {
-				err, code, body := GetPage("/posts/FOSDEM-2020")
+				err, code, body := GetPage("/posts/2020-02-FOSDEM-2020")
 				Expect(err).NotTo(HaveOccurred())
 				Expect(code).To(Equal(200))
 				Expect(body).To(ContainSubstring(`Eurostar`))

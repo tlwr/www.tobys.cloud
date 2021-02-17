@@ -25,6 +25,11 @@ import (
 	nprom "github.com/zbindenren/negroni-prometheus"
 )
 
+var (
+	pathRx = regexp.MustCompile("^/posts/(?P<post>[-_a-zA-Z0-9]+)$")
+	dateRx = regexp.MustCompile("^(2[0-9]{3}-[0-1][1-9])-(.*)")
+)
+
 func main() {
 	renderer := render.New(render.Options{
 		Directory: "templates",
@@ -44,21 +49,35 @@ func main() {
 			return
 		}
 
-		posts := [][]string{}
+		datedPosts := [][]string{}
+		ongoingPosts := [][]string{}
 
 		for _, file := range files {
 			filename := strings.ReplaceAll(file, "posts/", "")
 			slug := strings.ReplaceAll(filename, ".md", "")
-			title := strings.ReplaceAll(slug, "-", " ")
-			posts = append(posts, []string{slug, title})
+
+			matches := dateRx.FindStringSubmatch(slug)
+			if len(matches) == 0 {
+				title := strings.ReplaceAll(slug, "-", " ")
+				ongoingPosts = append(ongoingPosts, []string{slug, title})
+			} else {
+				date := matches[1]
+				title := strings.ReplaceAll(matches[2], "-", " ")
+
+				datedPosts = append(datedPosts, []string{slug, title, date})
+			}
 		}
 
-		renderer.HTML(w, http.StatusOK, "posts", posts)
+		for i := 0; i < len(datedPosts)/2; i++ {
+			t := datedPosts[i]
+			datedPosts[i] = datedPosts[len(datedPosts)-i-1]
+			datedPosts[len(datedPosts)-i-1] = t
+		}
+
+		renderer.HTML(w, http.StatusOK, "posts", map[string]interface{}{"ongoing": ongoingPosts, "dated": datedPosts})
 	})
 
 	mux.HandleFunc("/posts/", func(w http.ResponseWriter, req *http.Request) {
-		pathRx := regexp.MustCompile("^/posts/(?P<post>[-_a-zA-Z0-9]+)$")
-
 		if !pathRx.MatchString(req.URL.Path) {
 			renderer.HTML(w, http.StatusNotFound, "404", nil)
 			return

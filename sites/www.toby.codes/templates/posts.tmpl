@@ -1,9 +1,20 @@
 <main role="main" class="homepage">
   <h1>Posts</h1>
 
+  <h2>Ongoing</h2>
   <ul class="no-bullet">
-  {{ range $index, $post := . }}
+  {{ range $index, $post := .ongoing }}
     <li itemprop="headline">
+      <a href="/posts/{{ index $post 0 }}">{{ index $post 1 }}</a>
+    </li>
+  {{ end }}
+  </ul>
+
+  <h2>Posts</h2>
+  <ul class="no-bullet">
+  {{ range $index, $post := .dated }}
+    <li itemprop="headline">
+      <span style="font-family: monospace;">{{ index $post 2 }}</span>
       <a href="/posts/{{ index $post 0 }}">{{ index $post 1 }}</a>
     </li>
   {{ end }}
