@@ -180,6 +180,9 @@ culture fit interviews.
    I think I got bonus points for having quantitative data for business impact
    (eg improving annual deploys by 50x by introducing CI/CD pipelines).
 
+1. The end to end process took 28 days from submitting the first application to
+   receiving an offer letter.
+
 ## Interview practice
 
 If you are an underrepresented group in tech and are looking for interview
