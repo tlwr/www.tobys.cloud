@@ -80,3 +80,9 @@ is the CI/CD tool with which I am most familiar, and is the
 I use
 [Cloudflare](https://cloudflare.com) for DNS
 and [Cloudflare workers](https://workers.cloudflare.com) for a few projects.
+
+## Hardware
+
+I use a MacBook Air (M1) as my daily driver with Mac OS X.  My Thinkpad X220
+runs [Arch](https://archlinux.org) and [Void](https://voidlinux.org). My Linux
+development VMs run [Ubuntu](https://ubuntu.com).
