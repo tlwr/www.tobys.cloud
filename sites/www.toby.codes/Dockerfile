@@ -1,4 +1,4 @@
-ARG go_version=1.14-alpine
+ARG go_version=1.16-alpine
 FROM golang:$go_version AS build
 
 WORKDIR /app
@@ -13,7 +13,6 @@ RUN CGO_ENABLED=0 go build -o server
 FROM scratch AS run
 
 WORKDIR /app
-COPY --from=build /app/posts /app/posts
 COPY --from=build /app/public /app/public
 COPY --from=build /app/server /app/server
 COPY --from=build /app/templates /app/templates

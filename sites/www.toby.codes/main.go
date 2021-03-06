@@ -2,12 +2,12 @@ package main
 
 import (
 	"context"
+	"embed"
 	"fmt"
 	html "html/template"
-	"io/ioutil"
+	"io/fs"
 	"net/http"
 	"os"
-	"path/filepath"
 	"regexp"
 	"strings"
 	"syscall"
@@ -28,6 +28,9 @@ import (
 var (
 	pathRx = regexp.MustCompile("^/posts/(?P<post>[-_a-zA-Z0-9]+)$")
 	dateRx = regexp.MustCompile("^(2[0-9]{3}-[0-1][1-9])-(.*)")
+
+	//go:embed posts/*
+	postsFS embed.FS
 )
 
 func main() {
@@ -43,7 +46,7 @@ func main() {
 	})
 
 	mux.HandleFunc("/posts", func(w http.ResponseWriter, req *http.Request) {
-		files, err := filepath.Glob("posts/*.md")
+		files, err := fs.Glob(postsFS, "posts/*.md")
 		if err != nil {
 			renderer.HTML(w, http.StatusInternalServerError, "500", nil)
 			return
@@ -88,14 +91,9 @@ func main() {
 
 		path := "posts/" + post + ".md"
 
-		if _, err := os.Stat(path); err != nil {
-			renderer.HTML(w, http.StatusNotFound, "404", nil)
-			return
-		}
-
-		contents, err := ioutil.ReadFile(path)
+		contents, err := postsFS.ReadFile(path)
 		if err != nil {
-			renderer.HTML(w, http.StatusInternalServerError, "500", nil)
+			renderer.HTML(w, http.StatusNotFound, "404", nil)
 			return
 		}
 
