@@ -6278,7 +6278,7 @@ spec:
                 fieldPath: metadata.namespace
           resources:
             {}
-            
+
           volumeMounts:
           - name: certs
             mountPath: /certs
@@ -6315,6 +6315,7 @@ webhooks:
           - "*/*"
     failurePolicy: Fail
     sideEffects: None
+    timeoutSeconds: 29
     clientConfig:
       service:
         name: cert-manager-webhook
@@ -6399,6 +6400,7 @@ webhooks:
           - "*/*"
     failurePolicy: Fail
     sideEffects: None
+    timeoutSeconds: 29
     clientConfig:
       service:
         name: cert-manager-webhook
