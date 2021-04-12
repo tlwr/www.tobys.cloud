@@ -301,7 +301,7 @@ worker:
 
   cleanUpWorkDirOnStart: true
 
-  replicas: 2
+  replicas: 1
 
   sidecarContainers: []
   extraInitContainers: []
