@@ -23,6 +23,7 @@ spec:
     matchLabels:
       app: www-toby-codes
   replicas: 2
+  revisionHistoryLimit: 3
   template:
     metadata:
       labels:

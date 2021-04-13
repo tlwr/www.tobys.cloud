@@ -23,6 +23,7 @@ spec:
     matchLabels:
       app: assets-tobys-cloud
   replicas: 2
+  revisionHistoryLimit: 3
   template:
     metadata:
       labels:

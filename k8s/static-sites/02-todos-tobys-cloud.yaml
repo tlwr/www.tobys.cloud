@@ -24,6 +24,7 @@ spec:
     matchLabels:
       app: todos-tobys-cloud
   replicas: 1
+  revisionHistoryLimit: 3
   template:
     metadata:
       labels:
