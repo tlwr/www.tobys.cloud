@@ -25,7 +25,7 @@
   --light: #f2f0ec;
 }
 
-body{
+body {
   background-color: var(--light);
   color: var(--dark);
   font-family: 'd-dinregular', monospace;
