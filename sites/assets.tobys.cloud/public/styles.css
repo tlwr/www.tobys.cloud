@@ -7,7 +7,7 @@
 }
 
 :root {
-  --dark: #2d2d2d;
+  --dark: #111111;
   --light: #f2f0ec;
   --highlight: mediumseagreen;
   --highlight-text: #f2f0ec;
@@ -15,13 +15,13 @@
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --light: #2d2d2d;
+    --light: #111111;
     --dark: #f2f0ec;
   }
 }
 
 .no-dark-mode * {
-  --dark: #2d2d2d;
+  --dark: #111111;
   --light: #f2f0ec;
 }
 
