@@ -7,16 +7,23 @@
 }
 
 :root {
-  --dark: #111111;
-  --light: #f2f0ec;
+  --dark: rgb(17, 17, 17);
+  --light: rgb(242, 240, 236);
+
+  --lighter-dark: rgb(37, 37, 37);
+  --darker-light: rgb(222, 220, 216);
+
   --highlight: mediumseagreen;
   --highlight-text: #f2f0ec;
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --light: #111111;
-    --dark: #f2f0ec;
+    --light: rgb(17, 17, 17);
+    --dark: rgb(242, 240, 236);
+
+    --lighter-dark: rgb(222, 220, 216);
+    --darker-light: rgb(37, 37, 37);
   }
 }
 
@@ -137,4 +144,5 @@ pre {
   padding-bottom: 1em;
   border-top: 1px dotted var(--dark);
   border-bottom: 1px dotted var(--dark);
+  background-color: var(--lighter-dark);
 }
