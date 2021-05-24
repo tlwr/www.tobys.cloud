@@ -144,5 +144,5 @@ pre {
   padding-bottom: 1em;
   border-top: 1px dotted var(--dark);
   border-bottom: 1px dotted var(--dark);
-  background-color: var(--lighter-dark);
+  background-color: var(--darker-light);
 }
