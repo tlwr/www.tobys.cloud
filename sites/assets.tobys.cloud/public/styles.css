@@ -35,7 +35,7 @@
 body {
   background-color: var(--light);
   color: var(--dark);
-  font-family: 'd-dinregular', monospace;
+  font-family: system-ui, 'd-dinregular', monospace;
   font-size: 100%;
   line-height: 1.5;
   margin: 0;
