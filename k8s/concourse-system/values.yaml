@@ -1,5 +1,5 @@
 image: concourse/concourse
-imageTag: "7.1.0"
+imageTag: "7.7.1"
 imagePullPolicy: IfNotPresent
 concourse:
   web:
