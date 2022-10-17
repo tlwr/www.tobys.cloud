@@ -52,7 +52,7 @@ spec:
 ...
 
 ---
-apiVersion: extensions/v1beta1
+apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
   name: assets-tobys-cloud
@@ -70,7 +70,11 @@ spec:
   - host: assets.tobys.cloud
     http:
       paths:
-      - backend:
-          serviceName: assets-tobys-cloud
-          servicePort: 8080
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: assets-tobys-cloud
+            port:
+              number: 8080
 ...

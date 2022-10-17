@@ -53,7 +53,7 @@ spec:
 ...
 
 ---
-apiVersion: extensions/v1beta1
+apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
   name: www-toby-codes
@@ -72,13 +72,21 @@ spec:
   - host: toby.codes
     http:
       paths:
-      - backend:
-          serviceName: www-toby-codes
-          servicePort: 8080
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: www-toby-codes
+            port:
+              number: 8080
   - host: www.toby.codes
     http:
       paths:
-      - backend:
-          serviceName: www-toby-codes
-          servicePort: 8080
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: www-toby-codes
+            port:
+              number: 8080
 ...
