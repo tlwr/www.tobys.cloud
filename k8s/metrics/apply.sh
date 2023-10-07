@@ -20,3 +20,7 @@ kubectl apply \
 kubectl apply \
   --namespace prometheus-system \
   -f "$wd/03-service-monitors.yaml"
+
+kubectl apply \
+  --namespace "$ns" \
+  -f "$wd/04-grafana.yaml"
