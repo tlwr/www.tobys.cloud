@@ -30,13 +30,25 @@ func main() {
 	logger.SetLevel(logrus.InfoLevel)
 
 	promURL := flag.String("prometheus-url", "http://localhost:9090", "Promtheus URL")
+	promBasicAuth := flag.String("prometheus-basic-auth", "", "Optional basic auth used for prometheus")
+	promReadPath := flag.String("prometheus-read-path", "", "Optional path to modify URL for reading data")
 	flag.Parse()
 
 	if promURL == nil || *promURL == "" {
 		logger.Fatal("-prometheus-url flag is required")
 	}
 
-	promClient, err := prom.NewClient(prom.Config{Address: *promURL})
+	httpc := NewHTTPClient()
+	promConfig := prom.Config{
+		Address: *promURL,
+		RoundTripper: &promRoundTripper{
+			client:    httpc,
+			basicAuth: *promBasicAuth,
+			path:      *promReadPath,
+		},
+	}
+
+	promClient, err := prom.NewClient(promConfig)
 	if err != nil {
 		logger.Fatalf("Could not create Prometheus API client: %s", err)
 	}
