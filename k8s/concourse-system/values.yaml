@@ -1,5 +1,5 @@
 image: concourse/concourse
-imageTag: "7.7.1"
+imageTag: "7.10.0"
 imagePullPolicy: IfNotPresent
 concourse:
   web:
@@ -69,7 +69,6 @@ concourse:
       sslmode: disable
       connectTimeout: 5m
       database: atc
-
 
     kubernetes:
       enabled: true
@@ -168,6 +167,8 @@ concourse:
       enabled: false
 
   worker:
+    runtime: containerd
+
     shutdownSignal: SIGUSR2
     connectionDrainTimeout: 1h
 
@@ -371,7 +372,7 @@ postgresql:
 
 rbac:
   create: true
-  apiVersion: v1beta1
+  apiVersion: v1
 
 podSecurityPolicy:
   create: false
