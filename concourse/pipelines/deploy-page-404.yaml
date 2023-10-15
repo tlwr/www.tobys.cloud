@@ -52,7 +52,7 @@ jobs:
             type: registry-image
             source:
               repository: golang
-              tag: 1.14
+              tag: 1.21
 
           inputs:
             - name: page-404-src

@@ -52,7 +52,7 @@ jobs:
             type: registry-image
             source:
               repository: golang
-              tag: 1.16
+              tag: 1.21
 
           inputs:
             - name: www-toby-codes-src
