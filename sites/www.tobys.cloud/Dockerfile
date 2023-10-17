@@ -1,3 +1,3 @@
-FROM nginx:1.19
+FROM nginx:1.24
 
 COPY $PWD/src /usr/share/nginx/html
