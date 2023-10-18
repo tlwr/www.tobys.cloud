@@ -35,7 +35,17 @@ spec:
         command: [/app/server]
         args:
           - -prometheus-url
-          - http://prometheus-operated.prometheus-system.svc.cluster.local:9090
+          - https://prometheus-prod-01-eu-west-0.grafana.net
+          - -prometheus-basic-auth
+          - $(PROM_BASIC_AUTH)
+          - -prometheus-read-path
+          - /api/prom
+        env:
+          - name: PROM_BASIC_AUTH
+            valueFrom:
+              secretKeyRef:
+                name: stats-tobys-cloud-grafana
+                key: prometheus-basic-auth
         ports:
         - containerPort: 8080
 ...
