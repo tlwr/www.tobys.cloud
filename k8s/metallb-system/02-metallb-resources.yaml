@@ -1,0 +1,9 @@
+---
+apiVersion: metallb.io/v1beta1
+kind: IPAddressPool
+metadata:
+  name: securebit
+  namespace: metallb-system
+spec:
+  addresses:
+    - "2a0e:97c0:450::/44"
