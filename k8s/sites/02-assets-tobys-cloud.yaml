@@ -1,0 +1,37 @@
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: assets-tobys-cloud
+  namespace: sites
+spec:
+  ports:
+  - port: 80
+    targetPort: 8080
+  selector:
+    app: assets-tobys-cloud
+...
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: assets-tobys-cloud
+  namespace: sites
+spec:
+  selector:
+    matchLabels:
+      app: assets-tobys-cloud
+  replicas: 1
+  revisionHistoryLimit: 3
+  template:
+    metadata:
+      labels:
+        app: assets-tobys-cloud
+    spec:
+      containers:
+      - name: nginx
+        image: ghcr.io/tlwr/assets.tobys.cloud:24b12c521c5490c98fe1ea73564c04c436fa9086
+        ports:
+        - containerPort: 8080
+...

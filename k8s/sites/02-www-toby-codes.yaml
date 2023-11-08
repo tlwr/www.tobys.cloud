@@ -1,0 +1,37 @@
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: www-toby-codes
+  namespace: sites
+spec:
+  ports:
+  - port: 80
+    targetPort: 8080
+  selector:
+    app: www-toby-codes
+...
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: www-toby-codes
+  namespace: sites
+spec:
+  selector:
+    matchLabels:
+      app: www-toby-codes
+  replicas: 1
+  revisionHistoryLimit: 3
+  template:
+    metadata:
+      labels:
+        app: www-toby-codes
+    spec:
+      containers:
+      - name: app
+        image: ghcr.io/tlwr/www.toby.codes:fe7d86fb20dc3c7046c64a8107ce98cb7d5c4c35
+        ports:
+        - containerPort: 8080
+...
