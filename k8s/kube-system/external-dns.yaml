@@ -65,8 +65,9 @@ spec:
         - name: external-dns
           image: registry.k8s.io/external-dns/external-dns:v0.13.6
           args:
-          - --source=service
           - --source=ingress
+          - --ingress-class=haproxy
+          - --source=service
           - --zone-id-filter=$(CF_ZONE_ID)
           - --provider=cloudflare
 
