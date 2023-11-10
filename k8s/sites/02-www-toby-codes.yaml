@@ -58,21 +58,8 @@ spec:
               number: 80
         path: /
         pathType: Prefix
-  - host: codes.metal.tobys.cloud
-    http:
-      paths:
-      - backend:
-          service:
-            name: www-toby-codes
-            port:
-              number: 80
-        path: /
-        pathType: Prefix
   tls:
   - secretName: www-toby-codes-tls
     hosts:
       - www.toby.codes
-  - secretName: codes-metal-tobys-cloud-tls
-    hosts:
-      - codes.metal.tobys.cloud
 ...
