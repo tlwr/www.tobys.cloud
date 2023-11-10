@@ -35,3 +35,43 @@ spec:
         ports:
         - containerPort: 8080
 ...
+
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: www-toby-codes
+  namespace: sites
+  annotations:
+    kubernetes.io/tls-acme: "true"
+    cert-manager.io/cluster-issuer: "letsencrypt-prod"
+spec:
+  ingressClassName: haproxy
+  rules:
+  - host: www.toby.codes
+    http:
+      paths:
+      - backend:
+          service:
+            name: www-toby-codes
+            port:
+              number: 80
+        path: /
+        pathType: Prefix
+  - host: codes.metal.tobys.cloud
+    http:
+      paths:
+      - backend:
+          service:
+            name: www-toby-codes
+            port:
+              number: 80
+        path: /
+        pathType: Prefix
+  tls:
+  - secretName: www-toby-codes-tls
+    hosts:
+      - www.toby.codes
+  - secretName: codes-metal-tobys-cloud-tls
+    hosts:
+      - codes.metal.tobys.cloud
