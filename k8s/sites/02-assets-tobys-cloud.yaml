@@ -62,3 +62,4 @@ spec:
   - secretName: assets-tobys-cloud-tls
     hosts:
       - assets.tobys.cloud
+...
