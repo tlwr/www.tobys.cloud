@@ -147,8 +147,7 @@ spec:
         args:
           - --configmap=haproxy-system/haproxy-kubernetes-ingress
           - --publish-service=haproxy-system/haproxy-kubernetes-ingress
-          - --log-zap
-          - --log-dev
+          - --default-backend-service=sites/page-404
         securityContext:
           runAsUser:  1000
           runAsGroup: 1000
