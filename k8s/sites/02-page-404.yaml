@@ -31,7 +31,7 @@ spec:
     spec:
       containers:
       - name: app
-        image: ghcr.io/tlwr/page-404:@tag
+        image: ghcr.io/tlwr/page-404:9380a07cb1b85f6358a5b21565d0c55cbe824bde
         ports:
         - containerPort: 8080
 ...
