@@ -35,3 +35,41 @@ spec:
         ports:
         - containerPort: 8080
 ...
+
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: page-404
+  namespace: sites
+  annotations:
+    kubernetes.io/tls-acme: "true"
+    cert-manager.io/cluster-issuer: "letsencrypt-prod"
+spec:
+  ingressClassName: haproxy
+  rules:
+  - host: '*.tobys.cloud'
+    http:
+      paths:
+      - backend:
+          service:
+            name: page-404
+            port:
+              number: 80
+        path: /
+        pathType: Prefix
+  - host: '*.toby.codes'
+    http:
+      paths:
+      - backend:
+          service:
+            name: page-404
+            port:
+              number: 80
+        path: /
+        pathType: Prefix
+  tls:
+  - secretName: page-404-tls
+    hosts:
+      - '*.tobys.cloud'
+      - '*.toby.codes'

@@ -58,7 +58,7 @@ spec:
               number: 80
         path: /
         pathType: Prefix
-  - host: '*.tobys.cloud'
+  - host: www.tobys.cloud
     http:
       paths:
       - backend:
@@ -72,4 +72,4 @@ spec:
   - secretName: www-tobys-cloud-tls
     hosts:
       - tobys.cloud
-      - '*.tobys.cloud'
+      - www.tobys.cloud

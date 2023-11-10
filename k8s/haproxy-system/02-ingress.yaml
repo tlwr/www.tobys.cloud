@@ -148,6 +148,7 @@ spec:
           - --configmap=haproxy-system/haproxy-kubernetes-ingress
           - --publish-service=haproxy-system/haproxy-kubernetes-ingress
           - --default-backend-service=sites/page-404
+          - --default-backend-port=80
         securityContext:
           runAsUser:  1000
           runAsGroup: 1000
