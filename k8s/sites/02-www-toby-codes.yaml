@@ -31,7 +31,7 @@ spec:
     spec:
       containers:
       - name: app
-        image: ghcr.io/tlwr/www.toby.codes:fe7d86fb20dc3c7046c64a8107ce98cb7d5c4c35
+        image: ghcr.io/tlwr/www.toby.codes:4b78a913db1816dc5e7b637bd8b9507cea88b7a2
         ports:
         - containerPort: 8080
 ...
