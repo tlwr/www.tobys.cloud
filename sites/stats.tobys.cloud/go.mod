@@ -9,7 +9,6 @@ require (
 	github.com/phyber/negroni-gzip v1.0.0
 	github.com/prometheus/client_golang v1.17.0
 	github.com/prometheus/common v0.44.0
-	github.com/sethvargo/go-signalcontext v0.2.1
 	github.com/sirupsen/logrus v1.7.0
 	github.com/unrolled/render v1.6.1
 	github.com/unrolled/secure v1.0.8

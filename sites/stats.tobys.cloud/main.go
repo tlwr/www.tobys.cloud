@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"net/http"
 	"os"
+	"os/signal"
 	"sync"
 	"syscall"
 	"time"
@@ -15,7 +16,6 @@ import (
 	prom "github.com/prometheus/client_golang/api"
 	promapi "github.com/prometheus/client_golang/api/prometheus/v1"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
-	"github.com/sethvargo/go-signalcontext"
 	"github.com/sirupsen/logrus"
 	"github.com/unrolled/render"
 	nsecure "github.com/unrolled/secure"
@@ -114,7 +114,7 @@ func main() {
 	n.Use(nprom.NewMiddleware("stats.tobys.cloud"))
 	n.UseHandler(mux)
 
-	ctx, cancel := signalcontext.On(syscall.SIGTERM)
+	ctx, cancel := signal.NotifyContext(context.Background(), syscall.SIGTERM)
 	defer cancel()
 
 	server := &http.Server{Addr: ":8080", Handler: n}
