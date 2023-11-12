@@ -12,7 +12,7 @@ require (
 	github.com/sethvargo/go-signalcontext v0.2.1
 	github.com/sirupsen/logrus v1.7.0
 	github.com/unrolled/render v1.6.1
-	github.com/unrolled/secure v1.0.8
+	github.com/unrolled/secure v1.13.0
 	github.com/urfave/negroni v1.0.0
 	github.com/zbindenren/negroni-prometheus v0.1.1
 )
