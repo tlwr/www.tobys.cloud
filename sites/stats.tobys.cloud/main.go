@@ -92,11 +92,11 @@ func main() {
 		statsMu.RLock()
 		defer statsMu.RUnlock()
 
-		renderer.HTML(
+		_ = renderer.HTML(
 			w, http.StatusOK,
 			"stats",
 			StatPage{
-				SecondsAgo: int64(time.Now().Sub(updatedAt).Seconds()),
+				SecondsAgo: int64(time.Since(updatedAt).Seconds()),
 				Stats:      stats,
 			},
 		)
@@ -121,13 +121,13 @@ func main() {
 
 	go func() {
 		logger.Info("listening")
-		server.ListenAndServe()
+		_ = server.ListenAndServe()
 	}()
 
 	<-ctx.Done()
 
 	ctx, cancel = context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
-	server.Shutdown(ctx)
+	_ = server.Shutdown(ctx)
 	os.Exit(0)
 }

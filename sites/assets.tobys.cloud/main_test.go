@@ -37,7 +37,7 @@ var _ = Describe("Server", func() {
 			serverURL = defaultServerURL
 
 			By("Compiling")
-			pkg := "github.com/tlwr/www.tobys.cloud/sites/www.toby.codes"
+			pkg := "github.com/tlwr/www.tobys.cloud/sites/assets.tobys.cloud"
 			pathToServer, err = gexec.Build(pkg)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(pathToServer).NotTo(Equal(""))

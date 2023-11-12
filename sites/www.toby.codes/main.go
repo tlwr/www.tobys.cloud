@@ -48,7 +48,7 @@ func main() {
 	mux.HandleFunc("/posts", func(w http.ResponseWriter, req *http.Request) {
 		files, err := fs.Glob(postsFS, "posts/*.md")
 		if err != nil {
-			renderer.HTML(w, http.StatusInternalServerError, "500", nil)
+			_ = renderer.HTML(w, http.StatusInternalServerError, "500", nil)
 			return
 		}
 
@@ -77,12 +77,12 @@ func main() {
 			datedPosts[len(datedPosts)-i-1] = t
 		}
 
-		renderer.HTML(w, http.StatusOK, "posts", map[string]interface{}{"ongoing": ongoingPosts, "dated": datedPosts})
+		_ = renderer.HTML(w, http.StatusOK, "posts", map[string]interface{}{"ongoing": ongoingPosts, "dated": datedPosts})
 	})
 
 	mux.HandleFunc("/posts/", func(w http.ResponseWriter, req *http.Request) {
 		if !pathRx.MatchString(req.URL.Path) {
-			renderer.HTML(w, http.StatusNotFound, "404", nil)
+			_ = renderer.HTML(w, http.StatusNotFound, "404", nil)
 			return
 		}
 
@@ -93,21 +93,21 @@ func main() {
 
 		contents, err := postsFS.ReadFile(path)
 		if err != nil {
-			renderer.HTML(w, http.StatusNotFound, "404", nil)
+			_ = renderer.HTML(w, http.StatusNotFound, "404", nil)
 			return
 		}
 
 		rendered := html.HTML(markdown.ToHTML(contents, nil, nil))
-		renderer.HTML(w, http.StatusOK, "post", rendered)
+		_ = renderer.HTML(w, http.StatusOK, "post", rendered)
 	})
 
 	mux.HandleFunc("/", func(w http.ResponseWriter, req *http.Request) {
 		if req.URL.Path != "" && req.URL.Path != "/" {
-			renderer.HTML(w, http.StatusNotFound, "404", nil)
+			_ = renderer.HTML(w, http.StatusNotFound, "404", nil)
 			return
 		}
 
-		renderer.HTML(w, http.StatusOK, "index", nil)
+		_ = renderer.HTML(w, http.StatusOK, "index", nil)
 	})
 
 	mux.Handle("/metrics", promhttp.Handler())
@@ -129,13 +129,13 @@ func main() {
 	server := &http.Server{Addr: ":8080", Handler: n}
 
 	go func() {
-		server.ListenAndServe()
+		_ = server.ListenAndServe()
 	}()
 
 	<-ctx.Done()
 
 	ctx, cancel = context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
-	server.Shutdown(ctx)
+	_ = server.Shutdown(ctx)
 	os.Exit(0)
 }

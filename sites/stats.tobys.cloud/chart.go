@@ -71,7 +71,7 @@ func makeChart(
 	yMin := yv[0]
 	yMax := yv[0]
 
-	for i, _ := range xv {
+	for i := range xv {
 		x := xv[i]
 		y := yv[i]
 
@@ -111,7 +111,7 @@ func makeChart(
 
 	// svg path of the data
 	path := ""
-	for i, _ := range xv {
+	for i := range xv {
 		x := xv[i]
 		y := yv[i]
 
