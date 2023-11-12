@@ -6,7 +6,7 @@ require (
 	github.com/meatballhat/negroni-logrus v1.1.0
 	github.com/onsi/ginkgo v1.14.2
 	github.com/onsi/gomega v1.10.3
-	github.com/phyber/negroni-gzip v0.0.0-20180113114010-ef6356a5d029
+	github.com/phyber/negroni-gzip v1.0.0
 	github.com/prometheus/client_golang v1.17.0
 	github.com/prometheus/common v0.44.0
 	github.com/sethvargo/go-signalcontext v0.1.0
