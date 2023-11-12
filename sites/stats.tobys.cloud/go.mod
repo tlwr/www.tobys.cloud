@@ -11,7 +11,7 @@ require (
 	github.com/prometheus/common v0.44.0
 	github.com/sethvargo/go-signalcontext v0.1.0
 	github.com/sirupsen/logrus v1.7.0
-	github.com/unrolled/render v1.0.3
+	github.com/unrolled/render v1.6.1
 	github.com/unrolled/secure v1.0.8
 	github.com/urfave/negroni v1.0.0
 	github.com/zbindenren/negroni-prometheus v0.1.1
@@ -20,7 +20,7 @@ require (
 require (
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/cespare/xxhash/v2 v2.2.0 // indirect
-	github.com/fsnotify/fsnotify v1.4.9 // indirect
+	github.com/fsnotify/fsnotify v1.6.0 // indirect
 	github.com/golang/protobuf v1.5.3 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
 	github.com/kr/text v0.2.0 // indirect
