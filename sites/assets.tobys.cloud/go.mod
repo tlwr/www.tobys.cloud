@@ -3,7 +3,7 @@ module github.com/tlwr/www.tobys.cloud/sites/assets.tobys.cloud
 go 1.14
 
 require (
-	github.com/meatballhat/negroni-logrus v1.1.0
+	github.com/meatballhat/negroni-logrus v1.1.1
 	github.com/onsi/ginkgo v1.16.5
 	github.com/onsi/gomega v1.10.1
 	github.com/phyber/negroni-gzip v1.0.0
