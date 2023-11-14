@@ -8,7 +8,6 @@ require (
 	github.com/onsi/gomega v1.10.1
 	github.com/phyber/negroni-gzip v1.0.0
 	github.com/prometheus/client_golang v1.17.0
-	github.com/sethvargo/go-signalcontext v0.2.1
 	github.com/sirupsen/logrus v1.9.3
 	github.com/unrolled/secure v1.0.8
 	github.com/urfave/negroni v1.0.0

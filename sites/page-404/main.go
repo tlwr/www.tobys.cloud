@@ -5,13 +5,13 @@ import (
 	"fmt"
 	"net/http"
 	"os"
+	"os/signal"
 	"syscall"
 	"time"
 
 	nlogrus "github.com/meatballhat/negroni-logrus"
 	"github.com/phyber/negroni-gzip/gzip"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
-	"github.com/sethvargo/go-signalcontext"
 	"github.com/sirupsen/logrus"
 	"github.com/unrolled/render"
 	nsecure "github.com/unrolled/secure"
@@ -46,7 +46,7 @@ func main() {
 	n.Use(nprom.NewMiddleware("www.toby.codes"))
 	n.UseHandler(mux)
 
-	ctx, cancel := signalcontext.On(syscall.SIGTERM)
+	ctx, cancel := signal.NotifyContext(context.Background(), syscall.SIGTERM)
 	defer cancel()
 
 	server := &http.Server{Addr: ":8080", Handler: n}

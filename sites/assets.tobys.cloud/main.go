@@ -5,13 +5,13 @@ import (
 	"fmt"
 	"net/http"
 	"os"
+	"os/signal"
 	"syscall"
 	"time"
 
 	nlogrus "github.com/meatballhat/negroni-logrus"
 	"github.com/phyber/negroni-gzip/gzip"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
-	"github.com/sethvargo/go-signalcontext"
 	"github.com/sirupsen/logrus"
 	nsecure "github.com/unrolled/secure"
 	"github.com/urfave/negroni"
@@ -38,7 +38,7 @@ func main() {
 	n.Use(negroni.NewStatic(http.Dir("public")))
 	n.UseHandler(mux)
 
-	ctx, cancel := signalcontext.On(syscall.SIGTERM)
+	ctx, cancel := signal.NotifyContext(context.Background(), syscall.SIGTERM)
 	defer cancel()
 
 	server := &http.Server{Addr: ":8080", Handler: n}
