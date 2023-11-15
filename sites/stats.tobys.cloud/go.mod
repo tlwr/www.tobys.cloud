@@ -4,7 +4,7 @@ go 1.21
 
 require (
 	github.com/meatballhat/negroni-logrus v1.1.1
-	github.com/onsi/ginkgo v1.14.2
+	github.com/onsi/ginkgo v1.16.5
 	github.com/onsi/gomega v1.30.0
 	github.com/phyber/negroni-gzip v1.0.0
 	github.com/prometheus/client_golang v1.17.0
@@ -27,7 +27,7 @@ require (
 	github.com/matttproud/golang_protobuf_extensions/v2 v2.0.0 // indirect
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
 	github.com/modern-go/reflect2 v1.0.2 // indirect
-	github.com/nxadm/tail v1.4.4 // indirect
+	github.com/nxadm/tail v1.4.8 // indirect
 	github.com/prometheus/client_model v0.4.1-0.20230718164431-9a2bf3000d16 // indirect
 	github.com/prometheus/procfs v0.11.1 // indirect
 	golang.org/x/net v0.17.0 // indirect
