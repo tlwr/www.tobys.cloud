@@ -11,9 +11,6 @@ deps: $(addprefix deps-, ${sites})
 build: $(addprefix build-, ${sites})
 push: $(addprefix push-, ${sites})
 
-acceptance-tests:
-	cd acceptance && bundle exec rspec
-
 test-%:
 	cd sites/$* && ${GO_TEST} && ${GO_LINT}
 
@@ -25,3 +22,12 @@ build-%:
 
 push-%: build-%
 	podman push ghcr.io/tlwr/$*:$$(git rev-parse HEAD) --creds=tlwr:$${GHCR_API_KEY}
+
+acceptance-tests:
+	cd acceptance && bundle exec rspec
+
+build-acceptance-tests:
+	cd acceptance && podman build . --arch=amd64 -t=ghcr.io/tlwr/www-tobys-cloud-acceptance:$$(git rev-parse HEAD)
+
+push-acceptance-tests: build-acceptance-tests
+	podman push ghcr.io/tlwr/www-tobys-cloud-acceptance:$$(git rev-parse HEAD) --creds=tlwr:$${GHCR_API_KEY}
