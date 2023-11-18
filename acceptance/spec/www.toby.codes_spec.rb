@@ -1,18 +1,18 @@
 require 'spec_helper'
 
-def base_url
-  'https://www.toby.codes'
-end
-
-def homepage_path
-  base_url + '/'
-end
-
-def posts_page_path
-  base_url + '/posts'
-end
-
 describe 'www.toby.codes', type: :feature do
+  def base_url
+    'https://www.toby.codes'
+  end
+
+  def homepage_path
+    base_url + '/'
+  end
+
+  def posts_page_path
+    base_url + '/posts'
+  end
+
   it 'has a browseable homepage' do
     page = agent.get(homepage_path)
     expect(page.code.to_i).to eq(200)

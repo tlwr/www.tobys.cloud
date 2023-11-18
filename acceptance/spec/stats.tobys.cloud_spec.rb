@@ -1,10 +1,10 @@
 require 'spec_helper'
 
-def stats_url
-  'https://stats.tobys.cloud/'
-end
-
 describe 'stats.tobys.cloud', type: :feature do
+  def stats_url
+    'https://stats.tobys.cloud/'
+  end
+
   it 'has charts on the page' do
     page = agent.get(stats_url)
     expect(page.code.to_i).to eq(200)
