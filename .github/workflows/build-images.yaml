@@ -28,3 +28,7 @@ jobs:
       - name: gchr-build-push
         run: |
           make push
+
+      - name: gchr-build-push-acceptance-tests
+        run: |
+          make push-acceptance-tests
