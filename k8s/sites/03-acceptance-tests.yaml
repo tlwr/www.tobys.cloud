@@ -13,7 +13,7 @@ spec:
 
   jobTemplate:
     spec:
-      ttlSecondsAfterFinished: 180
+      ttlSecondsAfterFinished: 3600
 
       template:
         spec:
