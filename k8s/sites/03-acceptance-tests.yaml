@@ -1,0 +1,31 @@
+---
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: acceptance-tests
+  namespace: sites
+spec:
+  schedule: '*/30 * * * *'
+  concurrencyPolicy: Replace
+
+  successfulJobsHistoryLimit: 1
+  failedJobsHistoryLimit: 1
+
+  jobTemplate:
+    spec:
+      ttlSecondsAfterFinished: 180
+
+      template:
+        spec:
+          containers:
+            - name: tests
+              image: ghcr.io/tlwr/www-tobys-cloud-acceptance:687e5cc6f35ebf682e820b19a8ea57f3da44ead7
+              workingDir: /acceptance
+              command:
+                - bundle
+                - exec
+                - rspec
+                - --format=documentation
+
+          restartPolicy: Never
+...

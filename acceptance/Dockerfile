@@ -7,5 +7,6 @@ COPY $PWD/Gemfile.lock .
 RUN bundle install
 
 COPY $PWD /acceptance
+WORKDIR /acceptance
 
-RUN bundle exec rspec
+RUN bundle exec rspec --format documentation
