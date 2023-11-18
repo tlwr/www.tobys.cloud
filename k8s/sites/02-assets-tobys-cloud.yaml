@@ -31,7 +31,7 @@ spec:
     spec:
       containers:
       - name: nginx
-        image: ghcr.io/tlwr/assets.tobys.cloud:24b12c521c5490c98fe1ea73564c04c436fa9086
+        image: ghcr.io/tlwr/assets.tobys.cloud:a22c78930a84255d9698a21473cb1291c465ecf7
         ports:
         - containerPort: 8080
 ...
