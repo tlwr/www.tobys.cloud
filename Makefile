@@ -11,6 +11,9 @@ deps: $(addprefix deps-, ${sites})
 build: $(addprefix build-, ${sites})
 push: $(addprefix push-, ${sites})
 
+acceptance-tests:
+	cd acceptance && bundle exec rspec
+
 test-%:
 	cd sites/$* && ${GO_TEST} && ${GO_LINT}
 
