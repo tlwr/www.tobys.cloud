@@ -9,6 +9,7 @@ sites = assets.tobys.cloud \
 test: $(addprefix test-, ${sites})
 deps: $(addprefix deps-, ${sites})
 build: $(addprefix build-, ${sites})
+push: $(addprefix push-, ${sites})
 
 test-%:
 	cd sites/$* && ${GO_TEST} && ${GO_LINT}
@@ -17,4 +18,7 @@ deps-%:
 	cd sites/$* && go mod tidy
 
 build-%:
-	cd sites/$* && podman build . -t ghcr.io/tlwr/$*:$$(git rev-parse HEAD)
+	cd sites/$* && podman build . --arch=amd64 -t=ghcr.io/tlwr/$*:$$(git rev-parse HEAD)
+
+push-%: build-%
+	podman push ghcr.io/tlwr/$*:$$(git rev-parse HEAD) --creds=tlwr:$${GHCR_API_KEY}
