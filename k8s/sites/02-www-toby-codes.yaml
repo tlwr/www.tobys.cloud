@@ -58,8 +58,19 @@ spec:
               number: 80
         path: /
         pathType: Prefix
+  - host: toby.codes
+    http:
+      paths:
+      - backend:
+          service:
+            name: www-toby-codes
+            port:
+              number: 80
+        path: /
+        pathType: Prefix
   tls:
   - secretName: www-toby-codes-tls
     hosts:
       - www.toby.codes
+      - toby.codes
 ...
