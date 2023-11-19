@@ -15,8 +15,6 @@ images:
     newTag: *newTag
   - name: ghcr.io/tlwr/www.toby.codes
     newTag: *newTag
-  - name: ghcr.io/tlwr/www.tobys.cloud
-    newTag: *newTag
 
 resources:
   - namespace.yaml
