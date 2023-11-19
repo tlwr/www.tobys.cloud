@@ -29,7 +29,7 @@ spec:
     spec:
       containers:
       - name: nginx
-        image: ghcr.io/tlwr/stats.tobys.cloud:a22c78930a84255d9698a21473cb1291c465ecf7
+        image: ghcr.io/tlwr/stats.tobys.cloud:latest
         command: [/app/server]
         args:
           - -prometheus-url

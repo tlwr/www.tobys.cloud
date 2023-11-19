@@ -4,6 +4,20 @@ kind: Kustomization
 
 namespace: sites
 
+images:
+  - name: ghcr.io/tlwr/assets.tobys.cloud
+    newTag: &newTag ec6ab3604fc5b3a97505d0837b085c1fc144e3c0
+  - name: ghcr.io/tlwr/page-404
+    newTag: *newTag
+  - name: ghcr.io/tlwr/stats.tobys.cloud
+    newTag: *newTag
+  - name: ghcr.io/tlwr/www-tobys-cloud-acceptance
+    newTag: *newTag
+  - name: ghcr.io/tlwr/www.toby.codes
+    newTag: *newTag
+  - name: ghcr.io/tlwr/www.tobys.cloud
+    newTag: *newTag
+
 resources:
   - namespace.yaml
 

@@ -29,7 +29,7 @@ spec:
     spec:
       containers:
       - name: app
-        image: ghcr.io/tlwr/www.toby.codes:a22c78930a84255d9698a21473cb1291c465ecf7
+        image: ghcr.io/tlwr/www.toby.codes:latest
         ports:
         - containerPort: 8080
 ...
