@@ -3,7 +3,6 @@ apiVersion: batch/v1
 kind: CronJob
 metadata:
   name: acceptance-tests
-  namespace: sites
 spec:
   schedule: '*/30 * * * *'
   concurrencyPolicy: Replace

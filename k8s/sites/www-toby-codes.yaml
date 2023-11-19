@@ -2,36 +2,34 @@
 apiVersion: v1
 kind: Service
 metadata:
-  name: page-404
-  namespace: sites
+  name: www-toby-codes
 spec:
   ports:
   - port: 80
     targetPort: 8080
   selector:
-    app: page-404
+    app: www-toby-codes
 ...
 
 ---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: page-404
-  namespace: sites
+  name: www-toby-codes
 spec:
   selector:
     matchLabels:
-      app: page-404
+      app: www-toby-codes
   replicas: 1
   revisionHistoryLimit: 3
   template:
     metadata:
       labels:
-        app: page-404
+        app: www-toby-codes
     spec:
       containers:
       - name: app
-        image: ghcr.io/tlwr/page-404:a22c78930a84255d9698a21473cb1291c465ecf7
+        image: ghcr.io/tlwr/www.toby.codes:a22c78930a84255d9698a21473cb1291c465ecf7
         ports:
         - containerPort: 8080
 ...
@@ -40,37 +38,36 @@ spec:
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
-  name: page-404
-  namespace: sites
+  name: www-toby-codes
   annotations:
     kubernetes.io/tls-acme: "true"
     cert-manager.io/cluster-issuer: "letsencrypt-prod"
 spec:
   ingressClassName: haproxy
   rules:
-  - host: '*.tobys.cloud'
+  - host: www.toby.codes
     http:
       paths:
       - backend:
           service:
-            name: page-404
+            name: www-toby-codes
             port:
               number: 80
         path: /
         pathType: Prefix
-  - host: '*.toby.codes'
+  - host: toby.codes
     http:
       paths:
       - backend:
           service:
-            name: page-404
+            name: www-toby-codes
             port:
               number: 80
         path: /
         pathType: Prefix
   tls:
-  - secretName: page-404-tls
+  - secretName: www-toby-codes-tls
     hosts:
-      - '*.tobys.cloud'
-      - '*.toby.codes'
+      - www.toby.codes
+      - toby.codes
 ...
