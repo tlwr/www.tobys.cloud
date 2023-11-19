@@ -8,5 +8,3 @@ RUN bundle install
 
 COPY $PWD /acceptance
 WORKDIR /acceptance
-
-RUN bundle exec rspec --format documentation
