@@ -2,13 +2,6 @@
 
 _In this post I am collecting talks that I have given_
 
-## 2019
-
-### Live
-
-* [Concourse London User Group: Operating a multi-tenant Concourse deployment](https://www.youtube.com/watch?v=hD6nXqhAzsM)
-* [Prometheus London User Group: Observing your bank account](https://www.youtube.com/watch?v=Wrn8MEV-gpg&t=1384s)
-
 ## 2020
 
 ### Live
@@ -18,3 +11,10 @@ _In this post I am collecting talks that I have given_
 ### Recorded
 
 * [Cloud Foundry Summit: How Cloud Foundry Goes Bang](https://www.youtube.com/watch?v=7oJBNcUvKOA)
+
+## 2019
+
+### Live
+
+* [Concourse London User Group: Operating a multi-tenant Concourse deployment](https://www.youtube.com/watch?v=hD6nXqhAzsM)
+* [Prometheus London User Group: Observing your bank account](https://www.youtube.com/watch?v=Wrn8MEV-gpg&t=1384s)
