@@ -13,3 +13,4 @@ resources:
 
   - petitions-exporter.yaml
   - grafana.yaml
+  - node-exporter.yaml

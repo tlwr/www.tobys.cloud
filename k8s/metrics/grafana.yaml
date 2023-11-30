@@ -83,6 +83,7 @@ spec:
         - -config.file=/etc/agent/agent.yaml
         - -enable-features=integrations-next
         - -server.http.address=0.0.0.0:80
+        - -disable-reporting
         env:
         - name: HOSTNAME
           valueFrom:
