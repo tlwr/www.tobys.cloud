@@ -118,6 +118,7 @@ metadata:
   name: haproxy-kubernetes-ingress
   namespace: haproxy-system
 data:
+  scale-server-slots: "4"
 
 ---
 apiVersion: apps/v1
