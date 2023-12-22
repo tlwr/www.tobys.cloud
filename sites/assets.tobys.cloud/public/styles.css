@@ -54,6 +54,10 @@ p {
   margin-bottom: 1rem;
 }
 
+p img {
+  max-width: 100%;
+}
+
 h1 { font-size: 2rem }
 h2 { font-size: 1.5rem }
 h3 { font-size: 1.25rem }
@@ -145,4 +149,8 @@ pre {
   border-top: 1px dotted var(--dark);
   border-bottom: 1px dotted var(--dark);
   background-color: var(--darker-light);
+}
+
+code {
+  white-space: pre-wrap;
 }
