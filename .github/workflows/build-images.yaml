@@ -5,6 +5,8 @@ on:
   push:
     branches:
       - main
+    paths:
+      - sites/**
 
 permissions:
   contents: read
