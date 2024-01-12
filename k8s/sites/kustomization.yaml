@@ -6,7 +6,7 @@ namespace: sites
 
 images:
   - name: ghcr.io/tlwr/assets.tobys.cloud
-    newTag: &newTag 92775af3dfe1c80718701395ae939d3e83fa7f6c
+    newTag: &newTag 0498dc5e3f95733559fb54f6b681cf45d604b875
   - name: ghcr.io/tlwr/page-404
     newTag: *newTag
   - name: ghcr.io/tlwr/stats.tobys.cloud
@@ -18,7 +18,7 @@ images:
   - name: ghcr.io/tlwr/www-tobys-cloud-acceptance
     newTag: *newTag
   - name: ghcr.io/tlwr/www.tobys.cloud
-    newTag: 24b12c521c5490c98fe1ea73564c04c436fa9086
+    newTag: *newTag
 
 resources:
   - namespace.yaml
