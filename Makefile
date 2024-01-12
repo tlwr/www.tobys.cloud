@@ -4,7 +4,8 @@ GO_LINT = go vet ./... && golangci-lint run ./...
 sites = assets.tobys.cloud \
 				page-404 \
 				stats.tobys.cloud \
-				www.toby.codes
+				www.toby.codes \
+				www.tobys.cloud
 
 test: $(addprefix test-, ${sites})
 deps: $(addprefix deps-, ${sites})
