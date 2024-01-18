@@ -20,5 +20,5 @@ jobs:
       - name: make-test
         run: |
           export PATH=$PATH:$(go env GOPATH)/bin
-          go install -n github.com/golangci/golangci-lint/cmd/golangci-lint@latest > /dev/null
+          curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(go env GOPATH)/bin v1.55.2
           make test
