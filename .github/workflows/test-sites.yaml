@@ -17,6 +17,8 @@ jobs:
       - uses: actions/setup-go@v4
         with:
           go-version: '>=1.21.0'
-      - run: |
-          go install -n github.com/golangci/golangci-lint/cmd/golangci-lint@latest
+      - name: make-test
+        run: |
+          export PATH=$PATH:$(go env GOPATH)/bin
+          go install -n github.com/golangci/golangci-lint/cmd/golangci-lint@latest > /dev/null
           make test
