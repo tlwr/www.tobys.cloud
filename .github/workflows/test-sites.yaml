@@ -17,5 +17,6 @@ jobs:
       - uses: actions/setup-go@v4
         with:
           go-version: '>=1.21.0'
-      - uses: golangci/golangci-lint-action@v3
+      - run: |
+          go install -n github.com/golangci/golangci-lint/cmd/golangci-lint@latest
       - run: make test
