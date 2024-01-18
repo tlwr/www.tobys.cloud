@@ -1,12 +1,14 @@
 ---
-name: build-images
+name: build-sites
 
 on:
-  push:
+  workflow_run:
+    workflows:
+      - test-sites
     branches:
       - main
-    paths:
-      - sites/**
+    types:
+      - completed
 
 permissions:
   contents: read
@@ -17,9 +19,7 @@ jobs:
     runs-on: [ubuntu-latest]
 
     steps:
-      - name: checkout
-        uses: actions/checkout@v4
-
+      - uses: actions/checkout@v4
       - name: gchr-login
         uses: docker/login-action@v3
         with:
@@ -27,10 +27,5 @@ jobs:
           username: ${{github.actor}}
           password: ${{secrets.GITHUB_TOKEN}}
 
-      - name: gchr-build-push
-        run: |
-          make push
-
-      - name: gchr-build-push-acceptance-tests
-        run: |
-          make push-acceptance-tests
+      - run: make push
+      - run: make push-acceptance-tests
