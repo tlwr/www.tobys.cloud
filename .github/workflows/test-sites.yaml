@@ -5,6 +5,8 @@ on:
   push:
     paths:
       - sites/**
+      - .github/workflows/test-sites.yaml
+      - .github/workflows/build-sites.yaml
 
 jobs:
   make-test:
