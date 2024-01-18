@@ -1,14 +1,19 @@
 GO_TEST = go test -v -count=1 ./...
 GO_LINT = go vet ./... && golangci-lint run ./...
 
+go_sites = assets.tobys.cloud \
+				page-404 \
+				stats.tobys.cloud \
+				www.toby.codes
+
 sites = assets.tobys.cloud \
 				page-404 \
 				stats.tobys.cloud \
 				www.toby.codes \
 				www.tobys.cloud
 
-test: $(addprefix test-, ${sites})
-deps: $(addprefix deps-, ${sites})
+test: $(addprefix test-, ${go_sites})
+deps: $(addprefix deps-, ${go_sites})
 build: $(addprefix build-, ${sites})
 push: $(addprefix push-, ${sites})
 
