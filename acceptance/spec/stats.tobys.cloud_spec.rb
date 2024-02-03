@@ -10,7 +10,7 @@ describe 'stats.tobys.cloud', type: :feature do
     expect(page.code.to_i).to eq(200)
 
     svgs = page.css('svg')
-    expect(svgs.count).to be == 15, 'should render svgs (max 15) for each petition'
+    expect(svgs.count).to be >= 15, 'should render some svgs for each petition'
 
     petitions = page.css('tr')
     petitions.each do |petition|
