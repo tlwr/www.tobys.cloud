@@ -22,7 +22,7 @@ RSpec.configure do |config|
     msg = "www.tobys.cloud acceptance tests duration #{duration_s.round(2)}s #{tally.to_a.join(" ")}"
 
     webhook_url = ENV['DISCORD_WEBHOOK_URL']
-    if Random.rand(0...60) == 0 && webhook_url
+    if Random.rand(0...10) == 0 && webhook_url
       HTTP.post(webhook_url, :json => { :content => msg })
     else
       puts msg
