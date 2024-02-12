@@ -25,6 +25,12 @@ spec:
                 - exec
                 - rspec
                 - --format=documentation
+              env:
+                - name: DISCORD_WEBHOOK_URL
+                  valueFrom:
+                    secretKeyRef:
+                      name: discord
+                      key: webhook-url
 
           restartPolicy: Never
 ...
