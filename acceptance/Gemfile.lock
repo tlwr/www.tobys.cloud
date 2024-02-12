@@ -3,11 +3,26 @@ GEM
   specs:
     addressable (2.8.5)
       public_suffix (>= 2.0.2, < 6.0)
+    base64 (0.2.0)
     connection_pool (2.4.1)
     diff-lcs (1.5.0)
     domain_name (0.6.20231109)
+    ffi (1.16.3)
+    ffi-compiler (1.0.1)
+      ffi (>= 1.0.0)
+      rake
+    http (5.2.0)
+      addressable (~> 2.8)
+      base64 (~> 0.1)
+      http-cookie (~> 1.0)
+      http-form_data (~> 2.2)
+      llhttp-ffi (~> 0.5.0)
     http-cookie (1.0.5)
       domain_name (~> 0.5)
+    http-form_data (2.3.0)
+    llhttp-ffi (0.5.0)
+      ffi-compiler (~> 1.0)
+      rake (~> 13.0)
     mechanize (2.9.1)
       addressable (~> 2.8)
       domain_name (~> 0.5, >= 0.5.20190701)
@@ -31,6 +46,7 @@ GEM
       racc (~> 1.4)
     public_suffix (5.0.4)
     racc (1.7.3)
+    rake (13.1.0)
     rspec (3.12.0)
       rspec-core (~> 3.12.0)
       rspec-expectations (~> 3.12.0)
@@ -53,6 +69,7 @@ PLATFORMS
   x86_64-linux
 
 DEPENDENCIES
+  http
   mechanize
   rspec
 
