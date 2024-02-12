@@ -4,7 +4,7 @@ name: test-sites
 on:
   push:
     paths:
-      - sites/**
+      - sites/**/*
       - .github/workflows/test-sites.yaml
       - .github/workflows/build-sites.yaml
 
