@@ -5,6 +5,7 @@ on:
   push:
     paths:
       - sites/**/*
+      - acceptance/**/*
       - .github/workflows/test-sites.yaml
       - .github/workflows/build-sites.yaml
 
