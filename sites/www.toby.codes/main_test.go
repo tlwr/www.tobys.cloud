@@ -90,15 +90,6 @@ var _ = Describe("Server", func() {
 		})
 	})
 
-	Describe("/metrics", func() {
-		It("should return some metrics", func() {
-			err, code, body := GetPage("/metrics")
-			Expect(err).NotTo(HaveOccurred())
-			Expect(code).To(Equal(200))
-			Expect(body).To(ContainSubstring(`negroni_requests_total`))
-		})
-	})
-
 	Describe("/posts", func() {
 		Context("when listing all posts", func() {
 			It("should list posts", func() {

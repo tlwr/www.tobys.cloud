@@ -17,12 +17,10 @@ import (
 	"github.com/gomarkdown/markdown"
 	nlogrus "github.com/meatballhat/negroni-logrus"
 	"github.com/phyber/negroni-gzip/gzip"
-	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/sirupsen/logrus"
 	"github.com/unrolled/render"
 	nsecure "github.com/unrolled/secure"
 	"github.com/urfave/negroni"
-	nprom "github.com/zbindenren/negroni-prometheus"
 )
 
 var (
@@ -41,11 +39,11 @@ func main() {
 
 	mux := http.NewServeMux()
 
-	mux.HandleFunc("/health", func(w http.ResponseWriter, req *http.Request) {
+	mux.HandleFunc("GET /health", func(w http.ResponseWriter, req *http.Request) {
 		fmt.Fprintf(w, "healthy")
 	})
 
-	mux.HandleFunc("/posts", func(w http.ResponseWriter, req *http.Request) {
+	mux.HandleFunc("GET /posts", func(w http.ResponseWriter, req *http.Request) {
 		files, err := fs.Glob(postsFS, "posts/*.md")
 		if err != nil {
 			_ = renderer.HTML(w, http.StatusInternalServerError, "500", nil)
@@ -80,7 +78,7 @@ func main() {
 		_ = renderer.HTML(w, http.StatusOK, "posts", map[string]interface{}{"ongoing": ongoingPosts, "dated": datedPosts})
 	})
 
-	mux.HandleFunc("/posts/", func(w http.ResponseWriter, req *http.Request) {
+	mux.HandleFunc("GET /posts/", func(w http.ResponseWriter, req *http.Request) {
 		if !pathRx.MatchString(req.URL.Path) {
 			_ = renderer.HTML(w, http.StatusNotFound, "404", nil)
 			return
@@ -110,8 +108,6 @@ func main() {
 		_ = renderer.HTML(w, http.StatusOK, "index", nil)
 	})
 
-	mux.Handle("/metrics", promhttp.Handler())
-
 	level := logrus.InfoLevel
 
 	n := negroni.New()
@@ -119,7 +115,6 @@ func main() {
 	n.Use(nlogrus.NewCustomMiddleware(level, &logrus.JSONFormatter{}, "web"))
 	n.Use(gzip.Gzip(gzip.DefaultCompression))
 	n.Use(negroni.HandlerFunc(nsecure.New().HandlerFuncWithNext))
-	n.Use(nprom.NewMiddleware("www.toby.codes"))
 	n.Use(negroni.NewStatic(http.Dir("public")))
 	n.UseHandler(mux)
 
