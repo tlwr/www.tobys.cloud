@@ -89,13 +89,4 @@ var _ = Describe("Server", func() {
 			Expect(body).To(ContainSubstring(`healthy`))
 		})
 	})
-
-	Describe("/metrics", func() {
-		It("should return some metrics", func() {
-			err, code, body := GetPage("/metrics")
-			Expect(err).NotTo(HaveOccurred())
-			Expect(code).To(Equal(200))
-			Expect(body).To(ContainSubstring(`negroni_requests_total`))
-		})
-	})
 })
