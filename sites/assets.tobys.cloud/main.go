@@ -21,11 +21,11 @@ import (
 func main() {
 	mux := http.NewServeMux()
 
-	mux.HandleFunc("/health", func(w http.ResponseWriter, req *http.Request) {
+	mux.HandleFunc("GET /health", func(w http.ResponseWriter, req *http.Request) {
 		fmt.Fprintf(w, "healthy")
 	})
 
-	mux.Handle("/metrics", promhttp.Handler())
+	mux.Handle("GET /metrics", promhttp.Handler())
 
 	level := logrus.InfoLevel
 
