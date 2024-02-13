@@ -15,12 +15,10 @@ import (
 	"github.com/phyber/negroni-gzip/gzip"
 	prom "github.com/prometheus/client_golang/api"
 	promapi "github.com/prometheus/client_golang/api/prometheus/v1"
-	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/sirupsen/logrus"
 	"github.com/unrolled/render"
 	nsecure "github.com/unrolled/secure"
 	"github.com/urfave/negroni"
-	nprom "github.com/zbindenren/negroni-prometheus"
 )
 
 func main() {
@@ -84,7 +82,7 @@ func main() {
 
 	mux := http.NewServeMux()
 
-	mux.HandleFunc("/health", func(w http.ResponseWriter, req *http.Request) {
+	mux.HandleFunc("GET /health", func(w http.ResponseWriter, req *http.Request) {
 		fmt.Fprintf(w, "healthy")
 	})
 
@@ -102,8 +100,6 @@ func main() {
 		)
 	})
 
-	mux.Handle("/metrics", promhttp.Handler())
-
 	level := logrus.InfoLevel
 
 	n := negroni.New()
@@ -111,7 +107,6 @@ func main() {
 	n.Use(nlogrus.NewCustomMiddleware(level, &logrus.JSONFormatter{}, "web"))
 	n.Use(gzip.Gzip(gzip.DefaultCompression))
 	n.Use(negroni.HandlerFunc(nsecure.New().HandlerFuncWithNext))
-	n.Use(nprom.NewMiddleware("stats.tobys.cloud"))
 	n.UseHandler(mux)
 
 	ctx, cancel := signal.NotifyContext(context.Background(), syscall.SIGTERM)

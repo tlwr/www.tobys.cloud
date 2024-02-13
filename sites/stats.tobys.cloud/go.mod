@@ -1,6 +1,6 @@
 module github.com/tlwr/www.tobys.cloud/sites/stats.tobys.cloud
 
-go 1.21
+go 1.22
 
 require (
 	github.com/meatballhat/negroni-logrus v1.1.1
