@@ -6,7 +6,7 @@ namespace: sites
 
 images:
   - name: ghcr.io/tlwr/assets.tobys.cloud
-    newTag: &newTag 52ac36e6e7a9ca374bca2e369adc8ad08b45f330
+    newTag: &newTag b2f46959818d84d137488a3735ba539de5d45c1d
   - name: ghcr.io/tlwr/page-404
     newTag: *newTag
   - name: ghcr.io/tlwr/stats.tobys.cloud
