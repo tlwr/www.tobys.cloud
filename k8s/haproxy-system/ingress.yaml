@@ -147,6 +147,8 @@ spec:
           - --publish-service=haproxy-system/haproxy-kubernetes-ingress
           - --default-backend-service=sites/page-404
           - --default-backend-port=80
+          - --http-bind-port=80
+          - --https-bind-port=443
         securityContext:
           runAsNonRoot: true
           allowPrivilegeEscalation: false
