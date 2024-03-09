@@ -10,4 +10,4 @@ resources:
 
 images:
   - name: haproxytech/kubernetes-ingress
-    newTag: 1.10.11
+    newTag: 1.11.0
