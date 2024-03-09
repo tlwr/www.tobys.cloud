@@ -148,6 +148,8 @@ spec:
           - --default-backend-service=sites/page-404
           - --default-backend-port=80
         securityContext:
+          runAsNonRoot: true
+          allowPrivilegeEscalation: false
           runAsUser:  1000
           runAsGroup: 1000
           capabilities:
@@ -155,6 +157,8 @@ spec:
               - ALL
             add:
               - NET_BIND_SERVICE
+          seccompProfile:
+            type: RuntimeDefault
         resources:
           limits:
             memory: 256Mi
