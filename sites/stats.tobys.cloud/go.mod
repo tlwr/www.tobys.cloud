@@ -5,7 +5,7 @@ go 1.22
 require (
 	github.com/meatballhat/negroni-logrus v1.1.1
 	github.com/onsi/ginkgo v1.16.5
-	github.com/onsi/gomega v1.31.1
+	github.com/onsi/gomega v1.32.0
 	github.com/phyber/negroni-gzip v1.0.0
 	github.com/prometheus/client_golang v1.19.0
 	github.com/prometheus/common v0.50.0
@@ -17,7 +17,6 @@ require (
 
 require (
 	github.com/fsnotify/fsnotify v1.6.0 // indirect
-	github.com/golang/protobuf v1.5.3 // indirect
 	github.com/google/go-cmp v0.6.0 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
 	github.com/kr/text v0.2.0 // indirect
