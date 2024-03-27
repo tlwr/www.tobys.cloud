@@ -7,7 +7,7 @@ import (
 	"testing"
 	"time"
 
-	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/onsi/gomega/gexec"
 	"github.com/onsi/gomega/ghttp"
@@ -23,7 +23,7 @@ var (
 	defaultServerURL = "http://localhost:8080"
 )
 
-var _ = Describe("Server", func() {
+var _ = Describe("Server", Ordered, func() {
 	var (
 		err          error
 		pathToServer string
@@ -32,8 +32,7 @@ var _ = Describe("Server", func() {
 		prometheusServer *ghttp.Server
 	)
 
-	BeforeSuite(func() {
-
+	BeforeAll(func() {
 		customServerURL := os.Getenv("SERVER_URL")
 		if customServerURL != "" {
 			serverURL = customServerURL
@@ -51,7 +50,7 @@ var _ = Describe("Server", func() {
 		prometheusServer = ghttp.NewServer()
 	})
 
-	AfterSuite(func() {
+	AfterAll(func() {
 		gexec.CleanupBuildArtifacts()
 		prometheusServer.Close()
 	})
