@@ -6,6 +6,30 @@
     font-style: normal;
 }
 
+@font-face {
+    font-family: 'Berkeley Mono';
+    src: url('BerkeleyMono-Regular.woff2') format('woff2'),
+         url('BerkeleyMono-Regular.woff') format('woff');
+    font-weight: normal;
+    font-style: normal;
+}
+
+@font-face {
+    font-family: 'Berkeley Mono';
+    src: url('BerkeleyMono-Bold.woff2') format('woff2'),
+         url('BerkeleyMono-Bold.woff') format('woff');
+    font-weight: bold;
+    font-style: normal;
+}
+
+@font-face {
+    font-family: 'Berkeley Mono';
+    src: url('BerkeleyMono-BoldItalic.woff2') format('woff2'),
+         url('BerkeleyMono-BoldItalic.woff') format('woff');
+    font-weight: bold;
+    font-style: italic;
+}
+
 :root {
   --dark: rgb(17, 17, 17);
   --light: rgb(242, 240, 236);
