@@ -1,12 +1,4 @@
 @font-face {
-    font-family: 'd-dinregular';
-    src: url('d-din-webfont.woff2') format('woff2'),
-         url('d-din-webfont.woff') format('woff');
-    font-weight: normal;
-    font-style: normal;
-}
-
-@font-face {
     font-family: 'Berkeley Mono';
     src: url('BerkeleyMono-Regular.woff2') format('woff2'),
          url('BerkeleyMono-Regular.woff') format('woff');
@@ -59,7 +51,7 @@
 body {
   background-color: var(--light);
   color: var(--dark);
-  font-family: system-ui, 'd-dinregular', monospace;
+  font-family: 'Berkeley Mono', system-ui, monospace;
   font-size: 100%;
   line-height: 1.5;
   margin: 0;
@@ -67,6 +59,7 @@ body {
 }
 
 h1, h2, h3, h4, h5, h6 {
+  font-family: 'Berkeley Mono';
   font-weight: bold;
   line-height: 1.25;
   margin-top: 1em;
@@ -80,6 +73,11 @@ p {
 
 p img {
   max-width: 100%;
+}
+
+header h1 {
+  font-style: italic;
+  text-transform: uppercase;
 }
 
 h1 { font-size: 2rem }
@@ -132,11 +130,6 @@ hr {
 p.term {
   white-space: pre-wrap;
   font-family: monospace;
-}
-
-p.term.motd {
-  color: var(--dark);
-  font-size: 0.6em;
 }
 
 ul.no-bullet {
