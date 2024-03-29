@@ -103,7 +103,7 @@ var _ = Describe("Server", Ordered, func() {
 		})
 
 		Describe("fonts", func() {
-			for _, font := range []string{"d-din-webfont"} {
+			for _, font := range []string{"BerkeleyMono-Regular"} {
 				for _, format := range []string{"woff", "woff2"} {
 					It("serves the font", func() {
 						url := "/" + font + "." + format
