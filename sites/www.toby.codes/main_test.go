@@ -89,6 +89,16 @@ var _ = Describe("Server", Ordered, func() {
 		})
 	})
 
+	Describe("/robots.txt", func() {
+		It("should return generic yes", func() {
+			err, code, body := GetPage("/robots.txt")
+			Expect(err).NotTo(HaveOccurred())
+			Expect(code).To(Equal(200))
+			Expect(body).To(ContainSubstring(`User-agent: *`))
+			Expect(body).To(ContainSubstring(`Allow: /`))
+		})
+	})
+
 	Describe("/posts", func() {
 		Context("when listing all posts", func() {
 			It("should list posts", func() {

@@ -43,6 +43,10 @@ func main() {
 		fmt.Fprintf(w, "healthy")
 	})
 
+	mux.HandleFunc("GET /robots.txt", func(w http.ResponseWriter, req *http.Request) {
+		fmt.Fprintf(w, "User-agent: *\nAllow: /\n")
+	})
+
 	mux.HandleFunc("GET /posts", func(w http.ResponseWriter, req *http.Request) {
 		files, err := fs.Glob(postsFS, "posts/*.md")
 		if err != nil {
