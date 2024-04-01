@@ -4,8 +4,9 @@ name: test-sites
 on:
   push:
     paths:
-      - sites/**/*
       - acceptance/**/*
+      - mischiefs/**/*
+      - sites/**/*
       - .github/workflows/test-sites.yaml
       - .github/workflows/build-sites.yaml
 
