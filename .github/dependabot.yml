@@ -2,6 +2,11 @@
 version: 2
 updates:
   - package-ecosystem: "gomod"
+    directory: "/mischiefs"
+    schedule:
+      interval: "daily"
+
+  - package-ecosystem: "gomod"
     directory: "/sites/assets.tobys.cloud"
     schedule:
       interval: "daily"
