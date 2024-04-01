@@ -12,22 +12,36 @@ sites = assets.tobys.cloud \
 				www.toby.codes \
 				www.tobys.cloud
 
-test: $(addprefix test-, ${go_sites})
-deps: $(addprefix deps-, ${go_sites})
-build: $(addprefix build-, ${sites})
-push: $(addprefix push-, ${sites})
+test: $(addprefix test-, ${go_sites}) test-mischiefs
+deps: $(addprefix deps-, ${go_sites}) deps-mischiefs
+build: $(addprefix build-, ${sites}) build-mischiefs
+push: $(addprefix push-, ${sites}) push-mischiefs
+
+test-mischiefs:
+	cd mischiefs && ${GO_TEST} && ${GO_LINT}
+
+deps-mischiefs:
+	cd mischiefs && go mod tidy
+
+build-mischiefs:
+	cd mischiefs && podman build . --arch=amd64 -t=ghcr.io/tlwr/mischiefs:$$(git rev-parse HEAD)
+
+push-mischiefs: build-mischiefs
+	podman push ghcr.io/tlwr/mischiefs:$$(git rev-parse HEAD)
 
 test-%:
 	cd sites/$* && ${GO_TEST} && ${GO_LINT}
 
 deps-%:
 	cd sites/$* && go mod tidy
+	cd mischiefs && go mod tidy
 
 build-%:
 	cd sites/$* && podman build . --arch=amd64 -t=ghcr.io/tlwr/$*:$$(git rev-parse HEAD)
 
 push-%: build-%
 	podman push ghcr.io/tlwr/$*:$$(git rev-parse HEAD)
+
 acceptance-tests:
 	cd acceptance && bundle exec rspec
 
