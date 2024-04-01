@@ -1,0 +1,13 @@
+---
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: mischiefs
+
+images:
+  - name: ghcr.io/tlwr/mischiefs
+    newTag: &newTag b8d5dab2d3c8359fafeb063ada3f5750127fb2fe
+
+resources:
+  - namespace.yaml
+  - site.yaml
