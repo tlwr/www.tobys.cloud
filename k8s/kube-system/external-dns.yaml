@@ -70,6 +70,7 @@ spec:
           - --source=service
           - --zone-id-filter=$(CF_ZONE_ID)
           - --zone-id-filter=$(CF_ZONE_ID_2)
+          - --zone-id-filter=$(CF_ZONE_ID_3)
           - --provider=cloudflare
 
           env:
@@ -88,3 +89,8 @@ spec:
                 secretKeyRef:
                   name: external-dns-cloudflare
                   key: zone-id-2
+            - name: CF_ZONE_ID_3
+              valueFrom:
+                secretKeyRef:
+                  name: external-dns-cloudflare
+                  key: zone-id-3
