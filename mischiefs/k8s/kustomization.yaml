@@ -6,7 +6,7 @@ namespace: mischiefs
 
 images:
   - name: ghcr.io/tlwr/mischiefs
-    newTag: &newTag b8d5dab2d3c8359fafeb063ada3f5750127fb2fe
+    newTag: &newTag 163776322ecd6684b4c2bcab434b161cc603ad04
 
 resources:
   - namespace.yaml
