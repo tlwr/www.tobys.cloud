@@ -9,3 +9,4 @@ resources:
   - metallb-system
   - metrics
   - sites
+  - ../mischiefs/k8s
