@@ -7,10 +7,6 @@ interesting problem solving opportunities_
 
 ## 2022
 
-Although 
-[it was fixed in 2017](https://github.com/apache/zookeeper/pull/312)
-in 2022, we upgraded this particular ZK cluster to a patched version.
-
 ZooKeeper clients usually maintain an open connection (session) to ZooKeeper.
 In many cases this is the point. Especially important for
 [ephemeral nodes](https://zookeeper.apache.org/doc/current/zookeeperProgrammers.html#Ephemeral+Nodes).
@@ -45,6 +41,10 @@ There are additional subsequent issues:
   time
 * sessions that must renew at the same time are even more vulnerable to this
   pathology
+
+Although
+[it was fixed in 2017](https://github.com/apache/zookeeper/pull/312),
+in 2022 we upgraded this particular ZK cluster to a patched version.
 
 The patch introduced a hashmap for managing sessions which fixed the problem entirely.
 Adding jitter (between reconnects and to session timeouts) to clients ensures
