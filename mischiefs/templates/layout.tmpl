@@ -8,25 +8,19 @@
     <link rel="stylesheet" href="/styles.css" type="text/css">
     <link rel="icon" href="/favicon.ico">
     <title>Mischiefs</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/htmx/1.9.12/htmx.min.js" integrity="sha512-JvpjarJlOl4sW26MnEb3IdSAcGdeTeOaAlu2gUZtfFrRgnChdzELOZKl0mN6ZvI0X+xiX5UMvxjK2Rx2z/fliw==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
   </head>
 
   <body class="container">
     <header>
       <h1>Mischiefs</h1>
-      <nav></nav>
+      <nav>
+        <a href="/">Over mischiefs</a>
+        <a href="/naaipatronen">Naaipatronen</a>
+      </nav>
     </header>
 
-    <main>
-      <section>
-        <h2>Atelier</h2>
-        <p>
-          Zondag 26 Mei
-          &mdash;
-          <a href="https://www.swanmarket.nl">Swan Market</a>
-          &mdash;
-          Binnenrotte, Rotterdam
-        </p>
-      </section>
-    </main>
+    {{ yield }}
+
   </body>
 </html>

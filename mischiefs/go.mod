@@ -8,11 +8,13 @@ require (
 	github.com/onsi/gomega v1.33.1
 	github.com/phyber/negroni-gzip v1.0.0
 	github.com/sirupsen/logrus v1.9.3
+	github.com/unrolled/render v1.6.1
 	github.com/unrolled/secure v1.14.0
 	github.com/urfave/negroni v1.0.0
 )
 
 require (
+	github.com/fsnotify/fsnotify v1.6.0 // indirect
 	github.com/go-logr/logr v1.4.1 // indirect
 	github.com/go-task/slim-sprig/v3 v3.0.0 // indirect
 	github.com/google/go-cmp v0.6.0 // indirect
