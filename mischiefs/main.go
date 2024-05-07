@@ -52,9 +52,9 @@ func main() {
 		svgWidth := int(math.Ceil((buitenradius + 5) * 2))
 		svgHeight := svgWidth
 
+		// nolint:errcheck
 		w.Write([]byte(fmt.Sprintf(`
 <svg viewBox="%d %d %d %d" style="width: 100%%; height: auto; max-height: 50vh">
-foo / bar
   <circle cx="0" cy="0" r="0.1" stroke="var(--dark)" fill-opacity="0" stroke-width="0.25"/>
   <circle cx="0" cy="0" r="%.1f" stroke="var(--dark)" fill-opacity="0" stroke-width="0.25"/>
   <circle cx="0" cy="0" r="%.1f" stroke="var(--dark)" fill-opacity="0" stroke-width="0.25"/>
