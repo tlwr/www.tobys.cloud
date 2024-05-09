@@ -111,7 +111,11 @@ func main() {
 	ctx, cancel := signal.NotifyContext(context.Background(), syscall.SIGTERM)
 	defer cancel()
 
-	server := &http.Server{Addr: ":8080", Handler: n}
+	listenAddr := ":8080"
+	if os.Getenv("USER") == "toby" {
+		listenAddr = "localhost:8080"
+	}
+	server := &http.Server{Addr: listenAddr, Handler: n}
 
 	go func() {
 		_ = server.ListenAndServe()
