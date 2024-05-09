@@ -17,6 +17,8 @@ import (
 	"github.com/unrolled/render"
 	nsecure "github.com/unrolled/secure"
 	"github.com/urfave/negroni"
+
+	svgo "github.com/ajstarks/svgo"
 )
 
 func main() {
@@ -44,45 +46,38 @@ func main() {
 			return
 		}
 
-		binnenradius := heupomvang / (math.Pi * 2)
-		buitenradius := binnenradius + lengte
+		mmLengte := int(math.Ceil(lengte * 10))
+		binnenradius := int(math.Ceil((10 * heupomvang) / (math.Pi * 2)))
+		buitenradius := binnenradius + mmLengte
 
-		minX := int(math.Ceil(-1 * (buitenradius + 5)))
-		minY := int(math.Ceil(-1 * (buitenradius + 5)))
-		svgWidth := int(math.Ceil((buitenradius + 5) * 2))
-		svgHeight := svgWidth
+		minX := -1 * (buitenradius + 5)
+		minY := -1 * (buitenradius + 5)
+		width := (buitenradius + 5) * 2
+		height := width
+		tekstmarge := 5
+		tekstgrootte := 24
+		tekstStyle := fmt.Sprintf(`style="font-size: %d"`, tekstgrootte)
 
-		// nolint:errcheck
-		w.Write([]byte(fmt.Sprintf(`
-<svg viewBox="%d %d %d %d" style="width: 100%%; height: auto; max-height: 50vh">
-  <circle cx="0" cy="0" r="0.1" stroke="var(--dark)" fill-opacity="0" stroke-width="0.25"/>
-  <circle cx="0" cy="0" r="%.1f" stroke="var(--dark)" fill-opacity="0" stroke-width="0.25"/>
-  <circle cx="0" cy="0" r="%.1f" stroke="var(--dark)" fill-opacity="0" stroke-width="0.25"/>
+		s := svgo.New(w)
+		s.Startpercent(
+			100, 100,
+			fmt.Sprintf(`viewBox="%d %d %d %d"`, minX, minY, width, height),
+			`style="max-width: 550px"`,
+		)
+		// middenpunt
+		s.Circle(0, 0, 1, "fill-opacity: 0; stroke-width: 2.5; stroke: var(--dark)")
 
-  <line
-    x1="0" y1="0"
-    x2="%.1f" y2="0"
-    stroke="var(--dark)" stroke-width="0.3" stroke-dasharray="1"
-  />
-	<text x="%.1f" y="0" font-size="4">%.1f cm</text>
+		// binnenring
+		s.Circle(0, 0, binnenradius, "fill-opacity: 0; stroke-width: 2.5; stroke: var(--dark)")
+		s.Line(0, 0, binnenradius, 0, `style="stroke: var(--dark); stroke-width: 2.5; stroke-dasharray: 10"`)
+		s.Text(binnenradius+tekstmarge, 0, fmt.Sprintf("%.1f cm", float64(binnenradius)/10), tekstStyle)
 
-  <line
-    x1="0" y1="%.1f"
-    x2="0" y2="%.1f"
-    stroke="var(--dark)" stroke-width="0.3" stroke-dasharray="2"
-  />
-	<text x="2" y="%.1f" font-size="4">%.1f cm</text>
-</svg>
-`,
-			minX, minY, svgWidth, svgHeight, /* viewbox */
-			binnenradius, buitenradius, /* binnencircel ; buitencircel */
+		// buitenring
+		s.Circle(0, 0, buitenradius, "fill-opacity: 0; stroke-width: 2.5; stroke: var(--dark)")
+		s.Line(0, binnenradius, 0, buitenradius, `style="stroke: var(--dark); stroke-width: 2.5; stroke-dasharray: 10"`)
+		s.Text(tekstmarge, int(math.Floor(float64(buitenradius)/2)), fmt.Sprintf("%.1f cm", lengte), tekstStyle)
 
-			binnenradius,                 /* korte lijn */
-			binnenradius+2, binnenradius, /* korte lijn tekst */
-
-			binnenradius, buitenradius, /* lange lijn */
-			buitenradius/2, lengte, /* lange lijn tekst */
-		)))
+		return
 	})
 
 	mux.HandleFunc("GET /naaipatronen", func(w http.ResponseWriter, req *http.Request) {

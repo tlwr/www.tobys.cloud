@@ -3,6 +3,7 @@ module github.com/tlwr/www.tobys.cloud/mischiefs
 go 1.22
 
 require (
+	github.com/ajstarks/svgo v0.0.0-20211024235047-1546f124cd8b
 	github.com/meatballhat/negroni-logrus v1.1.1
 	github.com/onsi/ginkgo/v2 v2.17.3
 	github.com/onsi/gomega v1.33.1
