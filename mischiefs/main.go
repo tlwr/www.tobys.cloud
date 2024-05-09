@@ -56,7 +56,8 @@ func main() {
 		height := width
 		tekstmarge := 5
 		tekstgrootte := 24
-		tekstStyle := fmt.Sprintf(`style="font-size: %d"`, tekstgrootte)
+		tekstStijlen := fmt.Sprintf("font-size: %d", tekstgrootte)
+		tekstStyle := fmt.Sprintf(`style="%s"`, tekstStijlen)
 
 		s := svgo.New(w)
 		s.Startpercent(
@@ -71,11 +72,17 @@ func main() {
 		s.Circle(0, 0, binnenradius, "fill-opacity: 0; stroke-width: 2.5; stroke: var(--dark)")
 		s.Line(0, 0, binnenradius, 0, `style="stroke: var(--dark); stroke-width: 2.5; stroke-dasharray: 10"`)
 		s.Text(binnenradius+tekstmarge, 0, fmt.Sprintf("%.1f cm", float64(binnenradius)/10), tekstStyle)
+		// circumference
+		s.Text(-binnenradius-tekstmarge, 0, fmt.Sprintf("%.1f cm", heupomvang), fmt.Sprintf(`style="text-anchor: end; %s"`, tekstStijlen))
 
 		// buitenring
 		s.Circle(0, 0, buitenradius, "fill-opacity: 0; stroke-width: 2.5; stroke: var(--dark)")
 		s.Line(0, binnenradius, 0, buitenradius, `style="stroke: var(--dark); stroke-width: 2.5; stroke-dasharray: 10"`)
 		s.Text(tekstmarge, int(math.Floor(float64(buitenradius)/2)), fmt.Sprintf("%.1f cm", lengte), tekstStyle)
+
+		// buitenring + lengte
+		s.Line(0, 0, 0, -(mmLengte + binnenradius), `style="stroke: var(--dark); stroke-width: 2.5; stroke-dasharray: 5"`)
+		s.Text(tekstmarge, -int(math.Floor(float64(binnenradius+buitenradius)/2)), fmt.Sprintf("%.1f cm", (float64(binnenradius)/10)+lengte), tekstStyle)
 	})
 
 	mux.HandleFunc("GET /naaipatronen", func(w http.ResponseWriter, req *http.Request) {
