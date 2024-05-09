@@ -76,8 +76,6 @@ func main() {
 		s.Circle(0, 0, buitenradius, "fill-opacity: 0; stroke-width: 2.5; stroke: var(--dark)")
 		s.Line(0, binnenradius, 0, buitenradius, `style="stroke: var(--dark); stroke-width: 2.5; stroke-dasharray: 10"`)
 		s.Text(tekstmarge, int(math.Floor(float64(buitenradius)/2)), fmt.Sprintf("%.1f cm", lengte), tekstStyle)
-
-		return
 	})
 
 	mux.HandleFunc("GET /naaipatronen", func(w http.ResponseWriter, req *http.Request) {
