@@ -9,8 +9,6 @@ images:
     newTag: &newTag 3f482bd15a0ed059610335e532d171846bdc93b6
   - name: ghcr.io/tlwr/page-404
     newTag: *newTag
-  - name: ghcr.io/tlwr/stats.tobys.cloud
-    newTag: *newTag
   - name: ghcr.io/tlwr/www-tobys-cloud-acceptance
     newTag: *newTag
   - name: ghcr.io/tlwr/www.toby.codes
@@ -25,7 +23,6 @@ resources:
 
   - assets-tobys-cloud.yaml
   - page-404.yaml
-  - stats-tobys-cloud.yaml
   - www-toby-codes.yaml
   - www-tobys-cloud.yaml
 

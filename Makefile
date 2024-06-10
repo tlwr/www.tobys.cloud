@@ -3,12 +3,10 @@ GO_LINT = go vet ./... && golangci-lint run ./...
 
 go_sites = assets.tobys.cloud \
 				page-404 \
-				stats.tobys.cloud \
 				www.toby.codes
 
 sites = assets.tobys.cloud \
 				page-404 \
-				stats.tobys.cloud \
 				www.toby.codes \
 				www.tobys.cloud
 

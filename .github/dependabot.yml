@@ -17,11 +17,6 @@ updates:
       interval: "daily"
 
   - package-ecosystem: "gomod"
-    directory: "/sites/stats.tobys.cloud"
-    schedule:
-      interval: "daily"
-
-  - package-ecosystem: "gomod"
     directory: "/sites/www.toby.codes"
     schedule:
       interval: "daily"

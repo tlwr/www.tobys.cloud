@@ -4,14 +4,11 @@ kind: Kustomization
 
 namespace: metrics
 
-images:
-  - name: ghcr.io/tlwr/petitions-exporter
-    newTag: 76f8cfe39ce3fe75c62a3b0ba0fb33ba3ab9d255
+images: []
 
 resources:
   - namespace.yaml
 
-  - petitions-exporter.yaml
   - grafana.yaml
   - node-exporter.yaml
   - x509-exporter.yaml
