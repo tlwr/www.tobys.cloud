@@ -6,7 +6,7 @@ require (
 	github.com/gomarkdown/markdown v0.0.0-20230922112808-5421fefb8386
 	github.com/meatballhat/negroni-logrus v1.1.1
 	github.com/onsi/ginkgo/v2 v2.19.0
-	github.com/onsi/gomega v1.33.1
+	github.com/onsi/gomega v1.34.0
 	github.com/phyber/negroni-gzip v1.0.0
 	github.com/sirupsen/logrus v1.9.3
 	github.com/unrolled/render v1.6.1
