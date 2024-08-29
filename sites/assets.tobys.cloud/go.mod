@@ -4,7 +4,7 @@ go 1.22
 
 require (
 	github.com/meatballhat/negroni-logrus v1.1.1
-	github.com/onsi/ginkgo/v2 v2.20.1
+	github.com/onsi/ginkgo/v2 v2.20.2
 	github.com/onsi/gomega v1.34.2
 	github.com/phyber/negroni-gzip v1.0.0
 	github.com/prometheus/client_golang v1.20.2
