@@ -9,7 +9,7 @@ require (
 	github.com/phyber/negroni-gzip v1.0.0
 	github.com/sirupsen/logrus v1.9.3
 	github.com/unrolled/render v1.7.0
-	github.com/unrolled/secure v1.15.0
+	github.com/unrolled/secure v1.16.0
 	github.com/urfave/negroni v1.0.0
 )
 
