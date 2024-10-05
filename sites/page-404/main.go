@@ -2,25 +2,19 @@ package main
 
 import (
 	"context"
+	_ "embed"
 	"fmt"
 	"net/http"
 	"os"
 	"os/signal"
 	"syscall"
 	"time"
-
-	nlogrus "github.com/meatballhat/negroni-logrus"
-	"github.com/phyber/negroni-gzip/gzip"
-	"github.com/sirupsen/logrus"
-	"github.com/unrolled/render"
-	nsecure "github.com/unrolled/secure"
-	"github.com/urfave/negroni"
 )
 
+//go:embed templates/404.tmpl
+var site []byte
+
 func main() {
-	renderer := render.New(render.Options{
-		Directory: "templates",
-	})
 
 	mux := http.NewServeMux()
 
@@ -29,22 +23,14 @@ func main() {
 	})
 
 	mux.HandleFunc("/", func(w http.ResponseWriter, req *http.Request) {
-		_ = renderer.HTML(w, http.StatusNotFound, "404", nil)
+		w.WriteHeader(404)
+		w.Write(site)
 	})
-
-	level := logrus.InfoLevel
-
-	n := negroni.New()
-	n.Use(negroni.NewRecovery())
-	n.Use(nlogrus.NewCustomMiddleware(level, &logrus.JSONFormatter{}, "web"))
-	n.Use(gzip.Gzip(gzip.DefaultCompression))
-	n.Use(negroni.HandlerFunc(nsecure.New().HandlerFuncWithNext))
-	n.UseHandler(mux)
 
 	ctx, cancel := signal.NotifyContext(context.Background(), syscall.SIGTERM)
 	defer cancel()
 
-	server := &http.Server{Addr: ":8080", Handler: n}
+	server := &http.Server{Addr: ":8080", Handler: mux}
 
 	go func() {
 		_ = server.ListenAndServe()

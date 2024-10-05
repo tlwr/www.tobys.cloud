@@ -1,2 +1,6 @@
 .terraform
 *.tfstate*
+
+bazel-*
+
+sites/page-404/page-404

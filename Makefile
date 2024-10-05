@@ -2,11 +2,9 @@ GO_TEST = go test -v -count=1 ./...
 GO_LINT = go vet ./... && golangci-lint run ./...
 
 go_sites = assets.tobys.cloud \
-				page-404 \
 				www.toby.codes
 
 sites = assets.tobys.cloud \
-				page-404 \
 				www.toby.codes \
 				www.tobys.cloud
 

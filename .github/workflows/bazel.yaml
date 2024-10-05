@@ -1,0 +1,12 @@
+---
+name: bazel-test
+
+on:
+  push:
+    paths:
+      - '*.bazel'
+      - 'go.mod'
+      - 'WORKSPACE'
+      - acceptance/**/*
+      - sites/**/*
+      - .github/workflows/bazel.yaml
