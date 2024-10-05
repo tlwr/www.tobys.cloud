@@ -4,9 +4,13 @@ name: bazel
 on:
   push:
     paths:
-      - '*.bazel'
-      - 'go.mod'
       - 'WORKSPACE'
+      - 'BUILD.bazel'
+      - 'MODULE.bazel'
+      - 'MODULE.bazel.lock'
+      - 'deps.bazel'
+      - 'go.mod'
+
       - acceptance/**/*
       - sites/**/*
       - .github/workflows/bazel.yaml
