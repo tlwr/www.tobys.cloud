@@ -1,52 +1,46 @@
-load("@io_bazel_rules_go//go:def.bzl", "go_binary", "go_library", "go_test", "go_cross_binary")
+load("@io_bazel_rules_go//go:def.bzl", "go_binary", "go_cross_binary", "go_library", "go_test")
 load("@rules_pkg//pkg:tar.bzl", "pkg_tar")
 load("@rules_oci//oci:defs.bzl", "oci_image", "oci_push")
 
 go_library(
-    name = "lib",
-    srcs = [
-        "main.go",
-    ],
-    importpath = "github.com/tlwr/www.toby.codes/sites/page-404",
+    name = "page-404_lib",
+    srcs = ["main.go"],
+    embedsrcs = ["templates/404.tmpl"],
+    importpath = "github.com/tlwr/www.tobys.cloud/sites/page-404",
     visibility = ["//visibility:private"],
-    deps = [
-      "@com_github_onsi_ginkgo_v2//:go_default_library",
-      "@com_github_onsi_gomega//:go_default_library",
+)
+
+go_test(
+    name = "page-404_test",
+    srcs = [
+        "helpers_test.go",
+        "main_test.go",
     ],
-    embedsrcs = [
-      "templates/404.tmpl",
+    data = [":cmd"],
+    deps = [
+        "@com_github_onsi_ginkgo_v2//:ginkgo",
+        "@com_github_onsi_gomega//:gomega",
+        "@com_github_onsi_gomega//gexec",
     ],
 )
 
 go_binary(
     name = "cmd",
     out = "page-404",
-    embed = [":lib"],
+    embed = [":page-404_lib"],
     visibility = ["//visibility:public"],
 )
 
 go_cross_binary(
     name = "linux",
     platform = "@io_bazel_rules_go//go/toolchain:linux_amd64",
-    target = ":cmd"
-)
-
-go_test(
-    name = "test",
-    srcs = ["main_test.go", "helpers_test.go"],
-    deps = [
-      "@com_github_onsi_gomega//:go_default_library",
-      "@com_github_onsi_gomega//gexec:go_default_library",
-      "@com_github_onsi_ginkgo_v2//:go_default_library",
-    ],
-    data = [":cmd"],
-    embed = [":lib"],
+    target = ":cmd",
 )
 
 pkg_tar(
     name = "app_layer",
     srcs = [":cmd"],
-    package_dir = "/"
+    package_dir = "/",
 )
 
 oci_image(
@@ -59,6 +53,6 @@ oci_image(
 oci_push(
     name = "push",
     image = ":image",
+    remote_tags = ["latest"],
     repository = "ghcr.io/tlwr/page-404",
-    remote_tags = ["latest"]
 )

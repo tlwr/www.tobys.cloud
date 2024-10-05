@@ -13,4 +13,3 @@ gazelle(
     ],
     command = "update-repos",
 )
-
