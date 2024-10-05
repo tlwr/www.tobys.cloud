@@ -25,4 +25,4 @@ jobs:
 
       - name: bazel-test
         run: |
-          bazel test
+          bazel query 'tests(//...)' | xargs -n 1 bazel test
