@@ -2,11 +2,18 @@ load("@bazel_gazelle//:deps.bzl", "go_repository")
 
 def go_dependencies():
     go_repository(
-        name = "com_github_fsnotify_fsnotify",
+        name = "com_github_onsi_ginkgo_v2",
         build_file_proto_mode = "disable_global",
-        importpath = "github.com/fsnotify/fsnotify",
-        sum = "h1:n+5WquG0fcWoWp6xPWfHdbskMCQaFnG6PfBrh1Ky4HY=",
-        version = "v1.6.0",
+        importpath = "github.com/onsi/ginkgo/v2",
+        sum = "h1:7NVCeyIWROIAheY21RLS+3j2bb52W0W82tkberYytp4=",
+        version = "v2.20.2",
+    )
+    go_repository(
+        name = "com_github_onsi_gomega",
+        build_file_proto_mode = "disable_global",
+        importpath = "github.com/onsi/gomega",
+        sum = "h1:pNCwDkzrsv7MS9kpaQvVb1aVLahQXyJ/Tv5oAZMI3i8=",
+        version = "v1.34.2",
     )
     go_repository(
         name = "com_github_go_logr_logr",
@@ -44,60 +51,11 @@ def go_dependencies():
         version = "v0.3.1",
     )
     go_repository(
-        name = "com_github_meatballhat_negroni_logrus",
-        build_file_proto_mode = "disable_global",
-        importpath = "github.com/meatballhat/negroni-logrus",
-        sum = "h1:eDgsDdJYy97gI9kr+YS/uDKCaqK4S6CUQLPG0vNDqZA=",
-        version = "v1.1.1",
-    )
-    go_repository(
-        name = "com_github_onsi_ginkgo_v2",
-        build_file_proto_mode = "disable_global",
-        importpath = "github.com/onsi/ginkgo/v2",
-        sum = "h1:7NVCeyIWROIAheY21RLS+3j2bb52W0W82tkberYytp4=",
-        version = "v2.20.2",
-    )
-    go_repository(
-        name = "com_github_onsi_gomega",
-        build_file_proto_mode = "disable_global",
-        importpath = "github.com/onsi/gomega",
-        sum = "h1:pNCwDkzrsv7MS9kpaQvVb1aVLahQXyJ/Tv5oAZMI3i8=",
-        version = "v1.34.2",
-    )
-    go_repository(
         name = "com_github_rogpeppe_go_internal",
         build_file_proto_mode = "disable_global",
         importpath = "github.com/rogpeppe/go-internal",
         sum = "h1:TMyTOH3F/DB16zRVcYyreMH6GnZZrwQVAoYjRBZyWFQ=",
         version = "v1.10.0",
-    )
-    go_repository(
-        name = "com_github_sirupsen_logrus",
-        build_file_proto_mode = "disable_global",
-        importpath = "github.com/sirupsen/logrus",
-        sum = "h1:dueUQJ1C2q9oE3F7wvmSGAaVtTmUizReu6fjN8uqzbQ=",
-        version = "v1.9.3",
-    )
-    go_repository(
-        name = "com_github_unrolled_render",
-        build_file_proto_mode = "disable_global",
-        importpath = "github.com/unrolled/render",
-        sum = "h1:1yke01/tZiZpiXfUG+zqB+6fq3G4I+KDmnh0EhPq7So=",
-        version = "v1.7.0",
-    )
-    go_repository(
-        name = "com_github_unrolled_secure",
-        build_file_proto_mode = "disable_global",
-        importpath = "github.com/unrolled/secure",
-        sum = "h1:XgdAsS/Zl50ZfZPRJK6WpicFttfrsFYFd0+ONDBJubU=",
-        version = "v1.16.0",
-    )
-    go_repository(
-        name = "com_github_urfave_negroni",
-        build_file_proto_mode = "disable_global",
-        importpath = "github.com/urfave/negroni",
-        sum = "h1:kIimOitoypq34K7TG7DUaJ9kq/N4Ofuwi1sjz0KipXc=",
-        version = "v1.0.0",
     )
     go_repository(
         name = "in_gopkg_check_v1",
