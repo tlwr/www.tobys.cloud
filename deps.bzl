@@ -71,31 +71,3 @@ def go_dependencies():
         sum = "h1:fxVm/GzAzEWqLHuvctI91KS9hhNmmWOoWu0XTYJS7CA=",
         version = "v3.0.1",
     )
-    go_repository(
-        name = "org_golang_x_net",
-        build_file_proto_mode = "disable_global",
-        importpath = "golang.org/x/net",
-        sum = "h1:a9JDOJc5GMUJ0+UDqmLT86WiEy7iWyIhz8gz8E4e5hE=",
-        version = "v0.28.0",
-    )
-    go_repository(
-        name = "org_golang_x_sys",
-        build_file_proto_mode = "disable_global",
-        importpath = "golang.org/x/sys",
-        sum = "h1:Twjiwq9dn6R1fQcyiK+wQyHWfaz/BJB+YIpzU/Cv3Xg=",
-        version = "v0.24.0",
-    )
-    go_repository(
-        name = "org_golang_x_text",
-        build_file_proto_mode = "disable_global",
-        importpath = "golang.org/x/text",
-        sum = "h1:XtiM5bkSOt+ewxlOE/aE/AKEHibwj/6gvWMl9Rsh0Qc=",
-        version = "v0.17.0",
-    )
-    go_repository(
-        name = "org_golang_x_tools",
-        build_file_proto_mode = "disable_global",
-        importpath = "golang.org/x/tools",
-        sum = "h1:J1shsA93PJUEVaUSaay7UXAyE8aimq3GW0pjlolpa24=",
-        version = "v0.24.0",
-    )
