@@ -55,7 +55,7 @@ pkg_tar(
 oci_image(
     name = "image",
     base = "@go_alpine_linux",
-    entrypoint = ["/www-tobys-codes"],
+    entrypoint = ["/www-toby-codes"],
     tars = [":app_layer"],
 )
 
