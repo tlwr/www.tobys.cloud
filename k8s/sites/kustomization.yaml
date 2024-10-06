@@ -6,17 +6,18 @@ namespace: sites
 
 images:
   - name: ghcr.io/tlwr/assets.tobys.cloud
-    newTag: &newTag 3f482bd15a0ed059610335e532d171846bdc93b6
+    newTag: &newTag 956529e7c18f422d3b1a71469807b02910a883e3
   - name: ghcr.io/tlwr/page-404
     newTag: *newTag
   - name: ghcr.io/tlwr/www-tobys-cloud-acceptance
-    newTag: *newTag
-  - name: ghcr.io/tlwr/www.toby.codes
     newTag: *newTag
   - name: ghcr.io/tlwr/www-tobys-cloud-acceptance
     newTag: *newTag
   - name: ghcr.io/tlwr/www.tobys.cloud
     newTag: *newTag
+
+  - name: ghcr.io/tlwr/www.toby.codes
+    digest: 'sha256:c44ab922b414a680b8bc7c4e734f176eb43b161ad401b25d2f9c2210a03f1a87'
 
 resources:
   - namespace.yaml

@@ -30,6 +30,7 @@ spec:
       containers:
       - name: app
         image: ghcr.io/tlwr/www.toby.codes:latest
+        args: [/www-toby-codes]
         ports:
         - containerPort: 8080
 ...
