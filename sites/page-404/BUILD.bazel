@@ -29,6 +29,7 @@ go_binary(
     out = "page-404",
     embed = [":page-404_lib"],
     visibility = ["//visibility:public"],
+    cgo = True,
 )
 
 pkg_tar(

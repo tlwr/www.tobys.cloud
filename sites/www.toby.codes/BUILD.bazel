@@ -38,6 +38,7 @@ go_binary(
     out = "www-toby-codes",
     embed = [":www_toby_codes_lib"],
     visibility = ["//visibility:public"],
+    cgo = True,
 )
 
 pkg_tar(

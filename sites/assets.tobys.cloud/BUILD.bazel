@@ -38,6 +38,7 @@ go_binary(
     out = "assets-tobys-cloud",
     embed = [":assets_tobys_cloud_lib"],
     visibility = ["//visibility:public"],
+    cgo = True,
 )
 
 pkg_tar(
