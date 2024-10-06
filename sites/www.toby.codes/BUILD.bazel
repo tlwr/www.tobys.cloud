@@ -48,7 +48,7 @@ go_cross_binary(
 
 pkg_tar(
     name = "app_layer",
-    srcs = [":cmd"],
+    srcs = [":linux"],
     package_dir = "/",
 )
 
