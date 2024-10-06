@@ -54,15 +54,15 @@ def go_dependencies():
         name = "com_github_onsi_ginkgo_v2",
         build_file_proto_mode = "disable_global",
         importpath = "github.com/onsi/ginkgo/v2",
-        sum = "h1:7NVCeyIWROIAheY21RLS+3j2bb52W0W82tkberYytp4=",
-        version = "v2.20.2",
+        sum = "h1:YlVIbqct+ZmnEph770q9Q7NVAz4wwIiVNahee6JyUzo=",
+        version = "v2.20.1",
     )
     go_repository(
         name = "com_github_onsi_gomega",
         build_file_proto_mode = "disable_global",
         importpath = "github.com/onsi/gomega",
-        sum = "h1:pNCwDkzrsv7MS9kpaQvVb1aVLahQXyJ/Tv5oAZMI3i8=",
-        version = "v1.34.2",
+        sum = "h1:EUMJIKUjM8sKjYbtxQI9A4z2o+rruxnzNvpknOXie6k=",
+        version = "v1.34.1",
     )
     go_repository(
         name = "com_github_pmezard_go_difflib",
