@@ -3,6 +3,7 @@ package main_test
 import (
 	"os"
 	"os/exec"
+	"path"
 	"syscall"
 	"testing"
 
@@ -35,11 +36,7 @@ var _ = Describe("Server", Ordered, func() {
 		} else {
 			serverURL = defaultServerURL
 
-			By("Compiling")
-			pkg := "github.com/tlwr/www.tobys.cloud/sites/assets.tobys.cloud"
-			pathToServer, err = gexec.Build(pkg)
-			Expect(err).NotTo(HaveOccurred())
-			Expect(pathToServer).NotTo(Equal(""))
+			pathToServer = path.Join(os.Getenv("PWD"), "assets-tobys-cloud")
 		}
 
 		By("Using server URL: " + serverURL)

@@ -2,7 +2,9 @@ package main
 
 import (
 	"context"
+	"embed"
 	"fmt"
+	"io/fs"
 	"net/http"
 	"os"
 	"os/signal"
@@ -18,14 +20,19 @@ import (
 	nprom "github.com/zbindenren/negroni-prometheus"
 )
 
+//go:embed public
+var publicFS embed.FS
+
+var publicSubFS, _ = fs.Sub(publicFS, "public")
+
 func main() {
 	mux := http.NewServeMux()
 
-	mux.HandleFunc("GET /health", func(w http.ResponseWriter, req *http.Request) {
+	mux.HandleFunc("/health", func(w http.ResponseWriter, req *http.Request) {
 		fmt.Fprintf(w, "healthy")
 	})
 
-	mux.Handle("GET /metrics", promhttp.Handler())
+	mux.Handle("/metrics", promhttp.Handler())
 
 	level := logrus.InfoLevel
 
@@ -35,7 +42,7 @@ func main() {
 	n.Use(gzip.Gzip(gzip.DefaultCompression))
 	n.Use(negroni.HandlerFunc(nsecure.New().HandlerFuncWithNext))
 	n.Use(nprom.NewMiddleware("www.toby.codes"))
-	n.Use(negroni.NewStatic(http.Dir("public")))
+	n.Use(negroni.NewStatic(http.FS(publicSubFS)))
 	n.UseHandler(mux)
 
 	ctx, cancel := signal.NotifyContext(context.Background(), syscall.SIGTERM)
