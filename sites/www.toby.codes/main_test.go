@@ -36,7 +36,7 @@ var _ = Describe("Server", Ordered, func() {
 		} else {
 			serverURL = defaultServerURL
 
-			pathToServer = path.Join(os.Getenv("PWD"), "www-tobys-cloud")
+			pathToServer = path.Join(os.Getenv("PWD"), "www-toby-codes")
 		}
 
 		By("Using server URL: " + serverURL)
