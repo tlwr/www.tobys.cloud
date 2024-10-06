@@ -27,7 +27,7 @@ load("//:deps.bzl", "go_dependencies")
 # gazelle:repository_macro deps.bzl%go_dependencies
 go_dependencies()
 go_rules_dependencies()
-go_register_toolchains(version = "1.23.1")
+go_register_toolchains(version = "1.21.13")
 gazelle_dependencies()
 
 # tar
@@ -57,7 +57,7 @@ load("@rules_oci//oci:pull.bzl", "oci_pull")
 oci_pull(
     name = "go_alpine_linux",
     image = "index.docker.io/library/golang",
-    tag = "1.23",
+    tag = "1.21",
     platforms = [
         "linux/amd64",
     ],
