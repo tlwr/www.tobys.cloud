@@ -31,15 +31,9 @@ go_binary(
     visibility = ["//visibility:public"],
 )
 
-go_cross_binary(
-    name = "linux",
-    platform = "@io_bazel_rules_go//go/toolchain:linux_amd64",
-    target = ":cmd",
-)
-
 pkg_tar(
     name = "app_layer",
-    srcs = [":linux"],
+    srcs = [":cmd"],
     package_dir = "/usr/bin",
 )
 
