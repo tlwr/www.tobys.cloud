@@ -20,7 +20,7 @@ permissions:
   packages: write
 
 jobs:
-  bazel-test:
+  run-tests:
     runs-on: [ubuntu-latest]
 
     steps:
@@ -35,6 +35,18 @@ jobs:
         run: |
           bazel query 'tests(//...)' | xargs -n 1 bazel test
 
+  push-images:
+    needs: run-tests
+    runs-on: [ubuntu-latest]
+
+    steps:
+      - uses: actions/checkout@v4
+      - uses: bazel-contrib/setup-bazel@0.9.0
+        with:
+          bazelisk-cache: true
+          disk-cache: ${{ github.workflow }}
+          repository-cache: true
+
       - name: gchr-login
         uses: docker/login-action@v3
         with:
@@ -42,6 +54,6 @@ jobs:
           username: ${{github.actor}}
           password: ${{secrets.GITHUB_TOKEN}}
 
-      - name: bazel-push
+      - name: bazel-run-oci_push
         run: |
           bazel query 'kind(oci_push, //...)' | xargs -n 1 bazel run
