@@ -39,14 +39,14 @@ go_cross_binary(
 
 pkg_tar(
     name = "app_layer",
-    srcs = [":cmd"],
-    package_dir = "/",
+    srcs = [":linux"],
+    package_dir = "/usr/bin",
 )
 
 oci_image(
     name = "image",
     base = "@go_alpine_linux",
-    entrypoint = ["/page-404"],
+    entrypoint = ["/usr/bin/page-404"],
     tars = [":app_layer"],
 )
 

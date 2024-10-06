@@ -49,13 +49,13 @@ go_cross_binary(
 pkg_tar(
     name = "app_layer",
     srcs = [":linux"],
-    package_dir = "/",
+    package_dir = "/usr/bin",
 )
 
 oci_image(
     name = "image",
     base = "@go_alpine_linux",
-    entrypoint = ["/www-toby-codes"],
+    entrypoint = ["/usr/bin/www-toby-codes"],
     tars = [":app_layer"],
 )
 
