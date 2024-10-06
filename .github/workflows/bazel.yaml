@@ -30,3 +30,7 @@ jobs:
       - name: bazel-test
         run: |
           bazel query 'tests(//...)' | xargs -n 1 bazel test
+
+      - name: bazel-push
+        run: |
+          bazel query 'kind(oci_push, //...)' | xargs -n 1 bazel run
