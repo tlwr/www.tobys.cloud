@@ -29,25 +29,35 @@ var (
 
 	//go:embed posts/*
 	postsFS embed.FS
+
+	//go:embed public/*
+	publicFS embed.FS
+
+	//go:embed templates/*
+	templatesFS embed.FS
 )
+
+var publicSubFS, _ = fs.Sub(publicFS, "public")
+var templatesSubFS, _ = fs.Sub(templatesFS, "templates")
 
 func main() {
 	renderer := render.New(render.Options{
-		Directory: "templates",
-		Layout:    "layout",
+		Directory:  "templates",
+		FileSystem: render.FS(templatesFS),
+		Layout:     "layout",
 	})
 
 	mux := http.NewServeMux()
 
-	mux.HandleFunc("GET /health", func(w http.ResponseWriter, req *http.Request) {
+	mux.HandleFunc("/health", func(w http.ResponseWriter, req *http.Request) {
 		fmt.Fprintf(w, "healthy")
 	})
 
-	mux.HandleFunc("GET /robots.txt", func(w http.ResponseWriter, req *http.Request) {
+	mux.HandleFunc("/robots.txt", func(w http.ResponseWriter, req *http.Request) {
 		fmt.Fprintf(w, "User-agent: *\nAllow: /\n")
 	})
 
-	mux.HandleFunc("GET /posts", func(w http.ResponseWriter, req *http.Request) {
+	mux.HandleFunc("/posts", func(w http.ResponseWriter, req *http.Request) {
 		files, err := fs.Glob(postsFS, "posts/*.md")
 		if err != nil {
 			_ = renderer.HTML(w, http.StatusInternalServerError, "500", nil)
@@ -82,7 +92,7 @@ func main() {
 		_ = renderer.HTML(w, http.StatusOK, "posts", map[string]interface{}{"ongoing": ongoingPosts, "dated": datedPosts})
 	})
 
-	mux.HandleFunc("GET /posts/", func(w http.ResponseWriter, req *http.Request) {
+	mux.HandleFunc("/posts/", func(w http.ResponseWriter, req *http.Request) {
 		if !pathRx.MatchString(req.URL.Path) {
 			_ = renderer.HTML(w, http.StatusNotFound, "404", nil)
 			return
@@ -119,7 +129,7 @@ func main() {
 	n.Use(nlogrus.NewCustomMiddleware(level, &logrus.JSONFormatter{}, "web"))
 	n.Use(gzip.Gzip(gzip.DefaultCompression))
 	n.Use(negroni.HandlerFunc(nsecure.New().HandlerFuncWithNext))
-	n.Use(negroni.NewStatic(http.Dir("public")))
+	n.Use(negroni.NewStatic(http.FS(publicSubFS)))
 	n.UseHandler(mux)
 
 	ctx, cancel := signal.NotifyContext(context.Background(), syscall.SIGTERM)
