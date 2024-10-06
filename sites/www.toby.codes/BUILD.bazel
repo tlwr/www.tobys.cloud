@@ -35,7 +35,7 @@ go_test(
 
 go_binary(
     name = "cmd",
-    out = "www-tobys-codes",
+    out = "www-toby-codes",
     embed = [":www_toby_codes_lib"],
     visibility = ["//visibility:public"],
 )
