@@ -351,3 +351,10 @@ def go_dependencies():
         sum = "h1:J1shsA93PJUEVaUSaay7UXAyE8aimq3GW0pjlolpa24=",
         version = "v0.24.0",
     )
+    go_repository(
+      name = "com_github_ajstarks_svgo",
+      build_file_proto_mode = "disable_global",
+      importpath = "github.com/ajstarks/svgo",
+      sum = "h1:slYM766cy2nI3BwyRiyQj/Ud48djTMtMebDqepE95rw=",
+      version = "v0.0.0-20211024235047-1546f124cd8b",
+    )

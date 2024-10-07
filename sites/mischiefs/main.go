@@ -2,7 +2,9 @@ package main
 
 import (
 	"context"
+	"embed"
 	"fmt"
+	"io/fs"
 	"math"
 	"net/http"
 	"os"
@@ -21,19 +23,28 @@ import (
 	svgo "github.com/ajstarks/svgo"
 )
 
+//go:embed public
+var publicFS embed.FS
+var publicSubFS, _ = fs.Sub(publicFS, "public")
+
+//go:embed templates/*
+var templatesFS embed.FS
+var templatesSubFS, _ = fs.Sub(templatesFS, "templates")
+
 func main() {
 	renderer := render.New(render.Options{
-		Directory: "templates",
-		Layout:    "layout",
+		Directory:  "templates",
+		FileSystem: render.FS(templatesFS),
+		Layout:     "layout",
 	})
 
 	mux := http.NewServeMux()
 
-	mux.HandleFunc("GET /health", func(w http.ResponseWriter, req *http.Request) {
+	mux.HandleFunc("/health", func(w http.ResponseWriter, req *http.Request) {
 		fmt.Fprintf(w, "healthy")
 	})
 
-	mux.HandleFunc("POST /naaipatronen/kinderrokje", func(w http.ResponseWriter, req *http.Request) {
+	mux.HandleFunc("/naaipatronen/kinderrokje", func(w http.ResponseWriter, req *http.Request) {
 		lengte, err := strconv.ParseFloat(req.FormValue("lengte"), 64)
 		if err != nil {
 			_ = renderer.HTML(w, http.StatusBadRequest, "400", nil)
@@ -85,11 +96,11 @@ func main() {
 		s.Text(tekstmarge, -int(math.Floor(float64(binnenradius+buitenradius)/2)), fmt.Sprintf("%.1f cm", (float64(binnenradius)/10)+lengte), tekstStyle)
 	})
 
-	mux.HandleFunc("GET /naaipatronen", func(w http.ResponseWriter, req *http.Request) {
+	mux.HandleFunc("/naaipatronen", func(w http.ResponseWriter, req *http.Request) {
 		_ = renderer.HTML(w, http.StatusOK, "naaipatronen", nil)
 	})
 
-	mux.HandleFunc("GET /", func(w http.ResponseWriter, req *http.Request) {
+	mux.HandleFunc("/", func(w http.ResponseWriter, req *http.Request) {
 		if req.URL.Path != "" && req.URL.Path != "/" {
 			_ = renderer.HTML(w, http.StatusNotFound, "404", nil)
 			return
@@ -105,7 +116,7 @@ func main() {
 	n.Use(nlogrus.NewCustomMiddleware(level, &logrus.JSONFormatter{}, "web"))
 	n.Use(gzip.Gzip(gzip.DefaultCompression))
 	n.Use(negroni.HandlerFunc(nsecure.New().HandlerFuncWithNext))
-	n.Use(negroni.NewStatic(http.Dir("public")))
+	n.Use(negroni.NewStatic(http.FS(publicSubFS)))
 	n.UseHandler(mux)
 
 	ctx, cancel := signal.NotifyContext(context.Background(), syscall.SIGTERM)

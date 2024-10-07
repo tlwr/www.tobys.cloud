@@ -19,6 +19,9 @@ images:
   - name: ghcr.io/tlwr/www.toby.codes
     digest: 'sha256:c44ab922b414a680b8bc7c4e734f176eb43b161ad401b25d2f9c2210a03f1a87'
 
+  - name: ghcr.io/tlwr/mischiefs
+    newTag: 4ec7543d684992fa8a38e462feebeb682b61b98e
+
 resources:
   - namespace.yaml
 
@@ -26,5 +29,6 @@ resources:
   - page-404.yaml
   - www-toby-codes.yaml
   - www-tobys-cloud.yaml
+  - mischiefs.yaml
 
   - acceptance-tests.yaml
