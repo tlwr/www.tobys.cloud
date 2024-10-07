@@ -2,13 +2,10 @@
 name: build-sites
 
 on:
-  workflow_run:
-    workflows:
-      - test-sites
-    branches:
-      - main
-    types:
-      - completed
+  push:
+    paths:
+      - acceptance/**/*
+      - .github/workflows/build-sites.yaml
 
 permissions:
   contents: read
@@ -29,5 +26,4 @@ jobs:
           username: ${{github.actor}}
           password: ${{secrets.GITHUB_TOKEN}}
 
-      - run: make push
       - run: make push-acceptance-tests
