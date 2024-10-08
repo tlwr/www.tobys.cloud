@@ -1,5 +1,6 @@
-require 'spec_helper'
 require 'securerandom'
+
+require_relative 'spec_helper'
 
 describe 'page-404', type: :feature do
   def random_subdomain(domain)

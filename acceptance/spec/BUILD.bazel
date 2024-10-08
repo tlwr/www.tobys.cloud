@@ -1,0 +1,51 @@
+load("@rules_pkg//pkg:tar.bzl", "pkg_tar")
+load("@rules_oci//oci:defs.bzl", "oci_image", "oci_push")
+
+load(
+    "@rules_ruby//ruby:defs.bzl",
+    "rb_library",
+    "rb_binary",
+    "rb_test",
+)
+
+rb_library(
+    name = "spec_helper",
+    srcs = ["spec_helper.rb"],
+    deps = ["@bundle"],
+)
+
+rb_test(
+    name = "k8s",
+    size = "small",
+    main = "@bundle//bin:rspec",
+    deps = [":spec_helper"],
+    srcs = ["k8s_spec.rb"],
+    args = ["acceptance/spec/k8s_spec.rb"],
+)
+
+rb_test(
+    name = "page-404",
+    size = "small",
+    main = "@bundle//bin:rspec",
+    deps = [":spec_helper"],
+    srcs = ["page-404_spec.rb"],
+    args = ["acceptance/spec/page-404_spec.rb"],
+)
+
+rb_test(
+    name = "www.toby.codes",
+    size = "small",
+    main = "@bundle//bin:rspec",
+    deps = [":spec_helper"],
+    srcs = ["www.toby.codes_spec.rb"],
+    args = ["acceptance/spec/www.toby.codes_spec.rb"],
+)
+
+rb_test(
+    name = "assets.tobys.cloud",
+    size = "small",
+    main = "@bundle//bin:rspec",
+    deps = [":spec_helper"],
+    srcs = ["assets.tobys.cloud_spec.rb"],
+    args = ["acceptance/spec/assets.tobys.cloud_spec.rb"],
+)

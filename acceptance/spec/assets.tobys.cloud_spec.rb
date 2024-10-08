@@ -1,4 +1,4 @@
-require 'spec_helper'
+require_relative 'spec_helper'
 
 describe 'assets.tobys.cloud', type: :feature do
   def base_url
