@@ -5,11 +5,8 @@ kind: Kustomization
 namespace: sites
 
 images:
-  - name: ghcr.io/tlwr/www.tobys.cloud
-    newTag: &newTag 956529e7c18f422d3b1a71469807b02910a883e3
-
   - name: ghcr.io/tlwr/www-tobys-cloud-acceptance
-    newTag: *newTag
+    newTag: 956529e7c18f422d3b1a71469807b02910a883e3
 
   - name: ghcr.io/tlwr/page-404
     digest: 'sha256:da420764fee56123413fbf1e859efeef8cae83d909ba1a5c5d516a5bf7e619f0'

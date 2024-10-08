@@ -6,17 +6,34 @@ metadata:
   annotations:
     kubernetes.io/tls-acme: "true"
     cert-manager.io/cluster-issuer: "letsencrypt-prod"
-    haproxy.org/request-redirect: "www.toby.codes:443"
+    haproxy.org/request-redirect: "https://www.toby.codes"
 spec:
   ingressClassName: haproxy
-  defaultBackend:
-    service:
-      name: page-404
-      port:
-        number: 80
+  rules:
+    - host: www.tobys.cloud
+      http:
+        paths:
+        - backend:
+            service:
+              name: page-404
+              port:
+                number: 80
+          path: /
+          pathType: Prefix
+
+    - host: tobys.cloud
+      http:
+        paths:
+        - backend:
+            service:
+              name: page-404
+              port:
+                number: 80
+          path: /
+          pathType: Prefix
   tls:
-  - secretName: www-tobys-cloud-tls
-    hosts:
-      - tobys.cloud
-      - www.tobys.cloud
+    - secretName: www-tobys-cloud-tls
+      hosts:
+        - tobys.cloud
+        - www.tobys.cloud
 ...
