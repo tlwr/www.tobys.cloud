@@ -5,22 +5,23 @@ kind: Kustomization
 namespace: sites
 
 images:
-  - name: ghcr.io/tlwr/assets.tobys.cloud
-    newTag: &newTag 956529e7c18f422d3b1a71469807b02910a883e3
-  - name: ghcr.io/tlwr/page-404
-    newTag: *newTag
-  - name: ghcr.io/tlwr/www-tobys-cloud-acceptance
-    newTag: *newTag
-  - name: ghcr.io/tlwr/www-tobys-cloud-acceptance
-    newTag: *newTag
   - name: ghcr.io/tlwr/www.tobys.cloud
+    newTag: &newTag 956529e7c18f422d3b1a71469807b02910a883e3
+
+  - name: ghcr.io/tlwr/www-tobys-cloud-acceptance
     newTag: *newTag
+
+  - name: ghcr.io/tlwr/page-404
+    digest: 'sha256:da420764fee56123413fbf1e859efeef8cae83d909ba1a5c5d516a5bf7e619f0'
+
+  - name: ghcr.io/tlwr/assets.tobys.cloud
+    digest: 'sha256:cd3e683c7c083c893ccb3b11b63b2cd8cd3bf4c6db88abbee8fe5e980d1401cb'
 
   - name: ghcr.io/tlwr/www.toby.codes
-    digest: 'sha256:c44ab922b414a680b8bc7c4e734f176eb43b161ad401b25d2f9c2210a03f1a87'
+    digest: 'sha256:cd914242e08c5018f35900f112f4e056db98d8e3f956731cf5fd79586621af30'
 
   - name: ghcr.io/tlwr/mischiefs
-    newTag: 4ec7543d684992fa8a38e462feebeb682b61b98e
+    digest: 'sha256:9f21a67e254608a6cb3fe9e2837449c9557e5bc817127e99566edd7c54cfebda'
 
 resources:
   - namespace.yaml
