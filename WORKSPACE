@@ -57,7 +57,7 @@ load("@rules_oci//oci:pull.bzl", "oci_pull")
 oci_pull(
     name = "go_alpine_linux",
     image = "index.docker.io/library/golang",
-    tag = "1.21-alpine",
+    tag = "1.21",
     platforms = [
         "linux/amd64",
     ],
