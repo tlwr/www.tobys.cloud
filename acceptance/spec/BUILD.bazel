@@ -21,6 +21,8 @@ rb_test(
     deps = [":spec_helper"],
     srcs = ["k8s_spec.rb"],
     args = ["acceptance/spec/k8s_spec.rb"],
+    data = ["@kubeconfig_home//:kubeconfig.yaml"],
+    tags = ["no-cache"],
 )
 
 rb_test(

@@ -5,9 +5,16 @@ require_relative 'spec_helper'
 describe 'kubernetes', type: :feature do
   let(:ns) { 'sites' }
   let(:pod_name) { 'acceptance-tests-static-busybox' }
+
   let(:client) do
-    if ENV['USER'] == 'toby'
-      return K8s::Client.config(K8s::Config.load_file(File.expand_path 'kubeconfig'))
+    bzl_ext_path = './external/kubeconfig_home'
+    bzl_ext_kubeconfig = "#{bzl_ext_path}/kubeconfig.yaml"
+    return K8s::Client.config(K8s::Config.load_file(bzl_ext_kubeconfig)) if File.exist?(bzl_ext_kubeconfig)
+
+    if ENV['KUBECONFIG']
+      return K8s::Client.in_cluster_config
+    elsif ENV['USER'] == 'toby'
+      return K8s::Client.config(K8s::Config.load_file(File.expand_path '~/.kube/config'))
     else
       return K8s::Client.in_cluster_config
     end

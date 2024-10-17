@@ -63,6 +63,10 @@ oci_pull(
     ],
 )
 
+# kubeconfig
+load("//:rules.bzl", "provide_kubeconfig")
+provide_kubeconfig(name = "kubeconfig_home")
+
 # ruby deps
 http_archive(
     name = "bazel_skylib",
