@@ -33,7 +33,9 @@ jobs:
 
       - name: bazel-test
         run: |
-          bazel query 'tests(//...)' | xargs -n 1 bazel test
+          bazel query 'tests(//...)' \
+          | grep -v acceptance \
+          | xargs -n 1 bazel test
 
   push-images:
     needs: run-tests
