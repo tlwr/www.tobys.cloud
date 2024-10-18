@@ -6,3 +6,4 @@ namespace: tailscale
 
 resources:
   - operator.yaml
+  - power.yaml
