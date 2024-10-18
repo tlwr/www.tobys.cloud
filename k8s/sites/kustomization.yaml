@@ -15,7 +15,7 @@ images:
     digest: 'sha256:cd3e683c7c083c893ccb3b11b63b2cd8cd3bf4c6db88abbee8fe5e980d1401cb'
 
   - name: ghcr.io/tlwr/www.toby.codes
-    digest: 'sha256:cd914242e08c5018f35900f112f4e056db98d8e3f956731cf5fd79586621af30'
+    digest: 'sha256:e235b4a78fe96db896de285e20d532dcf85ef73040dbe06fe2b993b51a992c94'
 
   - name: ghcr.io/tlwr/mischiefs
     digest: 'sha256:9f21a67e254608a6cb3fe9e2837449c9557e5bc817127e99566edd7c54cfebda'
