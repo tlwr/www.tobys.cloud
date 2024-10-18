@@ -5,8 +5,8 @@ metadata:
   name: www-toby-codes
 spec:
   ports:
-  - port: 80
-    targetPort: 8080
+    - port: 80
+      targetPort: 8080
   selector:
     app: www-toby-codes
 ...
@@ -28,12 +28,11 @@ spec:
         app: www-toby-codes
     spec:
       containers:
-      - name: app
-        image: ghcr.io/tlwr/www.toby.codes:latest
-        ports:
-        - containerPort: 8080
+        - name: app
+          image: ghcr.io/tlwr/www.toby.codes:latest
+          ports:
+            - containerPort: 8080
 ...
-
 ---
 apiVersion: networking.k8s.io/v1
 kind: Ingress
@@ -45,29 +44,46 @@ metadata:
 spec:
   ingressClassName: haproxy
   rules:
-  - host: www.toby.codes
-    http:
-      paths:
-      - backend:
-          service:
-            name: www-toby-codes
-            port:
-              number: 80
-        path: /
-        pathType: Prefix
-  - host: toby.codes
-    http:
-      paths:
-      - backend:
-          service:
-            name: www-toby-codes
-            port:
-              number: 80
-        path: /
-        pathType: Prefix
+    - host: www.toby.codes
+      http:
+        paths:
+          - backend:
+              service:
+                name: www-toby-codes
+                port:
+                  number: 80
+            path: /
+            pathType: Prefix
+    - host: toby.codes
+      http:
+        paths:
+          - backend:
+              service:
+                name: www-toby-codes
+                port:
+                  number: 80
+            path: /
+            pathType: Prefix
   tls:
-  - secretName: www-toby-codes-tls
-    hosts:
-      - www.toby.codes
-      - toby.codes
+    - secretName: www-toby-codes-tls
+      hosts:
+        - www.toby.codes
+        - toby.codes
 ...
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: www-toby-codes-ts
+spec:
+  ingressClassName: tailscale
+  defaultBackend:
+    service:
+      name: www-toby-codes
+      port:
+        number: 80
+
+  # tls is used for the name in tailscale
+  tls:
+    - hosts:
+        - www-toby-codes
