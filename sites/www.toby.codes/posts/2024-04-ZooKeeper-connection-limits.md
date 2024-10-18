@@ -1,11 +1,10 @@
-# ZooKeeper
+# ZooKeeper connection limits
 
-_In this post I am collecting interesting things I have observed with
-[Apache ZooKeeper](https://zookeeper.apache.org). We run multiple large
-ZooKeeper clusters at [Booking.com](www.booking.com) and this makes for some
+_Written in 2024-04, split from a post collecting notes on
+[Apache ZooKeeper](https://zookeeper.apache.org).
+We run multiple large ZooKeeper clusters at
+[Booking.com](www.booking.com) and this makes for some
 interesting problem solving opportunities_
-
-## 2022
 
 ZooKeeper clients usually maintain an open connection (session) to ZooKeeper.
 In many cases this is the point. Especially important for

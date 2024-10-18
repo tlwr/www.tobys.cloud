@@ -25,7 +25,7 @@ import (
 
 var (
 	pathRx = regexp.MustCompile("^/posts/(?P<post>[-_a-zA-Z0-9]+)$")
-	dateRx = regexp.MustCompile("^(2[0-9]{3}-[0-1][1-9])-(.*)")
+	dateRx = regexp.MustCompile("^(2[0-9]{3}-[0-1][0-9])-(.*)")
 
 	//go:embed posts/*
 	postsFS embed.FS
