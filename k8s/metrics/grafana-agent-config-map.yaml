@@ -1,0 +1,87 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: grafana-agent
+data:
+  agent.yaml: |
+    ---
+    server:
+      log_level: info
+
+    metrics:
+      wal_directory: /var/lib/agent/wal
+
+      global:
+        scrape_interval: 60s
+
+        remote_write:
+          - url: https://grafana-cloud-remote.tlwr.workers.dev/api/prom/push
+            basic_auth:
+              username: '${GRAFANA_CLOUD_REMOTE_USERNAME}'
+              password: '${GRAFANA_CLOUD_REMOTE_PASSWORD}'
+
+      configs:
+        - name: node-exporter
+          scrape_configs:
+            - job_name: node-exporter
+              kubernetes_sd_configs:
+                - role: service
+              relabel_configs:
+                - source_labels: [__meta_kubernetes_namespace]
+                  action: keep
+                  regex: metrics
+                - source_labels: [__meta_kubernetes_service_name]
+                  action: keep
+                  regex: node-exporter
+
+        - name: x509-exporter
+          scrape_configs:
+            - job_name: x509-exporter
+              kubernetes_sd_configs:
+                - role: pod
+              relabel_configs:
+                - source_labels: [__meta_kubernetes_namespace]
+                  action: keep
+                  regex: metrics
+                - source_labels: [__meta_kubernetes_pod_name]
+                  action: keep
+                  regex: 'x509-certificate-exporter.*'
+                - source_labels: [__meta_kubernetes_pod_annotation_prometheus_io_scrape]
+                  action: keep
+
+        - name: haproxy-ingress
+          scrape_configs:
+            - job_name: haproxy-ingress
+              kubernetes_sd_configs:
+                - role: service
+              relabel_configs:
+                - source_labels: [__meta_kubernetes_namespace]
+                  action: keep
+                  regex: haproxy-system
+                - source_labels: [__meta_kubernetes_service_name]
+                  action: keep
+                  regex: haproxy-kubernetes-ingress
+                - source_labels: [__meta_kubernetes_service_port_name]
+                  action: keep
+                  regex: stat
+              metric_relabel_configs:
+                - source_labels: [__name__]
+                  action: keep
+                  regex: haproxy_backend_.*
+
+        - name: smartmeter
+          scrape_configs:
+            - job_name: 63a
+              scrape_interval: 30s
+              scrape_timeout: 20s
+              dns_sd_configs:
+                - names: [pipower.tailscale.svc]
+                  type: AAAA
+                  port: 9220
+            - job_name: kleidijk
+              scrape_interval: 30s
+              scrape_timeout: 20s
+              dns_sd_configs:
+                - names: [kleipower.tailscale.svc]
+                  type: AAAA
+                  port: 9220

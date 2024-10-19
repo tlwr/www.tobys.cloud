@@ -10,5 +10,25 @@ resources:
   - namespace.yaml
 
   - grafana.yaml
+  - grafana-agent-config-map.yaml
   - node-exporter.yaml
   - x509-exporter.yaml
+
+patches:
+  - target:
+      kind: StatefulSet
+      name: grafana-agent
+    patch: |-
+      - op: add
+        path: "/spec/template/spec/containers/0/env"
+        value:
+          - name: GRAFANA_CLOUD_REMOTE_USERNAME
+            valueFrom:
+              secretKeyRef:
+                name: grafana-cloud
+                key: username
+          - name: GRAFANA_CLOUD_REMOTE_PASSWORD
+            valueFrom:
+              secretKeyRef:
+                name: grafana-cloud
+                key: password
