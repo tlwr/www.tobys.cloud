@@ -96,6 +96,15 @@ var _ = Describe("Server", Ordered, func() {
 		})
 	})
 
+	Describe("/work", func() {
+		It("should return something", func() {
+			err, code, body := GetPage("/work")
+			Expect(err).NotTo(HaveOccurred())
+			Expect(code).To(Equal(200))
+			Expect(body).To(ContainSubstring(`Work with me`))
+		})
+	})
+
 	Describe("/posts", func() {
 		Context("when listing all posts", func() {
 			It("should list posts", func() {

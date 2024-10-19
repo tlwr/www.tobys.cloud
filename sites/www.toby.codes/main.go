@@ -113,6 +113,10 @@ func main() {
 		_ = renderer.HTML(w, http.StatusOK, "post", rendered)
 	})
 
+	mux.HandleFunc("/work", func(w http.ResponseWriter, req *http.Request) {
+		_ = renderer.HTML(w, http.StatusOK, "work", nil)
+	})
+
 	mux.HandleFunc("/", func(w http.ResponseWriter, req *http.Request) {
 		if req.URL.Path != "" && req.URL.Path != "/" {
 			_ = renderer.HTML(w, http.StatusNotFound, "404", nil)
