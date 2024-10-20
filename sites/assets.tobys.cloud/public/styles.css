@@ -71,8 +71,12 @@ p {
   margin-bottom: 1rem;
 }
 
-p img {
+p img, figure img {
   max-width: 100%;
+}
+
+figcaption {
+  font-style: italic;
 }
 
 h1 { font-size: 2rem }
