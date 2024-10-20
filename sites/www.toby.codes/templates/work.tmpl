@@ -2,6 +2,38 @@
   <h2>Work</h2>
   <p>
     Work with me on individual projects/solutions.
-    <i>Details coming soon</i>
+    This is unrelated to my day job at
+    <a href="https://www.booking.com">Booking.com</a>.
   </p>
+
+  <section>
+    <h3>Power measurement for smartmeter P4 ports</h3>
+    <p>
+      In the Netherlands, there is a standard for how power meters should
+      expose usage information. This is the P4 port (RJ11) data which periodically sends
+      datagrams via 115200 baud serial.
+    </p>
+
+    <p>
+      In multiple homes I have built and installed a
+      <a href="https://raspberrypi.org">Raspberry Pi</a> + wifi
+      monitoring solution. Energy usage data is collected and stored in the
+      cloud and viewable via <a href="https://grafana.org">Grafana</a>
+      dashboards.
+    </p>
+
+    <figure>
+      <img src="/images/work-grafana-power-usage.png" alt="Grafana dashboard panel energy usage"/>
+      <figcaption>
+        Grafana panel showing grid consumption (Net) versus grid delivery (Zon)
+        over a week.
+      </figcaption>
+    </figure>
+
+    <p>
+      The devices are available via
+      <a href="https://tailscale.com">Tailscale</a>
+      for metrics collection and device management.
+    </p>
+  </section>
 </main>
