@@ -75,6 +75,11 @@ p img, figure img {
   max-width: 100%;
 }
 
+figure {
+  margin-inline-start: 0;
+  margin-inline-end: 0;
+}
+
 figcaption {
   font-style: italic;
 }
