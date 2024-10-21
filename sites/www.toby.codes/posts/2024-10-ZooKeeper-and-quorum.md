@@ -35,9 +35,10 @@ would not be possible because latency would be too high (eg Australia/NZ).
 We scale out the capacity to serve many reads by using
 [ZooKeeper observers](https://zookeeper.apache.org/doc/r3.8.3/zookeeperObservers.html)
 as we found that we saw degraded performance with more than 10k (see below,
-2022) connections per ZK node. Using observers has allowed us to get better
-write performance, because clients connect to the observers and ZK primaries
-deal only with leader election, writes, and traffic from the observers.
+2022) connections per ZooKeeper node. Using observers has allowed us to get
+better write performance, because clients connect to the observers and
+primaries deal only with leader election, writes, and traffic from the
+observers.
 
 With less than 30 ZooKeeper servers (not all primaries), we are able to handle
 multiple hundreds of thousands of simultaneous connections, split across >3
