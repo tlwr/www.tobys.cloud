@@ -30,7 +30,7 @@ var (
 	//go:embed posts/*
 	postsFS embed.FS
 
-	//go:embed public/*
+	//go:embed public/**/*
 	publicFS embed.FS
 
 	//go:embed templates/*
