@@ -18,7 +18,7 @@ images:
     digest: 'sha256:babe8e00e570df93783d878a8054ec264247193aebce27b36366bad584b67835'
 
   - name: ghcr.io/tlwr/mischiefs
-    digest: 'sha256:9f21a67e254608a6cb3fe9e2837449c9557e5bc817127e99566edd7c54cfebda'
+    digest: 'sha256:8bc29d3cb86dab110548780b780075a7cfb788c84a2eb2d62cc2be6c81506862'
 
 resources:
   - namespace.yaml
