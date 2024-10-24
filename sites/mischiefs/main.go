@@ -66,7 +66,7 @@ func main() {
 		width := (buitenradius + 5) * 2
 		height := width
 		tekstmarge := 5
-		tekstgrootte := 24
+		tekstgrootte := int(float64(width) * 0.05)
 		tekstStijlen := fmt.Sprintf("font-size: %d", tekstgrootte)
 		tekstStyle := fmt.Sprintf(`style="%s"`, tekstStijlen)
 
