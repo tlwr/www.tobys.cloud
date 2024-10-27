@@ -4,14 +4,17 @@ kind: Kustomization
 
 namespace: metrics
 
-images: []
+images:
+  - name: crazymax/rrdcached
+    newTag: 1.8.0-r5
 
 resources:
   - namespace.yaml
 
-  - grafana.yaml
   - grafana-agent-config-map.yaml
+  - grafana.yaml
   - node-exporter.yaml
+  - rrdtool.yaml
   - x509-exporter.yaml
 
 patches:
