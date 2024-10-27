@@ -49,6 +49,8 @@ apiVersion: v1
 kind: Service
 metadata:
   name: rrdtool
+  annotations:
+    tailscale.com/expose: "true"
 spec:
   ports:
     - port: 42217
