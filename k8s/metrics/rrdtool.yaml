@@ -1,10 +1,35 @@
 ---
 apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: rrdtool-storage
+spec:
+  capacity:
+    storage: 10Gi
+  volumeMode: Filesystem
+  accessModes:
+    - ReadWriteOnce
+  persistentVolumeReclaimPolicy: Retain
+  storageClassName: local-storage
+  local:
+    path: /opt/data/rrdtool-storage
+  nodeAffinity:
+    required:
+      nodeSelectorTerms:
+        - matchExpressions:
+            - key: kubernetes.io/hostname
+              operator: In
+              values:
+                - ams-metal-01
+...
+---
+apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
   name: rrdtool-storage
-  namespace: metrics
 spec:
+  storageClassName: local-storage
+  volumeName: rrdtool-storage
   accessModes:
     - ReadWriteOnce
   resources:
@@ -35,9 +60,15 @@ spec:
           env:
             - name: TZ
               value: Europe/Amsterdam
+            - name: WRITE_TIMEOUT
+              value: '30'
           volumeMounts:
-            - mountPath: /data
+            - mountPath: /data/db
               name: rrdtool-storage
+              subPath: db
+            - mountPath: /data/journal
+              name: rrdtool-storage
+              subPath: journal
 
       volumes:
         - name: rrdtool-storage
