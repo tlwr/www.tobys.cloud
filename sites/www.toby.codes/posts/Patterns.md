@@ -32,3 +32,18 @@ These are connections which timed out after an hour and are re-established. The
 initial spike in connections is due to a sudden spike in usage (a periodic
 task, using multiple connections). These connections are re-established after
 the idle timeout.
+
+## Damped sine wave failures
+
+In this example we have a chart of 48h, with three peaks, and a damped sine wave pattern of failures.
+
+Similar to the sawtooth pattern above, but even more sinusoidal. In this case
+the retry mechanism has a jitter which more predictably spreads retries.
+
+![A damped sine wave pattern of failures to establish a grpc stream](/images/patterns-damped-sine.png)
+
+_This level of failure for this system is normal, as each server does load
+shedding to distribute load better, these failures represent either rejected
+connections for load distribution, or session expiries. What is abnormal here
+is that start time of all the servers is synced, so initial connections and
+expiries create coincidences of large load._
