@@ -34,6 +34,24 @@ data:
                   action: keep
                   regex: node-exporter
 
+            - job_name: node-exporter-baremetal
+              scrape_interval: 60s
+              scrape_timeout: 60s
+              dns_sd_configs:
+                - names: [pipower.tailscale.svc]
+                  type: AAAA
+                  port: 9100
+                - names: [kleipower.tailscale.svc]
+                  type: AAAA
+                  port: 9100
+                - names: [thinkcentre.tailscale.svc]
+                  type: AAAA
+                  port: 9100
+              relabel_configs:
+                - source_labels: [__meta_dns_name]
+                  target_label: server
+                  regex: '(.*)[.]tailscale[.]svc'
+
         - name: x509-exporter
           scrape_configs:
             - job_name: x509-exporter
@@ -68,40 +86,3 @@ data:
                 - source_labels: [__name__]
                   action: keep
                   regex: haproxy_backend_.*
-
-        - name: smartmeter
-          scrape_configs:
-            - job_name: 63a
-              scrape_interval: 30s
-              scrape_timeout: 20s
-              dns_sd_configs:
-                - names: [pipower.tailscale.svc]
-                  type: AAAA
-                  port: 9220
-            - job_name: kleidijk
-              scrape_interval: 30s
-              scrape_timeout: 20s
-              dns_sd_configs:
-                - names: [kleipower.tailscale.svc]
-                  type: AAAA
-                  port: 9220
-
-        - name: enphase-gateway
-          scrape_configs:
-            - job_name: 63a-solar
-              scrape_interval: 30s
-              scrape_timeout: 20s
-              dns_sd_configs:
-                - names: [pipower.tailscale.svc]
-                  type: AAAA
-                  port: 9365
-
-        - name: unpoller
-          scrape_configs:
-            - job_name: 63-unifi
-              scrape_interval: 60s
-              scrape_timeout: 60s
-              dns_sd_configs:
-                - names: [pipower.tailscale.svc]
-                  type: AAAA
-                  port: 9130
