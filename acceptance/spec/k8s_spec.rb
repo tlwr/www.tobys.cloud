@@ -7,8 +7,8 @@ describe 'kubernetes', type: :feature do
   let(:pod_name) { 'acceptance-tests-static-busybox' }
 
   let(:client) do
-    bzl_ext_path = './external/kubeconfig_home'
-    bzl_ext_kubeconfig = "#{bzl_ext_path}/kubeconfig.yaml"
+    bzl_ext_kubeconfig = Dir.glob('../**/*/kubeconfig.yaml').first
+
     return K8s::Client.config(K8s::Config.load_file(bzl_ext_kubeconfig)) if File.exist?(bzl_ext_kubeconfig)
 
     if ENV['KUBECONFIG']
