@@ -72,6 +72,16 @@ job "grafana-agent" {
                       - names: [pipower]
                         type: A
                         port: 9130
+
+              - name: ecoflow
+                scrape_configs:
+                  - job_name: 63a-ecoflow
+                    scrape_interval: 60s
+                    scrape_timeout: 60s
+                    dns_sd_configs:
+                      - names: [thinkcentre]
+                        type: A
+                        port: 2112
         EOH
       }
 
