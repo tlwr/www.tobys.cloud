@@ -2,8 +2,6 @@ module github.com/tlwr/www.tobys.cloud
 
 go 1.23.7
 
-toolchain go1.23.7
-
 require (
 	github.com/ajstarks/svgo v0.0.0-20211024235047-1546f124cd8b
 	github.com/gomarkdown/markdown v0.0.0-20230922112808-5421fefb8386
