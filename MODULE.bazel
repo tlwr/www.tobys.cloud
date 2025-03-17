@@ -55,7 +55,7 @@ oci.pull(
     platforms = [
         "linux/amd64",
     ],
-    tag = "1.21",
+    tag = "1.23",
 )
 use_repo(oci, "go_alpine_linux", "go_alpine_linux_linux_amd64")
 

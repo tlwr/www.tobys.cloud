@@ -1,6 +1,7 @@
 module github.com/tlwr/www.tobys.cloud
 
-go 1.21.13
+go 1.23.7
+
 toolchain go1.23.7
 
 require (
