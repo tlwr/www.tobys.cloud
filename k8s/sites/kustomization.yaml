@@ -6,7 +6,7 @@ namespace: sites
 
 images:
   - name: ghcr.io/tlwr/www.toby.codes
-    digest: 'sha256:3ed42865c5bcb1b395c9f3c3cd7589271b5eb889a0b2f33288fce720bd151cbc'
+    digest: 'sha256:d31dc859dfe0eeb53ddb0b97bece7d162984a6a2f8cea8919154047c2b6c63dc'
 
   - name: ghcr.io/tlwr/www-tobys-cloud-acceptance
     newTag: 956529e7c18f422d3b1a71469807b02910a883e3
