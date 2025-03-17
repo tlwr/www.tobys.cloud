@@ -6,19 +6,19 @@ namespace: sites
 
 images:
   - name: ghcr.io/tlwr/www.toby.codes
-    digest: 'sha256:5c291acd8e7f1b2138a4c0f3eea9d2f5876e0153f80c62ad9b6785a75adc1d61'
+    digest: 'sha256:3ed42865c5bcb1b395c9f3c3cd7589271b5eb889a0b2f33288fce720bd151cbc'
 
   - name: ghcr.io/tlwr/www-tobys-cloud-acceptance
     newTag: 956529e7c18f422d3b1a71469807b02910a883e3
 
   - name: ghcr.io/tlwr/page-404
-    digest: 'sha256:da420764fee56123413fbf1e859efeef8cae83d909ba1a5c5d516a5bf7e619f0'
+    digest: 'sha256:9c341d5f84984244941270450191f529b544c92538fda3f265facc75705e290a'
 
   - name: ghcr.io/tlwr/assets.tobys.cloud
-    digest: 'sha256:babe8e00e570df93783d878a8054ec264247193aebce27b36366bad584b67835'
+    digest: 'sha256:e0a410a5b670a721a9aee328827e4ed8b41667dca999eec17f8c77abb8318dc2'
 
   - name: ghcr.io/tlwr/mischiefs
-    digest: 'sha256:8bc29d3cb86dab110548780b780075a7cfb788c84a2eb2d62cc2be6c81506862'
+    digest: 'sha256:44c43c07c27fe177b6a239ed488842f023057124bf5a84373ddd856e80ca082c'
 
 resources:
   - namespace.yaml
