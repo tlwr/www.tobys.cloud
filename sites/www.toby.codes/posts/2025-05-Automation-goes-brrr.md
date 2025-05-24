@@ -95,7 +95,7 @@ The transformation operations include:
 * add or replace or remove volume mounts (for a given container)
 * add or replace or remove volumes (for a pod)
 
-We run Istio (as well as envoy, self-managed), so conceivable we could use Istio injection, however for other reasons outside the purview of this short post, we cannot use Istio (or other, non-proprietary tools which do container injection).
+We run Istio (as well as envoy, self-managed), so conceivably we could use Istio injection, however for other reasons outside the purview of this short post, we cannot use Istio (or other, non-proprietary tools which do container injection).
 
 ## So far so good
 
