@@ -37,7 +37,7 @@ job "grafana-agent" {
             configs:
               - name: smartmeter
                 scrape_configs:
-                  - job_name: 63a
+                  - job_name: 63
                     scrape_interval: 30s
                     scrape_timeout: 20s
                     dns_sd_configs:
@@ -55,7 +55,7 @@ job "grafana-agent" {
 
               - name: enphase-gateway
                 scrape_configs:
-                  - job_name: 63a-solar
+                  - job_name: 63-solar
                     scrape_interval: 30s
                     scrape_timeout: 20s
                     dns_sd_configs:
@@ -75,7 +75,7 @@ job "grafana-agent" {
 
               - name: ecoflow
                 scrape_configs:
-                  - job_name: 63a-ecoflow
+                  - job_name: 63-ecoflow
                     scrape_interval: 60s
                     scrape_timeout: 60s
                     dns_sd_configs:

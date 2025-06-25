@@ -18,7 +18,8 @@ job "smart-meter-exporter" {
       config {
         command = "smart-meter-exporter"
         args    = [
-          "-serial-path=/dev/ttyUSB0"
+          "-serial-path=/dev/ttyUSB0",
+          "-interval=${meta.tty_refresh}",
         ]
       }
 
