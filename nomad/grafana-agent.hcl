@@ -41,7 +41,7 @@ job "grafana-agent" {
                     scrape_interval: 30s
                     scrape_timeout: 20s
                     dns_sd_configs:
-                      - names: [pipower]
+                      - names: [pipower.finch-barb.ts.net]
                         type: A
                         port: 9220
 
@@ -49,7 +49,7 @@ job "grafana-agent" {
                     scrape_interval: 30s
                     scrape_timeout: 20s
                     dns_sd_configs:
-                      - names: [kleipower]
+                      - names: [kleipower.finch-barb.ts.net]
                         type: A
                         port: 9220
 
@@ -59,7 +59,7 @@ job "grafana-agent" {
                     scrape_interval: 30s
                     scrape_timeout: 20s
                     dns_sd_configs:
-                      - names: [pipower]
+                      - names: [pipower.finch-barb.ts.net]
                         type: A
                         port: 9365
 
@@ -69,7 +69,7 @@ job "grafana-agent" {
                     scrape_interval: 60s
                     scrape_timeout: 60s
                     dns_sd_configs:
-                      - names: [pipower]
+                      - names: [pipower.finch-barb.ts.net]
                         type: A
                         port: 9130
 
@@ -79,7 +79,7 @@ job "grafana-agent" {
                     scrape_interval: 60s
                     scrape_timeout: 60s
                     dns_sd_configs:
-                      - names: [thinkcentre]
+                      - names: [thinkcentre.finch-barb.ts.net]
                         type: A
                         port: 2112
         EOH
