@@ -69,7 +69,7 @@ job "grafana-agent" {
                     scrape_interval: 60s
                     scrape_timeout: 60s
                     dns_sd_configs:
-                      - names: [pipower.finch-barb.ts.net]
+                      - names: [thinkcentre.finch-barb.ts.net]
                         type: A
                         port: 9130
 
