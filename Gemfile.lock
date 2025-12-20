@@ -78,9 +78,11 @@ GEM
       mime-types-data (~> 3.2015)
     mime-types-data (3.2023.1003)
     multi_json (1.15.0)
+    mutex_m (0.2.0)
     net-http-digest_auth (1.4.1)
     net-http-persistent (4.0.2)
       connection_pool (~> 2.2)
+    nkf (0.2.0)
     nokogiri (1.18.8-arm64-darwin)
       racc (~> 1.4)
     nokogiri (1.18.8-x86_64-linux-gnu)
@@ -119,6 +121,8 @@ DEPENDENCIES
   http
   k8s-ruby
   mechanize
+  mutex_m
+  nkf
   rspec
 
 RUBY VERSION

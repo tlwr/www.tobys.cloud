@@ -51,3 +51,12 @@ rb_test(
     srcs = ["assets.tobys.cloud_spec.rb"],
     args = ["acceptance/spec/assets.tobys.cloud_spec.rb"],
 )
+
+rb_test(
+    name = "jvnl",
+    size = "small",
+    main = "@bundle//bin:rspec",
+    deps = [":spec_helper"],
+    srcs = ["jvnl_spec.rb"],
+    args = ["acceptance/spec/jvnl_spec.rb"],
+)
