@@ -1,0 +1,23 @@
+name = "utilityroom-club"
+main = "src/index.tsx"
+compatibility_date = "2024-01-01"
+
+[build]
+jsx_factory = "h"
+
+[[kv_namespaces]]
+binding = "PROJECTS"
+id = "utilityroom-club-projects"
+
+[[kv_namespaces]]
+binding = "USERS"
+id = "utilityroom-club-users"
+
+[[r2_buckets]]
+binding = "ASSETS"
+bucket_name = "utilityroom-club-assets"  # Replace with actual R2 bucket name after creation
+
+# Routes for custom domain (configure in Cloudflare dashboard or uncomment if needed)
+# [[routes]]
+# pattern = "utilityroom.club/*"
+# zone_id = "your-zone-id"  # Replace with Cloudflare zone ID

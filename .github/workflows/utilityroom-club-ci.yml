@@ -1,0 +1,43 @@
+name: CI for utilityroom.club
+
+on:
+  push:
+    branches: [main]
+    paths: ['sites/utilityroom.club/**']
+  pull_request:
+    branches: [main]
+    paths: ['sites/utilityroom.club/**']
+
+jobs:
+  lint-and-build:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: sites/utilityroom.club
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+          cache-dependency-path: sites/utilityroom.club/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run lint
+        run: npm run lint
+
+      - name: Run typecheck
+        run: npm run typecheck
+
+      - name: Run build
+        run: npm run build
+
+      - name: Run tests
+        run: npm test

@@ -12,3 +12,7 @@ sites/page-404/page-404
 .opencode/**
 .cursor/
 .cursor/**
+
+**/node_modules
+**/.wrangler
+**/dist
