@@ -16,6 +16,7 @@
     "jsxImportSource": "preact",
     "incremental": true,
     "skipLibCheck": true,
+    "types": ["@cloudflare/workers-types"],
     "forceConsistentCasingInFileNames": true
   },
   "include": ["src/**/*"],

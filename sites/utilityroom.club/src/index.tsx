@@ -1,6 +1,6 @@
 /** @jsx h */
 
-import { Hono } from 'hono'
+import { Hono, Context, Next } from 'hono'
 import { cors } from 'hono/cors'
 import { logger } from 'hono/logger'
 import { getCookie, setCookie } from 'hono/cookie'
@@ -16,7 +16,7 @@ type Bindings = {
   ASSETS: R2Bucket
 }
 
-const Layout = ({
+function Layout({
   title,
   children,
   isLoggedIn,
@@ -26,14 +26,15 @@ const Layout = ({
   children: ComponentChildren
   isLoggedIn?: boolean
   currentPage?: string
-}) => (
-  <html lang="en">
-    <head>
-      <meta charset="UTF-8" />
-      <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-      <title>{title}</title>
-      <style>
-        {`
+}) {
+  return (
+    <html lang="en">
+      <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>{title}</title>
+        <style>
+          {`
           @font-face {
             font-family: 'Berkeley Mono';
             src: url('/BerkeleyMono-Regular.woff2') format('woff2'),
@@ -77,55 +78,60 @@ const Layout = ({
           th { background: #f4f4f4; }
           textarea { width: 100%; padding: 5px; border: 1px solid #ccc; border-radius: 1px; font-family: 'Berkeley Mono', monospace; box-sizing: border-box; }
         `}
-      </style>
-    </head>
-    <body>
-      <header
-        style={{
-          textAlign: 'left',
-          marginBottom: '10px',
-          paddingBottom: '10px',
-          borderBottom: '1px solid #ddd',
-        }}
-      >
-        <h1 style={{ margin: '0', fontSize: '24px' }}>
-          <a href="/" style={{ textDecoration: 'none', color: '#333' }}>
-            utilityroom.club
-          </a>
-        </h1>
-      </header>
-      <nav
-        style={{
-          textAlign: 'left',
-          borderBottom: '1px solid #ddd',
-          paddingBottom: '10px',
-          marginBottom: '10px',
-        }}
-      >
-        {currentPage === 'projects' ? (
-          <span>projects</span>
-        ) : (
-          <a href="/">projects</a>
-        )}{' '}
-        |{' '}
-        {currentPage === 'tags' ? <span>tags</span> : <a href="/tags">tags</a>}
-        {isLoggedIn ? (
-          <span>
-            {' '}
-            |{' '}
-            {currentPage === 'admin' ? (
-              <span>admin</span>
-            ) : (
-              <a href="/admin">admin</a>
-            )}{' '}
-            | <a href="/logout">logout</a>
-          </span>
-        ) : null}
-      </nav>
-      {children}
-    </body>
-  </html>
-)
+        </style>
+      </head>
+      <body>
+        <header
+          style={{
+            textAlign: 'left',
+            marginBottom: '10px',
+            paddingBottom: '10px',
+            borderBottom: '1px solid #ddd',
+          }}
+        >
+          <h1 style={{ margin: '0', fontSize: '24px' }}>
+            <a href="/" style={{ textDecoration: 'none', color: '#333' }}>
+              utilityroom.club
+            </a>
+          </h1>
+        </header>
+        <nav
+          style={{
+            textAlign: 'left',
+            borderBottom: '1px solid #ddd',
+            paddingBottom: '10px',
+            marginBottom: '10px',
+          }}
+        >
+          {currentPage === 'projects' ? (
+            <span>projects</span>
+          ) : (
+            <a href="/">projects</a>
+          )}{' '}
+          |{' '}
+          {currentPage === 'tags' ? (
+            <span>tags</span>
+          ) : (
+            <a href="/tags">tags</a>
+          )}
+          {isLoggedIn ? (
+            <span>
+              {' '}
+              |{' '}
+              {currentPage === 'admin' ? (
+                <span>admin</span>
+              ) : (
+                <a href="/admin">admin</a>
+              )}{' '}
+              | <a href="/logout">logout</a>
+            </span>
+          ) : null}
+        </nav>
+        {children}
+      </body>
+    </html>
+  )
+}
 
 Layout.defaultProps = {
   isLoggedIn: false,
@@ -138,11 +144,15 @@ app.use('*', cors())
 app.use('*', logger())
 
 // eslint-disable-next-line consistent-return
-const authMiddleware = async (c, next) => {
+const authMiddleware = async (
+  c: Context<{ Bindings: Bindings }>,
+  next: Next,
+) => {
   if (getCookie(c, 'session') !== 'loggedin') {
     return c.redirect('/login')
   }
-  await next()
+  // eslint-disable-next-line no-return-await
+  return await next()
 }
 
 // Home page - list all projects
@@ -218,7 +228,7 @@ app.get('/project/:slug', async (c) => {
   const htmlContent = marked(project.content)
   const tagsHtml =
     project.tags && project.tags.length > 0
-      ? `<p>${project.tags.map((tag) => `<a href="/tag/${tag}">${tag}</a>`).join(', ')}</p>`
+      ? `<p>${project.tags.map((tag: string) => `<a href="/tag/${tag}">${tag}</a>`).join(', ')}</p>`
       : ''
   const content = `${project.visible ? '' : '<p>[invisible]</p>'}${tagsHtml}${htmlContent}`
 
