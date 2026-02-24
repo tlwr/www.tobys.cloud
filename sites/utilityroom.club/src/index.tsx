@@ -4,7 +4,7 @@ import { Hono, Context, Next } from 'hono'
 import { cors } from 'hono/cors'
 import { logger } from 'hono/logger'
 import { csrf } from 'hono/csrf'
-import { getCookie, setCookie } from 'hono/cookie'
+import { getSignedCookie, setSignedCookie, deleteCookie } from 'hono/cookie'
 import { marked } from 'marked'
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 import { h, ComponentChildren } from 'preact'
@@ -15,6 +15,52 @@ type Bindings = {
   PROJECTS: KVNamespace
   USERS: KVNamespace
   ASSETS: R2Bucket
+  SESSION_SECRET: string
+}
+
+function getSessionSecret(c: Context<{ Bindings: Bindings }>): string {
+  const secret = c.env.SESSION_SECRET
+  if (!secret && process.env.NODE_ENV === 'production') {
+    throw new Error('SESSION_SECRET must be set in production')
+  }
+  return secret || 'dev-session-secret-12345'
+}
+
+function getIsLoggedIn(c: Context<{ Bindings: Bindings }>): boolean {
+  try {
+    const sessionSecret = getSessionSecret(c)
+    const sessionCookie = getSignedCookie(
+      c,
+      'session',
+      sessionSecret,
+    ) as unknown as string | undefined
+    if (!sessionCookie) return false
+    const data = JSON.parse(sessionCookie)
+    return typeof data.username === 'string' && data.username.trim().length > 0
+  } catch {
+    return false
+  }
+}
+
+// Helper to authenticate and set session cookie
+async function loginUser(
+  c: Context<{ Bindings: Bindings }>,
+  username: string,
+  password: string,
+): Promise<boolean> {
+  const hashedPassword = await c.env.USERS.get(username)
+  if (hashedPassword && (await bcrypt.compare(password, hashedPassword))) {
+    const sessionData = { username, loggedInAt: Date.now() }
+    const sessionSecret = getSessionSecret(c)
+    setSignedCookie(c, 'session', JSON.stringify(sessionData), sessionSecret, {
+      httpOnly: true,
+      secure: true,
+      sameSite: 'strict',
+      maxAge: 86400,
+    })
+    return true
+  }
+  return false
 }
 
 function Layout({
@@ -157,7 +203,15 @@ const authMiddleware = async (
   c: Context<{ Bindings: Bindings }>,
   next: Next,
 ) => {
-  if (getCookie(c, 'session') !== 'loggedin') {
+  const sessionSecret = getSessionSecret(c)
+  const sessionCookie = (await getSignedCookie(c, 'session', sessionSecret)) as
+    | string
+    | undefined
+  if (!sessionCookie) {
+    return c.redirect('/login')
+  }
+  const sessionData = JSON.parse(sessionCookie)
+  if (!sessionData.username) {
     return c.redirect('/login')
   }
   // eslint-disable-next-line no-return-await
@@ -178,7 +232,7 @@ app.get('/', async (c) => {
     }
   }
 
-  const isLoggedIn = getCookie(c, 'session') === 'loggedin'
+  const isLoggedIn = getIsLoggedIn(c)
   const html = render(
     <Layout
       title="utilityroom.club"
@@ -212,7 +266,7 @@ app.get('/project/:slug{[A-Za-z0-9-]*[.]json}', async (c) => {
   }
 
   const project = JSON.parse(data)
-  const isLoggedIn = getCookie(c, 'session') === 'loggedin'
+  const isLoggedIn = getIsLoggedIn(c)
   if (!isLoggedIn && !project.visible) {
     return c.notFound()
   }
@@ -229,7 +283,7 @@ app.get('/project/:slug', async (c) => {
   }
 
   const project = JSON.parse(data)
-  const isLoggedIn = getCookie(c, 'session') === 'loggedin'
+  const isLoggedIn = getIsLoggedIn(c)
   if (!isLoggedIn && !project.visible) {
     return c.notFound()
   }
@@ -254,9 +308,8 @@ app.get('/project/:slug', async (c) => {
   return c.html(html)
 })
 
-// Login page
 app.get('/login', (c) => {
-  const isLoggedIn = getCookie(c, 'session') === 'loggedin'
+  const isLoggedIn = getIsLoggedIn(c)
   const html = render(
     <Layout title="Login - utilityroom.club" isLoggedIn={isLoggedIn}>
       <form className="login-form" method="post" action="/login">
@@ -277,18 +330,15 @@ app.post('/login', async (c) => {
   const body = await c.req.parseBody()
   const { username, password } = body
   if (typeof username === 'string' && typeof password === 'string') {
-    const hashedPassword = await c.env.USERS.get(username as string)
-    if (hashedPassword && (await bcrypt.compare(password, hashedPassword))) {
-      setCookie(c, 'session', 'loggedin')
+    if (await loginUser(c, username, password)) {
       return c.redirect('/')
     }
   }
   return c.text('Invalid credentials', 401)
 })
 
-// Logout route
 app.get('/logout', (c) => {
-  setCookie(c, 'session', '', { maxAge: 0 })
+  deleteCookie(c, 'session')
   return c.redirect('/')
 })
 
@@ -366,7 +416,6 @@ app.get('/admin', authMiddleware, async (c) => {
   return c.html(`<!DOCTYPE html>${html}`)
 })
 
-// Edit project page
 app.get('/admin/edit/:slug', authMiddleware, async (c) => {
   const slug = c.req.param('slug')
   const data = await c.env.PROJECTS.get(slug)
@@ -516,7 +565,6 @@ app.post('/admin/new', authMiddleware, async (c) => {
   return c.redirect(`/project/${slug}`)
 })
 
-// Tags page
 app.get('/tags', async (c) => {
   const projects = await c.env.PROJECTS.list()
   const allTags = new Set<string>()
@@ -530,7 +578,7 @@ app.get('/tags', async (c) => {
     }
   }
   const tags = Array.from(allTags).sort()
-  const isLoggedIn = getCookie(c, 'session') === 'loggedin'
+  const isLoggedIn = getIsLoggedIn(c)
   const html = render(
     <Layout
       title="tags - utilityroom.club"
@@ -558,7 +606,6 @@ app.get('/tags', async (c) => {
   return c.html(`<!DOCTYPE html>${html}`)
 })
 
-// Individual tag page
 app.get('/tag/:tag', async (c) => {
   const tag = c.req.param('tag')
   const projects = await c.env.PROJECTS.list()
@@ -576,7 +623,7 @@ app.get('/tag/:tag', async (c) => {
       }
     }
   }
-  const isLoggedIn = getCookie(c, 'session') === 'loggedin'
+  const isLoggedIn = getIsLoggedIn(c)
   const html = render(
     <Layout title={`${tag} - utilityroom.club`} isLoggedIn={isLoggedIn}>
       <h2>projects tagged with [{tag}]</h2>
@@ -594,7 +641,6 @@ app.get('/tag/:tag', async (c) => {
   return c.html(`<!DOCTYPE html>${html}`)
 })
 
-// Ready endpoint for health checks
 app.get('/ready', (c) => c.text('OK'))
 
 export default app
