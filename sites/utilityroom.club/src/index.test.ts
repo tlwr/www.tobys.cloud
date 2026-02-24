@@ -11,7 +11,64 @@ beforeAll(async () => {
     r2Buckets: ['ASSETS'],
   })
   // Seed projects for tests
-  await mf.dispatchFetch('http://localhost/seed')
+  const sampleProjects = [
+    {
+      slug: 'residential-heat-pump-installation',
+      content: `# Residential Heat Pump Installation
+
+![Heat pump installation](https://pbs.twimg.com/media/GzxFgYFWEAAXcez?format=jpg&name=medium)
+
+This project showcases a meticulously installed heat pump system in a modern residential utility room.
+
+## Key Features
+- High-efficiency variable speed compressor
+- Smart thermostat integration
+- Proper ductwork sealing
+- Energy monitoring system
+
+## Installation Details
+- Location: Utility room
+- Equipment: Variable speed heat pump
+- Controls: Smart thermostat
+- Monitoring: Energy usage tracking`,
+      createdAt: new Date().toISOString(),
+      tags: ['hvac', 'heat-pump'],
+      visible: true,
+    },
+    {
+      slug: 'commercial-hvac-retrofit',
+      content: `# Commercial HVAC Retrofit
+
+This project involved retrofitting an existing commercial building with modern VRF (Variable Refrigerant Flow) system.
+
+## System Overview
+- VRF technology for efficient cooling and heating
+- Modular design for scalability
+- Advanced controls for zone management
+
+## Benefits
+- 30% energy savings
+- Improved comfort control
+- Reduced maintenance costs
+- Future-proof design`,
+      createdAt: new Date().toISOString(),
+      tags: ['hvac', 'commercial', 'retrofit'],
+      visible: false,
+    },
+  ]
+
+  const projectsKV = await mf.getKVNamespace('PROJECTS')
+  for (const project of sampleProjects) {
+    await projectsKV.put(
+      project.slug,
+      JSON.stringify({
+        content: project.content,
+        createdAt: project.createdAt,
+        tags: project.tags,
+        visible: project.visible,
+      }),
+    )
+  }
   // Seed admin user for tests
   const hashedPassword = await bcrypt.hash('secret', 10)
   const usersKV = await mf.getKVNamespace('USERS')
@@ -65,15 +122,6 @@ describe('Utility Room Club', () => {
         { redirect: 'manual' },
       )
       expect(response.status).toBe(404)
-    })
-  })
-
-  describe('Seed endpoint', () => {
-    it('seeds projects and user successfully', async () => {
-      const response = await mf.dispatchFetch('http://localhost/seed')
-      expect(response.status).toBe(200)
-      const text = await response.text()
-      expect(text).toContain('seeded successfully')
     })
   })
 

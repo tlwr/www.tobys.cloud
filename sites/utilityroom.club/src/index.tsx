@@ -245,69 +245,6 @@ app.get('/project/:slug', async (c) => {
   return c.html(html)
 })
 
-// Seed route for development (remove in production)
-app.get('/seed', async (c) => {
-  const sampleProjects = [
-    {
-      slug: 'residential-heat-pump-installation',
-      content: `# Residential Heat Pump Installation
-
-![Heat pump installation](https://pbs.twimg.com/media/GzxFgYFWEAAXcez?format=jpg&name=medium)
-
-This project showcases a meticulously installed heat pump system in a modern residential utility room.
-
-## Key Features
-- High-efficiency variable speed compressor
-- Smart thermostat integration
-- Proper ductwork sealing
-- Energy monitoring system
-
-## Installation Details
-- Location: Utility room
-- Equipment: Variable speed heat pump
-- Controls: Smart thermostat
-- Monitoring: Energy usage tracking`,
-      createdAt: new Date().toISOString(),
-      tags: ['hvac', 'heat-pump'],
-      visible: true,
-    },
-    {
-      slug: 'commercial-hvac-retrofit',
-      content: `# Commercial HVAC Retrofit
-
-This project involved retrofitting an existing commercial building with modern VRF (Variable Refrigerant Flow) system.
-
-## System Overview
-- VRF technology for efficient cooling and heating
-- Modular design for scalability
-- Advanced controls for zone management
-
-## Benefits
-- 30% energy savings
-- Improved comfort control
-- Reduced maintenance costs
-- Future-proof design`,
-      createdAt: new Date().toISOString(),
-      tags: ['hvac', 'commercial', 'retrofit'],
-      visible: false,
-    },
-  ]
-
-  for (const project of sampleProjects) {
-    await c.env.PROJECTS.put(
-      project.slug,
-      JSON.stringify({
-        content: project.content,
-        createdAt: new Date().toISOString(),
-        tags: project.tags,
-        visible: true,
-      }),
-    )
-  }
-
-  return c.text('Sample projects seeded successfully')
-})
-
 // Login page
 app.get('/login', (c) => {
   const isLoggedIn = getCookie(c, 'session') === 'loggedin'
