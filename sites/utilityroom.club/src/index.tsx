@@ -585,4 +585,7 @@ app.get('/tag/:tag', async (c) => {
   return c.html(`<!DOCTYPE html>${html}`)
 })
 
+// Ready endpoint for health checks
+app.get('/ready', (c) => c.text('OK'))
+
 export default app
