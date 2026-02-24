@@ -3,6 +3,7 @@
 import { Hono, Context, Next } from 'hono'
 import { cors } from 'hono/cors'
 import { logger } from 'hono/logger'
+import { csrf } from 'hono/csrf'
 import { getCookie, setCookie } from 'hono/cookie'
 import { marked } from 'marked'
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -142,6 +143,14 @@ const app = new Hono<{ Bindings: Bindings }>()
 
 app.use('*', cors())
 app.use('*', logger())
+app.use(
+  csrf({
+    origin:
+      process.env.NODE_ENV === 'production'
+        ? 'https://utilityroom.club'
+        : ['http://localhost:8787', 'http://localhost'],
+  }),
+)
 
 // eslint-disable-next-line consistent-return
 const authMiddleware = async (

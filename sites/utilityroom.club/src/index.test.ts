@@ -6,6 +6,7 @@ let mf: Miniflare
 
 beforeAll(async () => {
   mf = new Miniflare({
+    compatibilityDate: '2025-04-02',
     modules: [{ type: 'ESModule', path: 'dist/index.js' }],
     kvNamespaces: ['PROJECTS', 'USERS'],
     r2Buckets: ['ASSETS'],
