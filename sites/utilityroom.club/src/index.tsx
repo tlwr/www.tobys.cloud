@@ -7,6 +7,7 @@ import { csrf } from 'hono/csrf'
 import { getSignedCookie, setSignedCookie, deleteCookie } from 'hono/cookie'
 import { marked } from 'marked'
 import render from 'preact-render-to-string'
+import { ComponentChildren } from 'preact'
 import bcrypt from 'bcryptjs'
 import { UserSchema } from './schemas/user'
 
