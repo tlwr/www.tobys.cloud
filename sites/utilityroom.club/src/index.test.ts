@@ -1,5 +1,6 @@
 import { describe, it, expect, beforeAll, afterAll } from 'vitest'
 import { Miniflare } from 'miniflare'
+import bcrypt from 'bcryptjs'
 
 let mf: Miniflare
 
@@ -11,6 +12,10 @@ beforeAll(async () => {
   })
   // Seed projects for tests
   await mf.dispatchFetch('http://localhost/seed')
+  // Seed admin user for tests
+  const hashedPassword = await bcrypt.hash('secret', 10)
+  const usersKV = await mf.getKVNamespace('USERS')
+  await usersKV.put('admin', hashedPassword)
 })
 
 afterAll(async () => {

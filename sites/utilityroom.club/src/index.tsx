@@ -305,11 +305,7 @@ This project involved retrofitting an existing commercial building with modern V
     )
   }
 
-  // Seed admin user
-  const hashedPassword = await bcrypt.hash('secret', 10)
-  await c.env.USERS.put('admin', hashedPassword)
-
-  return c.text('Sample projects and user seeded successfully')
+  return c.text('Sample projects seeded successfully')
 })
 
 // Login page
