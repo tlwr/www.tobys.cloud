@@ -6,10 +6,9 @@ import { logger } from 'hono/logger'
 import { csrf } from 'hono/csrf'
 import { getSignedCookie, setSignedCookie, deleteCookie } from 'hono/cookie'
 import { marked } from 'marked'
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-import { h, ComponentChildren } from 'preact'
 import render from 'preact-render-to-string'
 import bcrypt from 'bcryptjs'
+import { UserSchema } from './schemas/user'
 
 type Bindings = {
   PROJECTS: KVNamespace
@@ -48,8 +47,17 @@ async function loginUser(
   username: string,
   password: string,
 ): Promise<boolean> {
-  const hashedPassword = await c.env.USERS.get(username)
-  if (hashedPassword && (await bcrypt.compare(password, hashedPassword))) {
+  const userData = await c.env.USERS.get(username)
+  if (!userData) return false
+
+  const userParse = UserSchema.safeParse(JSON.parse(userData))
+  if (!userParse.success) {
+    console.error('Invalid user data in KV:', userParse.error)
+    return false
+  }
+
+  const { hashedPassword } = userParse.data
+  if (await bcrypt.compare(password, hashedPassword)) {
     const sessionData = { username, loggedInAt: Date.now() }
     const sessionSecret = getSessionSecret(c)
     setSignedCookie(c, 'session', JSON.stringify(sessionData), sessionSecret, {

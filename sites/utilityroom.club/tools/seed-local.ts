@@ -98,8 +98,9 @@ async function main() {
 
     // Seed admin user
     const hashedPassword = await bcrypt.hash('secret', 10)
+    const userData = JSON.stringify({ username: 'admin', hashedPassword })
     execSync(
-      `wrangler kv key put --local --binding=USERS "admin" '${hashedPassword}'`,
+      `wrangler kv key put --local --binding=USERS "admin" '${userData}'`,
       { stdio: 'inherit' },
     )
 
