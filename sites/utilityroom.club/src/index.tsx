@@ -16,30 +16,26 @@ type Bindings = {
   USERS: KVNamespace
   ASSETS: R2Bucket
   SESSION_SECRET: string
+  NODE_ENV: string
 }
 
 function getSessionSecret(c: Context<{ Bindings: Bindings }>): string {
   const secret = c.env.SESSION_SECRET
-  if (!secret && process.env.NODE_ENV === 'production') {
+  if (!secret && c.env.NODE_ENV === 'production') {
     throw new Error('SESSION_SECRET must be set in production')
   }
   return secret || 'dev-session-secret-12345'
 }
 
-function getIsLoggedIn(c: Context<{ Bindings: Bindings }>): boolean {
-  try {
-    const sessionSecret = getSessionSecret(c)
-    const sessionCookie = getSignedCookie(
-      c,
-      'session',
-      sessionSecret,
-    ) as unknown as string | undefined
-    if (!sessionCookie) return false
-    const data = JSON.parse(sessionCookie)
-    return typeof data.username === 'string' && data.username.trim().length > 0
-  } catch {
-    return false
-  }
+async function getIsLoggedIn(
+  c: Context<{ Bindings: Bindings }>,
+): Promise<boolean> {
+  const sessionSecret = getSessionSecret(c)
+  const username = await getSignedCookie(c, sessionSecret, 'username')
+
+  // signed cookie is not valid
+  if (username === false) return false
+  return !!username
 }
 
 // Helper to authenticate and set session cookie
@@ -58,18 +54,44 @@ async function loginUser(
   }
 
   const { hashedPassword } = userParse.data
-  if (await bcrypt.compare(password, hashedPassword)) {
-    const sessionData = { username, loggedInAt: Date.now() }
-    const sessionSecret = getSessionSecret(c)
-    setSignedCookie(c, 'session', JSON.stringify(sessionData), sessionSecret, {
-      httpOnly: true,
-      secure: true,
-      sameSite: 'strict',
-      maxAge: 86400,
-    })
-    return true
+  const result = await bcrypt.compare(password, hashedPassword)
+
+  if (!result) {
+    return false
   }
-  return false
+
+  const sessionSecret = getSessionSecret(c)
+  const options = {
+    httpOnly: true,
+    secure: false,
+    sameSite: 'strict' as const,
+    maxAge: 86400,
+  }
+
+  await Promise.all([
+    setSignedCookie(c, 'username', username, sessionSecret, options),
+    setSignedCookie(
+      c,
+      'loggedInAt',
+      Date.now().toString(),
+      sessionSecret,
+      options,
+    ),
+  ])
+
+  return true
+}
+
+const authMiddleware = async (
+  c: Context<{ Bindings: Bindings }>,
+  next: Next,
+) => {
+  const isLoggedIn = await getIsLoggedIn(c)
+  if (isLoggedIn) {
+    await next()
+  } else {
+    return c.redirect('/login')
+  }
 }
 
 function Layout({
@@ -198,34 +220,17 @@ const app = new Hono<{ Bindings: Bindings }>()
 
 app.use('*', cors())
 app.use('*', logger())
-app.use(
-  csrf({
+
+app.use('*', async (c, next) => {
+  const middleware = csrf({
     origin:
-      process.env.NODE_ENV === 'production'
+      c.env.NODE_ENV === 'production'
         ? 'https://utilityroom.club'
         : ['http://localhost:8787', 'http://localhost'],
-  }),
-)
+  })
 
-// eslint-disable-next-line consistent-return
-const authMiddleware = async (
-  c: Context<{ Bindings: Bindings }>,
-  next: Next,
-) => {
-  const sessionSecret = getSessionSecret(c)
-  const sessionCookie = (await getSignedCookie(c, 'session', sessionSecret)) as
-    | string
-    | undefined
-  if (!sessionCookie) {
-    return c.redirect('/login')
-  }
-  const sessionData = JSON.parse(sessionCookie)
-  if (!sessionData.username) {
-    return c.redirect('/login')
-  }
-  // eslint-disable-next-line no-return-await
-  return await next()
-}
+  return middleware(c, next)
+})
 
 // Home page - list all projects
 app.get('/', async (c) => {
@@ -241,7 +246,7 @@ app.get('/', async (c) => {
     }
   }
 
-  const isLoggedIn = getIsLoggedIn(c)
+  const isLoggedIn = await getIsLoggedIn(c)
   const html = render(
     <Layout
       title="utilityroom.club"
@@ -275,7 +280,7 @@ app.get('/project/:slug{[A-Za-z0-9-]*[.]json}', async (c) => {
   }
 
   const project = JSON.parse(data)
-  const isLoggedIn = getIsLoggedIn(c)
+  const isLoggedIn = await getIsLoggedIn(c)
   if (!isLoggedIn && !project.visible) {
     return c.notFound()
   }
@@ -292,7 +297,7 @@ app.get('/project/:slug', async (c) => {
   }
 
   const project = JSON.parse(data)
-  const isLoggedIn = getIsLoggedIn(c)
+  const isLoggedIn = await getIsLoggedIn(c)
   if (!isLoggedIn && !project.visible) {
     return c.notFound()
   }
@@ -317,8 +322,13 @@ app.get('/project/:slug', async (c) => {
   return c.html(html)
 })
 
-app.get('/login', (c) => {
-  const isLoggedIn = getIsLoggedIn(c)
+app.get('/login', async (c) => {
+  const isLoggedIn = await getIsLoggedIn(c)
+
+  if (isLoggedIn) {
+    return c.redirect('/admin')
+  }
+
   const html = render(
     <Layout title="Login - utilityroom.club" isLoggedIn={isLoggedIn}>
       <form className="login-form" method="post" action="/login">
@@ -587,7 +597,7 @@ app.get('/tags', async (c) => {
     }
   }
   const tags = Array.from(allTags).sort()
-  const isLoggedIn = getIsLoggedIn(c)
+  const isLoggedIn = await getIsLoggedIn(c)
   const html = render(
     <Layout
       title="tags - utilityroom.club"
@@ -632,7 +642,7 @@ app.get('/tag/:tag', async (c) => {
       }
     }
   }
-  const isLoggedIn = getIsLoggedIn(c)
+  const isLoggedIn = await getIsLoggedIn(c)
   const html = render(
     <Layout title={`${tag} - utilityroom.club`} isLoggedIn={isLoggedIn}>
       <h2>projects tagged with [{tag}]</h2>

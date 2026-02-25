@@ -13,6 +13,7 @@ module.exports = {
   },
   rules: {
     'no-console': 'off',
+    'consistent-return': 'off',
     'react/react-in-jsx-scope': 'off', // Not needed in Preact
     'react/jsx-uses-react': 'off', // Not needed in Preact
     'react/prop-types': 'off', // TypeScript handles this

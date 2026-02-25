@@ -1,8 +1,30 @@
 import { describe, it, expect, beforeAll, afterAll } from 'vitest'
 import { Miniflare } from 'miniflare'
 import bcrypt from 'bcryptjs'
+import crypto from 'crypto'
 
 let mf: Miniflare
+
+function createSignedSessionCookies(data: {
+  username: string
+  loggedInAt: number
+}): { username: string; loggedInAt: string } {
+  const secret = 'dev-session-secret-12345'
+  const usernameValue = data.username
+  const loggedInAtValue = data.loggedInAt.toString()
+  const usernameSig = crypto
+    .createHmac('sha256', secret)
+    .update(usernameValue)
+    .digest('base64')
+  const loggedInAtSig = crypto
+    .createHmac('sha256', secret)
+    .update(loggedInAtValue)
+    .digest('base64')
+  return {
+    username: `${usernameValue}.${usernameSig}`,
+    loggedInAt: `${loggedInAtValue}.${loggedInAtSig}`,
+  }
+}
 
 beforeAll(async () => {
   mf = new Miniflare({
@@ -73,7 +95,10 @@ This project involved retrofitting an existing commercial building with modern V
   // Seed admin user for tests
   const hashedPassword = await bcrypt.hash('secret', 10)
   const usersKV = await mf.getKVNamespace('USERS')
-  await usersKV.put('admin', hashedPassword)
+  await usersKV.put(
+    'admin',
+    JSON.stringify({ username: 'admin', hashedPassword }),
+  )
 })
 
 afterAll(async () => {
@@ -110,7 +135,13 @@ describe('Utility Room Club', () => {
     it('renders commercial project', async () => {
       const response = await mf.dispatchFetch(
         'http://localhost/project/commercial-hvac-retrofit',
-        { redirect: 'manual', headers: { cookie: 'session=loggedin' } },
+        {
+          redirect: 'manual',
+          headers: {
+            cookie: `username=${createSignedSessionCookies({ username: 'admin', loggedInAt: Date.now() }).username}; loggedInAt=${createSignedSessionCookies({ username: 'admin', loggedInAt: Date.now() }).loggedInAt}`,
+            Origin: 'http://localhost:8787',
+          },
+        },
       )
       expect(response.status).toBe(200)
       const html = await response.text()
@@ -139,7 +170,10 @@ describe('Utility Room Club', () => {
       const response = await mf.dispatchFetch('http://localhost/login', {
         method: 'POST',
         body: new URLSearchParams({ username: 'admin', password: 'wrong' }),
-        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded',
+          Origin: 'http://localhost:8787',
+        },
       })
       expect(response.status).toBe(401)
       const text = await response.text()
@@ -166,41 +200,69 @@ describe('Utility Room Club', () => {
 
     routes.forEach((route) => {
       it(`redirect to login if not authenticated: ${route.method} ${route.url}`, async () => {
+        const extra =
+          route.method === 'POST'
+            ? {
+                headers: {
+                  Origin: 'http://localhost:8787',
+                },
+              }
+            : {}
         const response = await mf.dispatchFetch(
           `http://localhost${route.url}`,
-          { method: route.method, body: route.body, redirect: 'manual' },
+          {
+            method: route.method,
+            body: route.body,
+            redirect: 'manual',
+            ...extra,
+          },
         )
         expect(response.status).toBe(302)
         expect(response.headers.get('location')).toBe('/login')
       })
-    })
-  })
 
-  describe('Create new project', () => {
-    describe('Create new project', () => {
-      it('rejects new project with conflicting slug', async () => {
-        const response = await mf.dispatchFetch('http://localhost/admin/new', {
-          method: 'POST',
-          body: new URLSearchParams({
-            title: 'Residential Heat Pump Installation',
-          }),
-          headers: { cookie: 'session=loggedin' },
-          redirect: 'manual',
+      describe('Create new project', () => {
+        it('rejects new project with conflicting slug', async () => {
+          const response = await mf.dispatchFetch(
+            'http://localhost/admin/new',
+            {
+              method: 'POST',
+              body: new URLSearchParams({
+                title: 'Residential Heat Pump Installation',
+              }),
+              headers: {
+                cookie: `username=${createSignedSessionCookies({ username: 'admin', loggedInAt: Date.now() }).username}; loggedInAt=${createSignedSessionCookies({ username: 'admin', loggedInAt: Date.now() }).loggedInAt}`,
+                Origin: 'http://localhost:8787',
+              },
+              redirect: 'manual',
+            },
+          )
+          expect(response.status).toBe(400)
+          const text = await response.text()
+          expect(text).toBe('Slug already exists')
         })
-        expect(response.status).toBe(400)
-        const text = await response.text()
-        expect(text).toBe('Slug already exists')
-      })
 
-      it('creates new project successfully', async () => {
-        const response = await mf.dispatchFetch('http://localhost/admin/new', {
-          method: 'POST',
-          body: new URLSearchParams({ title: 'Test Project' }),
-          headers: { cookie: 'session=loggedin' },
-          redirect: 'manual',
+        it('creates new project successfully', async () => {
+          const timestamp = Date.now()
+          const response = await mf.dispatchFetch(
+            'http://localhost/admin/new',
+            {
+              method: 'POST',
+              body: new URLSearchParams({
+                title: `Test Project ${timestamp}`,
+              }),
+              headers: {
+                cookie: `username=${createSignedSessionCookies({ username: 'admin', loggedInAt: timestamp }).username}; loggedInAt=${createSignedSessionCookies({ username: 'admin', loggedInAt: timestamp }).loggedInAt}`,
+                Origin: 'http://localhost:8787',
+              },
+              redirect: 'manual',
+            },
+          )
+          expect(response.status).toBe(302)
+          expect(response.headers.get('location')).toBe(
+            `/project/test-project-${timestamp}`,
+          )
         })
-        expect(response.status).toBe(302)
-        expect(response.headers.get('location')).toBe('/project/test-project')
       })
     })
   })
