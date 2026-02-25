@@ -113,35 +113,15 @@ function Layout({
         <title>{title}</title>
         <style>
           {`
-          @font-face {
-            font-family: 'Berkeley Mono';
-            src: url('/BerkeleyMono-Regular.woff2') format('woff2'),
-                 url('/BerkeleyMono-Regular.woff') format('woff');
-            font-weight: 400;
-            font-style: normal;
-          }
-          @font-face {
-            font-family: 'Berkeley Mono';
-            src: url('/BerkeleyMono-Bold.woff2') format('woff2'),
-                 url('/BerkeleyMono-Bold.woff') format('woff');
-            font-weight: 700;
-            font-style: normal;
-          }
-          @font-face {
-            font-family: 'Berkeley Mono';
-            src: url('/BerkeleyMono-BoldItalic.woff2') format('woff2'),
-                 url('/BerkeleyMono-BoldItalic.woff') format('woff');
-            font-weight: 700;
-            font-style: italic;
-          }
-          body { font-family: 'Berkeley Mono', monospace; max-width: 800px; margin: 0 auto; padding: 10px; }
-          h1 { color: #333; }
+          @import url('https://fonts.cdnfonts.com/css/din-1451-std');
+          body { font-family: 'DIN 1451 Std', sans-serif; max-width: 800px; margin: 0 auto; padding: 10px; }
+          h1 { color: #333; text-transform: uppercase; }
           .project { margin: 10px 0; padding: 10px; border: 1px solid #ddd; border-radius: 1px; }
           a { text-decoration: none; color: #007bff; }
           a:hover { text-decoration: underline; }
-          nav { margin-bottom: 10px; }
+          nav { margin-bottom: 10px; text-transform: uppercase; }
           .content { line-height: 1.6; }
-          .content h1, .content h2, .content h3 { color: #333; margin-top: 10px; }
+          .content h1, .content h2, .content h3 { color: #333; margin-top: 10px; text-transform: uppercase; }
           .content ul { padding-left: 10px; }
           .content li { margin: 5px 0; }
           .content img { max-width: 100%; height: auto; display: block; margin: 10px 0; }
@@ -154,7 +134,7 @@ function Layout({
           table { width: 100%; border-collapse: collapse; margin: 10px 0; }
           th, td { border: 1px solid #ddd; padding: 5px; text-align: left; }
           th { background: #f4f4f4; }
-          textarea { width: 100%; padding: 5px; border: 1px solid #ccc; border-radius: 1px; font-family: 'Berkeley Mono', monospace; box-sizing: border-box; }
+          textarea { width: 100%; padding: 5px; border: 1px solid #ccc; border-radius: 1px; font-family: 'DIN 1451 Std', sans-serif; box-sizing: border-box; }
         `}
         </style>
       </head>
