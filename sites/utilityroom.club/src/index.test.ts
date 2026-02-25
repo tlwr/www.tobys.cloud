@@ -1,8 +1,24 @@
 import { describe, it, expect, beforeAll, afterAll } from 'vitest'
 import { Miniflare } from 'miniflare'
 import bcrypt from 'bcryptjs'
+import * as esbuild from 'esbuild'
+import path from 'path'
+import { fileURLToPath } from 'url'
+
+// eslint-disable-next-line no-underscore-dangle
+const __dirname = path.dirname(fileURLToPath(import.meta.url))
 
 let mf: Miniflare
+
+async function buildProject() {
+  await esbuild.build({
+    entryPoints: [path.resolve(__dirname, 'index.tsx')],
+    outfile: path.resolve(__dirname, '../dist/index.js'),
+    bundle: true,
+    format: 'esm',
+    platform: 'node',
+  })
+}
 
 async function getAuthenticatedHeaders(): Promise<Record<string, unknown>> {
   const params = new URLSearchParams({ username: 'admin', password: 'secret' })
@@ -26,6 +42,7 @@ async function getAuthenticatedHeaders(): Promise<Record<string, unknown>> {
 }
 
 beforeAll(async () => {
+  await buildProject()
   mf = new Miniflare({
     compatibilityDate: '2025-04-02',
     modules: [{ type: 'ESModule', path: 'dist/index.js' }],
