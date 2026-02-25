@@ -357,7 +357,8 @@ app.post('/login', async (c) => {
 })
 
 app.get('/logout', (c) => {
-  deleteCookie(c, 'session')
+  deleteCookie(c, 'username')
+  deleteCookie(c, 'loggedInAt')
   return c.redirect('/')
 })
 

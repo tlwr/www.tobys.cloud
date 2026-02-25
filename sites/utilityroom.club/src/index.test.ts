@@ -266,6 +266,20 @@ describe('Utility Room Club', () => {
           )
         })
       })
+
+      it('logs out successfully', async () => {
+        const logoutResponse = await mf.dispatchFetch(
+          'http://localhost/logout',
+          {
+            ...(await getAuthenticatedHeaders()),
+          },
+        )
+        expect(logoutResponse.status).toBe(302)
+        expect(logoutResponse.headers.get('location')).toBe('/')
+        const setCookie = logoutResponse.headers.get('set-cookie')!
+        expect(setCookie).toContain('username=')
+        expect(setCookie).toContain('Max-Age=0')
+      })
     })
   })
 })
