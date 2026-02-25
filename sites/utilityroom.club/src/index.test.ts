@@ -1,28 +1,27 @@
 import { describe, it, expect, beforeAll, afterAll } from 'vitest'
 import { Miniflare } from 'miniflare'
 import bcrypt from 'bcryptjs'
-import crypto from 'crypto'
 
 let mf: Miniflare
 
-function createSignedSessionCookies(data: {
-  username: string
-  loggedInAt: number
-}): { username: string; loggedInAt: string } {
-  const secret = 'dev-session-secret-12345'
-  const usernameValue = data.username
-  const loggedInAtValue = data.loggedInAt.toString()
-  const usernameSig = crypto
-    .createHmac('sha256', secret)
-    .update(usernameValue)
-    .digest('base64')
-  const loggedInAtSig = crypto
-    .createHmac('sha256', secret)
-    .update(loggedInAtValue)
-    .digest('base64')
+async function getAuthenticatedHeaders(): Promise<Record<string, unknown>> {
+  const params = new URLSearchParams({ username: 'admin', password: 'secret' })
+  const loginResponse = await mf.dispatchFetch('http://localhost/login', {
+    method: 'POST',
+    body: params.toString(),
+    headers: {
+      'Content-Type': 'application/x-www-form-urlencoded',
+      Origin: 'http://localhost:8787',
+    },
+    redirect: 'manual',
+  })
+  expect(loginResponse.status).toBe(302)
+  const setCookie = loginResponse.headers.get('set-cookie')!
+  expect(setCookie).toContain('username=')
+  expect(setCookie).toContain('loggedInAt=')
   return {
-    username: `${usernameValue}.${usernameSig}`,
-    loggedInAt: `${loggedInAtValue}.${loggedInAtSig}`,
+    headers: { cookie: setCookie, Origin: 'http://localhost:8787' },
+    redirect: 'manual',
   }
 }
 
@@ -135,13 +134,7 @@ describe('Utility Room Club', () => {
     it('renders commercial project', async () => {
       const response = await mf.dispatchFetch(
         'http://localhost/project/commercial-hvac-retrofit',
-        {
-          redirect: 'manual',
-          headers: {
-            cookie: `username=${createSignedSessionCookies({ username: 'admin', loggedInAt: Date.now() }).username}; loggedInAt=${createSignedSessionCookies({ username: 'admin', loggedInAt: Date.now() }).loggedInAt}`,
-            Origin: 'http://localhost:8787',
-          },
-        },
+        await getAuthenticatedHeaders(),
       )
       expect(response.status).toBe(200)
       const html = await response.text()
@@ -230,11 +223,7 @@ describe('Utility Room Club', () => {
               body: new URLSearchParams({
                 title: 'Residential Heat Pump Installation',
               }),
-              headers: {
-                cookie: `username=${createSignedSessionCookies({ username: 'admin', loggedInAt: Date.now() }).username}; loggedInAt=${createSignedSessionCookies({ username: 'admin', loggedInAt: Date.now() }).loggedInAt}`,
-                Origin: 'http://localhost:8787',
-              },
-              redirect: 'manual',
+              ...(await getAuthenticatedHeaders()),
             },
           )
           expect(response.status).toBe(400)
@@ -251,11 +240,7 @@ describe('Utility Room Club', () => {
               body: new URLSearchParams({
                 title: `Test Project ${timestamp}`,
               }),
-              headers: {
-                cookie: `username=${createSignedSessionCookies({ username: 'admin', loggedInAt: timestamp }).username}; loggedInAt=${createSignedSessionCookies({ username: 'admin', loggedInAt: timestamp }).loggedInAt}`,
-                Origin: 'http://localhost:8787',
-              },
-              redirect: 'manual',
+              ...(await getAuthenticatedHeaders()),
             },
           )
           expect(response.status).toBe(302)
