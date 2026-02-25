@@ -38,6 +38,7 @@ Known issues that need fixing.
 ### Authentication Issues
 
 - [x] Fix edge case with session validation (enhanced with Zod and error handling)
+- [x] Implement signed cookies
 - Improve error handling for expired sessions
 
 ### Performance Issues
@@ -58,3 +59,7 @@ Tasks that have been finished (move here when done).
 - [x] Add CSRF protection
 - [x] Refactor login logic into helper functions
 - [x] Implement Zod schema validation for user data in KV
+- [x] Integrate build step into test suite to prevent stale code bugs
+- [x] Fix esbuild path resolution for robustness across different working directories
+- [x] Implement manual cookie verification fallback for test environments with URL encoding issues
+- [x] Add comprehensive test helpers for authentication and request options
