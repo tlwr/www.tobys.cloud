@@ -7,17 +7,16 @@ jsx_factory = "h"
 
 [[kv_namespaces]]
 binding = "PROJECTS"
-id = "utilityroom-club-projects"
+id = "47e06254587f46cfa4904cd122d770b5"
 
 [[kv_namespaces]]
 binding = "USERS"
-id = "utilityroom-club-users"
+id = "efdf6c84461145da86c85d34893ee69b"
 
 [[r2_buckets]]
 binding = "ASSETS"
-bucket_name = "utilityroom-club-assets"  # Replace with actual R2 bucket name after creation
+bucket_name = "utilityroom-club-assets"
 
-# Routes for custom domain (configure in Cloudflare dashboard or uncomment if needed)
-# [[routes]]
-# pattern = "utilityroom.club/*"
-# zone_id = "your-zone-id"  # Replace with Cloudflare zone ID
+[[routes]]
+pattern = "utilityroom.club"
+custom_domain = true
