@@ -29,6 +29,37 @@ describe('Utility Room Club', () => {
       expect(html).toContain('utilityroom.club')
       expect(html).toContain('Curating exceptional craftsmanship')
     })
+
+    it('renders with light theme by default (no theme cookie)', async () => {
+      const response = await mf.dispatchFetch('http://localhost/')
+      expect(response.status).toBe(200)
+      const html = await response.text()
+      expect(html).toContain('--bg-color: #ffffff')
+      expect(html).toContain('--text-color: #333333')
+      expect(html).toContain('🌙')
+    })
+
+    it('renders with light theme when cookie is light', async () => {
+      const response = await mf.dispatchFetch('http://localhost/', {
+        headers: { Cookie: 'theme=light' },
+      })
+      expect(response.status).toBe(200)
+      const html = await response.text()
+      expect(html).toContain('--bg-color: #ffffff')
+      expect(html).toContain('--text-color: #333333')
+      expect(html).toContain('🌙')
+    })
+
+    it('renders with dark theme when cookie is dark', async () => {
+      const response = await mf.dispatchFetch('http://localhost/', {
+        headers: { Cookie: 'theme=dark' },
+      })
+      expect(response.status).toBe(200)
+      const html = await response.text()
+      expect(html).toContain('--bg-color: #1a1a1a')
+      expect(html).toContain('--text-color: #f0f0f0')
+      expect(html).toContain('☀️')
+    })
   })
 
   describe('Project pages', () => {
