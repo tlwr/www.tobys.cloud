@@ -719,6 +719,11 @@ app.delete('/admin/edit/:slug/image/:imageHash', authMiddleware, async (c) => {
   }
   const project = projectParse.data
 
+  // Check if image hash exists in project
+  if (!project.images.includes(imageHash)) {
+    return c.text('Image hash not found in project', 404)
+  }
+
   // Remove image from R2 bucket
   await c.env.ASSETS.delete(imageHash)
 
