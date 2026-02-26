@@ -6,7 +6,7 @@ This document tracks tasks, features, and bugs for the project. Tasks are priori
 
 High-priority tasks that should be addressed next:
 
-- [ ] Add image upload to project admin edit page
+- [x] Add image upload to project admin edit page
 - [ ] Enhance input validation across forms
 - [ ] Zod schemas and validation for KV objects
 
@@ -32,9 +32,10 @@ to the KV object of the project.
 
 We can use HTMX to make the image upload form interactive, and to render a
 table of uploaded images (ie the images associated with the project). The table of images should have
-1) a small img for preview
-2) a link to the image in a new tab, for double checking
-3) a button that copies the img src URL (ie in R2 bucket), to aid in writing up projects
+
+1. a small img for preview
+2. a link to the image in a new tab, for double checking
+3. a button that copies the img src URL (ie in R2 bucket), to aid in writing up projects
 
 ### Multi-User Support
 
@@ -82,3 +83,6 @@ Tasks that have been finished (move here when done).
 - [x] Fix esbuild path resolution for robustness across different working directories
 - [x] Implement manual cookie verification fallback for test environments with URL encoding issues
 - [x] Add comprehensive test helpers for authentication and request options
+- [x] Set up wrangler deployment
+- [x] Implement image uploads feature
+- [x] Use DIN 1451 font
