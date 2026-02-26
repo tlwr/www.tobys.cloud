@@ -9,6 +9,7 @@ High-priority tasks that should be addressed next:
 - [x] Add image upload to project admin edit page
 - [ ] Enhance input validation across forms
 - [ ] Zod schemas and validation for KV objects
+- [x] Dark mode
 
 Low-priority tasks:
 
@@ -86,3 +87,4 @@ Tasks that have been finished (move here when done).
 - [x] Set up wrangler deployment
 - [x] Implement image uploads feature
 - [x] Use DIN 1451 font
+- [x] Dark mode

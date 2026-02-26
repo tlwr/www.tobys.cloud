@@ -6,7 +6,12 @@ import { Hono, Context, Next } from 'hono'
 import { cors } from 'hono/cors'
 import { logger } from 'hono/logger'
 import { csrf } from 'hono/csrf'
-import { getSignedCookie, setSignedCookie, deleteCookie } from 'hono/cookie'
+import {
+  getSignedCookie,
+  setSignedCookie,
+  deleteCookie,
+  getCookie,
+} from 'hono/cookie'
 import { marked } from 'marked'
 import render from 'preact-render-to-string'
 import { ComponentChildren } from 'preact'
@@ -39,6 +44,11 @@ async function getIsLoggedIn(
   // signed cookie is not valid
   if (username === false) return false
   return !!username
+}
+
+function getTheme(c: Context<{ Bindings: Bindings }>): 'light' | 'dark' {
+  const theme = getCookie(c, 'theme')
+  return theme === 'dark' ? 'dark' : 'light'
 }
 
 // Helper to authenticate and set session cookie
@@ -102,11 +112,13 @@ function Layout({
   children,
   isLoggedIn,
   currentPage,
+  theme,
 }: {
   title: string
   children: ComponentChildren
   isLoggedIn?: boolean
   currentPage?: string
+  theme?: 'light' | 'dark'
 }) {
   return (
     <html lang="en">
@@ -118,29 +130,133 @@ function Layout({
         <style>
           {`
           @import url('https://fonts.cdnfonts.com/css/din-1451-std');
-          body { font-family: 'DIN 1451 Std', sans-serif; max-width: 800px; margin: 0 auto; padding: 10px; }
-          h1 { color: #333; text-transform: uppercase; }
-          .project { margin: 10px 0; padding: 10px; border: 1px solid #ddd; border-radius: 1px; }
-          a { text-decoration: none; color: #007bff; }
-          a:hover { text-decoration: underline; }
+          :root {
+            --bg-color: ${theme === 'dark' ? '#1a1a1a' : '#ffffff'};
+            --text-color: ${theme === 'dark' ? '#f0f0f0' : '#333333'};
+            --link-color: ${theme === 'dark' ? '#4dabf7' : '#007bff'};
+            --link-hover-color: ${theme === 'dark' ? '#6bb6ff' : '#0056b3'};
+            --border-color: ${theme === 'dark' ? '#555555' : '#dddddd'};
+            --border-light: ${theme === 'dark' ? '#666666' : '#cccccc'};
+            --table-header-bg: ${theme === 'dark' ? '#2a2a2a' : '#f4f4f4'};
+            --button-bg: ${theme === 'dark' ? '#4dabf7' : '#007bff'};
+            --button-hover-bg: ${theme === 'dark' ? '#6bb6ff' : '#0056b3'};
+            --button-text: ${theme === 'dark' ? '#1a1a1a' : '#ffffff'};
+            --input-bg: ${theme === 'dark' ? '#333333' : '#ffffff'};
+          }
+          body { font-family: 'DIN 1451 Std', sans-serif; max-width: 800px; margin: 0 auto; padding: 10px; background-color: var(--bg-color); color: var(--text-color); }
+          h1 { color: var(--text-color); text-transform: uppercase; }
+          .project { margin: 10px 0; padding: 10px; border: 1px solid var(--border-color); border-radius: 1px; background-color: var(--bg-color); }
+          a { text-decoration: none; color: var(--link-color); }
+          a:hover { text-decoration: underline; color: var(--link-hover-color); }
           nav { margin-bottom: 10px; text-transform: uppercase; }
           .content { line-height: 1.6; }
-          .content h1, .content h2, .content h3 { color: #333; margin-top: 10px; text-transform: uppercase; }
+          .content h1, .content h2, .content h3 { color: var(--text-color); margin-top: 10px; text-transform: uppercase; }
           .content ul { padding-left: 10px; }
           .content li { margin: 5px 0; }
           .content img { max-width: 100%; height: auto; display: block; margin: 10px 0; }
-          form { margin: 10px 0; padding: 10px; border: 1px solid #ddd; border-radius: 1px; }
+          form { margin: 10px 0; padding: 10px; border: 1px solid var(--border-color); border-radius: 1px; background-color: var(--bg-color); }
           .login-form { max-width: 300px; margin: 10px auto; }
-          label { display: block; margin: 10px 0; font-weight: bold; }
-          input { width: 100%; padding: 5px; border: 1px solid #ccc; border-radius: 1px; box-sizing: border-box; }
-          button { width: 100%; padding: 10px; background: #007bff; color: white; border: none; border-radius: 1px; cursor: pointer; margin-top: 10px; }
-          button:hover { background: #0056b3; }
+          label { display: block; margin: 10px 0; font-weight: bold; color: var(--text-color); }
+          input { width: 100%; padding: 5px; border: 1px solid var(--border-light); border-radius: 1px; box-sizing: border-box; background-color: var(--input-bg); color: var(--text-color); }
+          button { width: 100%; padding: 10px; background: var(--button-bg); color: var(--button-text); border: none; border-radius: 1px; cursor: pointer; margin-top: 10px; }
+          button:hover { background: var(--button-hover-bg); }
           table { width: 100%; border-collapse: collapse; margin: 10px 0; }
-          th, td { border: 1px solid #ddd; padding: 5px; text-align: left; }
-          th { background: #f4f4f4; }
-          textarea { width: 100%; padding: 5px; border: 1px solid #ccc; border-radius: 1px; font-family: 'DIN 1451 Std', sans-serif; box-sizing: border-box; }
+          th, td { border: 1px solid var(--border-color); padding: 5px; text-align: left; color: var(--text-color); }
+          th { background: var(--table-header-bg); }
+          textarea { width: 100%; padding: 5px; border: 1px solid var(--border-light); border-radius: 1px; font-family: 'DIN 1451 Std', sans-serif; box-sizing: border-box; background-color: var(--input-bg); color: var(--text-color); }
         `}
         </style>
+        <script>
+          {`
+          (function() {
+            const themes = {
+              light: {
+                '--bg-color': '#ffffff',
+                '--text-color': '#333333',
+                '--link-color': '#007bff',
+                '--link-hover-color': '#0056b3',
+                '--border-color': '#dddddd',
+                '--border-light': '#cccccc',
+                '--table-header-bg': '#f4f4f4',
+                '--button-bg': '#007bff',
+                '--button-hover-bg': '#0056b3',
+                '--button-text': '#ffffff',
+                '--input-bg': '#ffffff'
+              },
+              dark: {
+                '--bg-color': '#1a1a1a',
+                '--text-color': '#f0f0f0',
+                '--link-color': '#4dabf7',
+                '--link-hover-color': '#6bb6ff',
+                '--border-color': '#555555',
+                '--border-light': '#666666',
+                '--table-header-bg': '#2a2a2a',
+                '--button-bg': '#4dabf7',
+                '--button-hover-bg': '#6bb6ff',
+                '--button-text': '#1a1a1a',
+                '--input-bg': '#333333'
+              }
+            };
+
+            function getCookie(name) {
+              const value = '; ' + document.cookie;
+              const parts = value.split('; ' + name + '=');
+              if (parts.length === 2) return parts.pop().split(';').shift();
+              return null;
+            }
+
+            function setCookie(name, value, days) {
+              const expires = new Date();
+              expires.setTime(expires.getTime() + days * 24 * 60 * 60 * 1000);
+              document.cookie = name + '=' + value + ';expires=' + expires.toUTCString() + ';path=/;samesite=strict';
+            }
+
+            function getTheme() {
+              const theme = getCookie('theme');
+              if (theme) return theme;
+              if (!window.matchMedia) return 'light';
+              if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
+                return 'dark';
+              } else {
+                return 'light';
+              }
+            }
+
+            function setTheme(theme) {
+              setCookie('theme', theme, 365);
+              applyTheme(theme);
+            }
+
+            function applyTheme(theme) {
+              const root = document.documentElement;
+              const vars = themes[theme];
+              Object.keys(vars).forEach(key => {
+                root.style.setProperty(key, vars[key]);
+              });
+              const toggle = document.getElementById('theme-toggle');
+              if (toggle) {
+                toggle.textContent = theme === 'dark' ? '☀️' : '🌙';
+                toggle.setAttribute('aria-label', 'Switch to ' + (theme === 'dark' ? 'light' : 'dark') + ' theme');
+              }
+            }
+
+            // Initialize theme
+            const currentTheme = getTheme();
+            applyTheme(currentTheme);
+
+            // Handle toggle
+            document.addEventListener('DOMContentLoaded', function() {
+              const toggle = document.getElementById('theme-toggle');
+              if (toggle) {
+                toggle.addEventListener('click', function() {
+                  const newTheme = getCookie('theme') === 'dark' ? 'light' : 'dark';
+                  setTheme(newTheme);
+                });
+              }
+            });
+          })();
+          `}
+        </script>
       </head>
       <body>
         <header
@@ -148,11 +264,14 @@ function Layout({
             textAlign: 'left',
             marginBottom: '10px',
             paddingBottom: '10px',
-            borderBottom: '1px solid #ddd',
+            borderBottom: '1px solid var(--border-color)',
           }}
         >
           <h1 style={{ margin: '0', fontSize: '24px' }}>
-            <a href="/" style={{ textDecoration: 'none', color: '#333' }}>
+            <a
+              href="/"
+              style={{ textDecoration: 'none', color: 'var(--text-color)' }}
+            >
               utilityroom.club
             </a>
           </h1>
@@ -160,7 +279,7 @@ function Layout({
         <nav
           style={{
             textAlign: 'left',
-            borderBottom: '1px solid #ddd',
+            borderBottom: '1px solid var(--border-color)',
             paddingBottom: '10px',
             marginBottom: '10px',
           }}
@@ -175,7 +294,24 @@ function Layout({
             <span>tags</span>
           ) : (
             <a href="/tags">tags</a>
-          )}
+          )}{' '}
+          |{' '}
+          <button
+            id="theme-toggle"
+            type="button"
+            style={{
+              background: 'none',
+              border: 'none',
+              cursor: 'pointer',
+              fontSize: '16px',
+              padding: '0',
+              margin: '0',
+              width: 'auto',
+            }}
+            aria-label={`Switch to ${theme === 'dark' ? 'light' : 'dark'} theme`}
+          >
+            {theme === 'dark' ? '☀️' : '🌙'}
+          </button>
           {isLoggedIn ? (
             <span>
               {' '}
@@ -198,6 +334,7 @@ function Layout({
 Layout.defaultProps = {
   isLoggedIn: false,
   currentPage: '',
+  theme: 'light',
 }
 
 const app = new Hono<{ Bindings: Bindings }>()
@@ -231,11 +368,13 @@ app.get('/', async (c) => {
   }
 
   const isLoggedIn = await getIsLoggedIn(c)
+  const theme = getTheme(c)
   const html = render(
     <Layout
       title="utilityroom.club"
       isLoggedIn={isLoggedIn}
       currentPage="projects"
+      theme={theme}
     >
       <p>Curating exceptional craftsmanship in building utility systems.</p>
       <div id="projects">
@@ -284,6 +423,7 @@ app.get('/project/:slug', async (c) => {
   const project = JSON.parse(data)
   project.slug = slug
   const isLoggedIn = await getIsLoggedIn(c)
+  const theme = getTheme(c)
   if (!isLoggedIn && !project.visible) {
     return c.notFound()
   }
@@ -300,6 +440,7 @@ app.get('/project/:slug', async (c) => {
       title={`${project.slug} - utilityroom.club`}
       isLoggedIn={isLoggedIn}
       currentPage="project"
+      theme={theme}
     >
       {/* eslint-disable-next-line react/no-danger */}
       <div className="content" dangerouslySetInnerHTML={{ __html: content }} />
@@ -310,13 +451,18 @@ app.get('/project/:slug', async (c) => {
 
 app.get('/login', async (c) => {
   const isLoggedIn = await getIsLoggedIn(c)
+  const theme = getTheme(c)
 
   if (isLoggedIn) {
     return c.redirect('/admin')
   }
 
   const html = render(
-    <Layout title="Login - utilityroom.club" isLoggedIn={isLoggedIn}>
+    <Layout
+      title="Login - utilityroom.club"
+      isLoggedIn={isLoggedIn}
+      theme={theme}
+    >
       <form
         id="login-form"
         className="login-form"
@@ -374,9 +520,15 @@ app.get('/admin', authMiddleware, async (c) => {
     (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
   )
   const tags = Object.entries(tagCounts).sort((a, b) => b[1] - a[1])
+  const theme = getTheme(c)
 
   const html = render(
-    <Layout title="admin - utilityroom.club" isLoggedIn currentPage="admin">
+    <Layout
+      title="admin - utilityroom.club"
+      isLoggedIn
+      currentPage="admin"
+      theme={theme}
+    >
       <table>
         <thead>
           <tr>
@@ -441,9 +593,10 @@ app.get('/admin/edit/:slug', authMiddleware, async (c) => {
     return c.text('Invalid project data', 500)
   }
   const project = projectParse.data
+  const theme = getTheme(c)
 
   const html = render(
-    <Layout title={`edit ${slug} - utilityroom.club`} isLoggedIn>
+    <Layout title={`edit ${slug} - utilityroom.club`} isLoggedIn theme={theme}>
       <h2>Edit {slug}</h2>
       <form id="project-edit-form" method="post" action={`/admin/edit/${slug}`}>
         {/* eslint-disable-next-line jsx-a11y/label-has-associated-control */}
@@ -791,8 +944,9 @@ app.get('/asset/:hash', async (c) => {
 })
 
 app.get('/admin/new', authMiddleware, async (c) => {
+  const theme = getTheme(c)
   const html = render(
-    <Layout title="new project - utilityroom.club" isLoggedIn>
+    <Layout title="new project - utilityroom.club" isLoggedIn theme={theme}>
       <h2>new project</h2>
       <form id="project-new-form" method="post" action="/admin/new">
         {/* eslint-disable-next-line jsx-a11y/label-has-associated-control */}
@@ -858,11 +1012,13 @@ app.get('/tags', async (c) => {
   }
   const tags = Array.from(allTags).sort()
   const isLoggedIn = await getIsLoggedIn(c)
+  const theme = getTheme(c)
   const html = render(
     <Layout
       title="tags - utilityroom.club"
       isLoggedIn={isLoggedIn}
       currentPage="tags"
+      theme={theme}
     >
       <table>
         <thead>
@@ -903,8 +1059,13 @@ app.get('/tag/:tag', async (c) => {
     }
   }
   const isLoggedIn = await getIsLoggedIn(c)
+  const theme = getTheme(c)
   const html = render(
-    <Layout title={`${tag} - utilityroom.club`} isLoggedIn={isLoggedIn}>
+    <Layout
+      title={`${tag} - utilityroom.club`}
+      isLoggedIn={isLoggedIn}
+      theme={theme}
+    >
       <h2>projects tagged with [{tag}]</h2>
       <div id="projects">
         {matchingProjects.map((project) => (
