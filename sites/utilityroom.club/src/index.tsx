@@ -264,6 +264,7 @@ app.get('/project/:slug{[A-Za-z0-9-]*[.]json}', async (c) => {
   }
 
   const project = JSON.parse(data)
+  project.slug = slug
   const isLoggedIn = await getIsLoggedIn(c)
   if (!isLoggedIn && !project.visible) {
     return c.notFound()
@@ -281,6 +282,7 @@ app.get('/project/:slug', async (c) => {
   }
 
   const project = JSON.parse(data)
+  project.slug = slug
   const isLoggedIn = await getIsLoggedIn(c)
   if (!isLoggedIn && !project.visible) {
     return c.notFound()
