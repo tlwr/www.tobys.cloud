@@ -1,3 +1,5 @@
+/* eslint-disable jsx-a11y/control-has-associated-label */
+
 /** @jsx h */
 
 import { Hono, Context, Next } from 'hono'
@@ -10,6 +12,7 @@ import render from 'preact-render-to-string'
 import { ComponentChildren } from 'preact'
 import bcrypt from 'bcryptjs'
 import { UserSchema } from './schemas/user'
+import { ProjectSchema } from './schemas/project'
 
 type Bindings = {
   PROJECTS: KVNamespace
@@ -111,6 +114,7 @@ function Layout({
         <meta charset="UTF-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
         <title>{title}</title>
+        <script src="https://unpkg.com/htmx.org@1.9.12" />
         <style>
           {`
           @import url('https://fonts.cdnfonts.com/css/din-1451-std');
@@ -311,7 +315,12 @@ app.get('/login', async (c) => {
 
   const html = render(
     <Layout title="Login - utilityroom.club" isLoggedIn={isLoggedIn}>
-      <form className="login-form" method="post" action="/login">
+      <form
+        id="login-form"
+        className="login-form"
+        method="post"
+        action="/login"
+      >
         <label htmlFor="username">
           Username: <input id="username" type="text" name="username" />
         </label>
@@ -424,12 +433,17 @@ app.get('/admin/edit/:slug', authMiddleware, async (c) => {
     return c.notFound()
   }
 
-  const project = JSON.parse(data)
+  const projectParse = ProjectSchema.safeParse(JSON.parse(data))
+  if (!projectParse.success) {
+    console.error('Invalid project data in KV:', projectParse.error)
+    return c.text('Invalid project data', 500)
+  }
+  const project = projectParse.data
 
   const html = render(
     <Layout title={`edit ${slug} - utilityroom.club`} isLoggedIn>
       <h2>Edit {slug}</h2>
-      <form method="post" action={`/admin/edit/${slug}`}>
+      <form id="project-edit-form" method="post" action={`/admin/edit/${slug}`}>
         {/* eslint-disable-next-line jsx-a11y/label-has-associated-control */}
         <label>
           tags (comma-separated, kebab-case):
@@ -459,6 +473,19 @@ app.get('/admin/edit/:slug', authMiddleware, async (c) => {
         <br />
         <button type="submit">Save</button>
       </form>
+
+      <h3>Images</h3>
+      <div
+        id="upload-form"
+        hx-get={`/admin/project/${slug}/image-upload-form`}
+        hx-trigger="load"
+      />
+
+      <div
+        id="images-table"
+        hx-get={`/admin/project/${slug}/images-table`}
+        hx-trigger="load, imageUploaded"
+      />
     </Layout>,
   )
   return c.html(`<!DOCTYPE html>${html}`)
@@ -471,6 +498,13 @@ app.post('/admin/edit/:slug', authMiddleware, async (c) => {
   if (!data) {
     return c.notFound()
   }
+
+  const projectParse = ProjectSchema.safeParse(JSON.parse(data))
+  if (!projectParse.success) {
+    console.error('Invalid project data in KV:', projectParse.error)
+    return c.text('Invalid project data', 500)
+  }
+  const existingProject = projectParse.data
 
   const body = await c.req.parseBody()
   const { content } = body
@@ -501,20 +535,259 @@ app.post('/admin/edit/:slug', authMiddleware, async (c) => {
 
   const visible = body.visible === 'on'
 
-  const project = JSON.parse(data)
-  await c.env.PROJECTS.put(
-    slug,
-    JSON.stringify({ content, createdAt: project.createdAt, tags, visible }),
-  )
+  const updatedProject = {
+    content,
+    createdAt: existingProject.createdAt,
+    tags,
+    visible,
+    images: existingProject.images,
+  }
+
+  await c.env.PROJECTS.put(slug, JSON.stringify(updatedProject))
 
   return c.redirect(`/project/${slug}`)
+})
+
+app.post('/admin/edit/:slug/image-upload', authMiddleware, async (c) => {
+  const slug = c.req.param('slug')
+  const data = await c.env.PROJECTS.get(slug)
+
+  if (!data) {
+    return c.notFound()
+  }
+
+  const projectParse = ProjectSchema.safeParse(JSON.parse(data))
+  if (!projectParse.success) {
+    console.error('Invalid project data in KV:', projectParse.error)
+    return c.html('<tr><td colspan="3">Error: Invalid project data</td></tr>')
+  }
+  const project = projectParse.data
+
+  const formData = await c.req.formData()
+  const imageFile = formData.get('image') as File
+
+  if (!imageFile || !(imageFile instanceof File)) {
+    return c.html('<tr><td colspan="3">Error: No image file provided</td></tr>')
+  }
+
+  // Compute SHA256 hash
+  const imageArrayBuffer = await imageFile.arrayBuffer()
+  const hashBuffer = await crypto.subtle.digest('SHA-256', imageArrayBuffer)
+  const hashArray = Array.from(new Uint8Array(hashBuffer))
+  const imageHash = hashArray
+    .map((b) => b.toString(16).padStart(2, '0'))
+    .join('')
+
+  // Store in R2
+  await c.env.ASSETS.put(imageHash, imageArrayBuffer, {
+    httpMetadata: {
+      contentType: imageFile.type,
+    },
+  })
+
+  // Update project images - ensure uniqueness
+  const updatedImages = Array.from(new Set([...project.images, imageHash]))
+  const updatedProject = { ...project, images: updatedImages }
+  await c.env.PROJECTS.put(slug, JSON.stringify(updatedProject))
+
+  // Return the upload form with success message - table will be reloaded via HTMX event
+  const html = render(
+    <div>
+      <div style={{ color: 'green', marginBottom: '10px' }}>
+        ✓ Image uploaded successfully!
+      </div>
+      <form
+        id="image-upload-form"
+        hx-post={`/admin/edit/${slug}/image-upload`}
+        hx-trigger="submit"
+        hx-on-htmx-after-request="if(event.detail.successful) htmx.trigger('#images-table', 'imageUploaded')"
+        encType="multipart/form-data"
+        style={{ display: 'flex', gap: '10px', alignItems: 'center' }}
+      >
+        <input
+          type="file"
+          name="image"
+          accept="image/*"
+          required
+          aria-label="Select image file"
+        />
+        <button type="submit" style={{ marginTop: 0 }}>
+          Upload Image
+        </button>
+      </form>
+    </div>,
+  )
+
+  return c.html(`<!DOCTYPE html>${html}`)
+})
+
+app.get('/admin/project/:slug/images-table', authMiddleware, async (c) => {
+  const slug = c.req.param('slug')
+  const data = await c.env.PROJECTS.get(slug)
+
+  if (!data) {
+    return c.html('<p>Error: Project not found</p>')
+  }
+
+  const projectParse = ProjectSchema.safeParse(JSON.parse(data))
+  if (!projectParse.success) {
+    console.error('Invalid project data in KV:', projectParse.error)
+    return c.html('<p>Error: Invalid project data</p>')
+  }
+  const project = projectParse.data
+
+  const html = render(
+    <table style={{ maxWidth: '100%' }}>
+      <thead>
+        <tr>
+          <th>Preview</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {project.images.map((imageHash) => (
+          <tr key={imageHash}>
+            <td>
+              <a href={`/asset/${imageHash}`} target="_blank" rel="noreferrer">
+                <img
+                  src={`/asset/${imageHash}`}
+                  alt="preview"
+                  style={{ maxWidth: '100px', maxHeight: '100px' }}
+                />
+              </a>
+            </td>
+            <td>
+              <span
+                // eslint-disable-next-line react/no-danger
+                dangerouslySetInnerHTML={{
+                  __html: `<button type="button" onclick="navigator.clipboard.writeText('${new URL(c.req.url).origin}/asset/${imageHash}'); this.innerText = '✓'; setTimeout(() => { this.innerText = '📋'; }, 2000);" title="Copy image URL to clipboard" aria-label="Copy image URL" style="font-size: 16px; padding: 4px 8px; cursor: pointer; width: auto; background-color: transparent; border: 2px solid blue; color: blue;">📋</button>
+                  <button type="button" hx-delete="/admin/edit/${slug}/image/${imageHash}" hx-confirm="Are you sure you want to delete this image?" hx-target="#images-table" hx-swap="outerHTML" title="Delete image" aria-label="Delete image" style="font-size: 16px; padding: 4px 8px; cursor: pointer; margin-left: 8px; width: auto; background-color: transparent; border: 2px solid red; color: red;">🗑️</button>`,
+                }}
+              />
+            </td>
+          </tr>
+        ))}
+      </tbody>
+    </table>,
+  )
+
+  return c.html(`<!DOCTYPE html>${html}`)
+})
+
+app.get('/admin/project/:slug/image-upload-form', authMiddleware, async (c) => {
+  const slug = c.req.param('slug')
+
+  const html = render(
+    <form
+      id="image-upload-form"
+      hx-post={`/admin/edit/${slug}/image-upload`}
+      hx-trigger="submit"
+      hx-on-htmx-after-request="if(event.detail.successful) htmx.trigger('#images-table', 'imageUploaded')"
+      encType="multipart/form-data"
+      style={{ display: 'flex', gap: '10px', alignItems: 'center' }}
+    >
+      <input
+        type="file"
+        name="image"
+        accept="image/*"
+        required
+        aria-label="Select image file"
+      />
+      <button type="submit" style={{ marginTop: 0 }}>
+        Upload Image
+      </button>
+    </form>,
+  )
+
+  return c.html(`<!DOCTYPE html>${html}`)
+})
+
+app.delete('/admin/edit/:slug/image/:imageHash', authMiddleware, async (c) => {
+  const slug = c.req.param('slug')
+  const imageHash = c.req.param('imageHash')
+
+  const data = await c.env.PROJECTS.get(slug)
+
+  if (!data) {
+    return c.text('Project not found', 404)
+  }
+
+  const projectParse = ProjectSchema.safeParse(JSON.parse(data))
+  if (!projectParse.success) {
+    console.error('Invalid project data in KV:', projectParse.error)
+    return c.text('Invalid project data', 500)
+  }
+  const project = projectParse.data
+
+  // Remove image from R2 bucket
+  await c.env.ASSETS.delete(imageHash)
+
+  // Remove image hash from project images array
+  const updatedImages = project.images.filter((hash) => hash !== imageHash)
+  const updatedProject = { ...project, images: updatedImages }
+  await c.env.PROJECTS.put(slug, JSON.stringify(updatedProject))
+
+  // Return updated images table HTML
+  const html = render(
+    <table style={{ maxWidth: '100%' }}>
+      <thead>
+        <tr>
+          <th>Preview</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {updatedImages.map((imgHash) => (
+          <tr key={imgHash}>
+            <td>
+              <a href={`/asset/${imgHash}`} target="_blank" rel="noreferrer">
+                <img
+                  src={`/asset/${imgHash}`}
+                  alt="preview"
+                  style={{ maxWidth: '100px', maxHeight: '100px' }}
+                />
+              </a>
+            </td>
+            <td>
+              <span
+                // eslint-disable-next-line react/no-danger
+                dangerouslySetInnerHTML={{
+                  __html: `<button type="button" onclick="navigator.clipboard.writeText('${new URL(c.req.url).origin}/asset/${imgHash}'); this.innerText = '✓'; setTimeout(() => { this.innerText = '📋'; }, 2000);" title="Copy image URL to clipboard" aria-label="Copy image URL" style="font-size: 16px; padding: 4px 8px; cursor: pointer; width: auto; background-color: transparent; border: 2px solid blue; color: blue;">📋</button>
+                <button type="button" hx-delete="/admin/edit/${slug}/image/${imgHash}" hx-confirm="Are you sure you want to delete this image?" hx-target="#images-table" hx-swap="outerHTML" title="Delete image" aria-label="Delete image" style="font-size: 16px; padding: 4px 8px; cursor: pointer; margin-left: 8px; width: auto; background-color: transparent; border: 2px solid red; color: red;">🗑️</button>`,
+                }}
+              />
+            </td>
+          </tr>
+        ))}
+      </tbody>
+    </table>,
+  )
+
+  return c.html(`<!DOCTYPE html>${html}`)
+})
+
+app.get('/asset/:hash', async (c) => {
+  const hash = c.req.param('hash')
+  const object = await c.env.ASSETS.get(hash)
+
+  if (!object) {
+    return c.notFound()
+  }
+
+  const headers = new Headers()
+  object.writeHttpMetadata(headers)
+  headers.set('etag', object.httpEtag)
+
+  return c.body(object.body, {
+    headers,
+  })
 })
 
 app.get('/admin/new', authMiddleware, async (c) => {
   const html = render(
     <Layout title="new project - utilityroom.club" isLoggedIn>
       <h2>new project</h2>
-      <form method="post" action="/admin/new">
+      <form id="project-new-form" method="post" action="/admin/new">
         {/* eslint-disable-next-line jsx-a11y/label-has-associated-control */}
         <label>
           title:
@@ -555,12 +828,11 @@ app.post('/admin/new', authMiddleware, async (c) => {
   const content = `# ${title}`
   const tags: string[] = []
   const visible = false
+  const images: string[] = []
 
   const createdAt = new Date().toISOString()
-  await c.env.PROJECTS.put(
-    slug,
-    JSON.stringify({ content, createdAt, tags, visible }),
-  )
+  const newProject = { content, createdAt, tags, visible, images }
+  await c.env.PROJECTS.put(slug, JSON.stringify(newProject))
 
   return c.redirect(`/project/${slug}`)
 })

@@ -18,6 +18,21 @@ module.exports = {
     'react/jsx-uses-react': 'off', // Not needed in Preact
     'react/prop-types': 'off', // TypeScript handles this
     'react/jsx-filename-extension': 'off', // Allow JSX in .tsx files
+    'react/no-unknown-property': [
+      'error',
+      {
+        ignore: [
+          'hx-post',
+          'hx-target',
+          'hx-swap',
+          'hx-get',
+          'hx-trigger',
+          'hx-on-htmx-after-request',
+          'hx-delete',
+          'hx-confirm',
+        ],
+      },
+    ],
     'import/no-unresolved': ['error', { ignore: ['^hono/'] }],
     'import/extensions': [
       'error',
@@ -31,6 +46,12 @@ module.exports = {
       'LabeledStatement',
       'WithStatement',
     ], // Allow for...of
+    'jsx-a11y/control-has-associated-label': [
+      'error',
+      {
+        ignore: ['button'], // Allow buttons with aria-label
+      },
+    ],
   },
   settings: {
     react: {
