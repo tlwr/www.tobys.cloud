@@ -5,16 +5,19 @@ A curated showcase of exceptional craftsmanship in building utility systems.
 ## Development
 
 ### Prerequisites
+
 - Node.js 18+
 - npm
 - Cloudflare account (for deployment)
 
 ### Setup
+
 ```bash
 npm install
 ```
 
 ### Commands
+
 - `npm run dev`: Start local development server with Wrangler
 - `npm run build`: Build for production
 - `npm run lint`: Run ESLint (Airbnb config + Prettier)
@@ -24,7 +27,12 @@ npm install
 - `npm test`: Run tests with Vitest
 
 ### CI
+
 GitHub Actions runs lint, typecheck, build, and tests on changes to `sites/utilityroom.club/**`.
+
+### Backlog Management
+
+The project backlog is managed using Linear. Use Linear MCP tooling to discover backlog items or check work history.
 
 ## Style Guide
 
@@ -93,6 +101,7 @@ This document outlines the aesthetic choices and design guidelines for utilityro
 ## Code Style and Consistency
 
 ### Code Formatting
+
 - **Linter**: ESLint with Airbnb rules, extended for TypeScript and Preact
 - **Formatter**: Prettier with single quotes, no semicolons
 - **TypeScript**: Strict mode enabled
@@ -101,6 +110,7 @@ This document outlines the aesthetic choices and design guidelines for utilityro
 - **Naming**: Kebab-case for URLs/tags, camelCase for code, PascalCase for components
 
 ### HTML/CSS Consistency
+
 - **Inline Styles**: Use object notation (e.g., `style={{ margin: '10px' }}`)
 - **Classes**: Use `className` (Preact), avoid inline if reusable
 - **Semantic HTML**: Proper headings, labels, forms
@@ -108,6 +118,7 @@ This document outlines the aesthetic choices and design guidelines for utilityro
 - **Responsive**: Max-width containers, mobile-first
 
 ### Text and Content Consistency
+
 - **Casing**: Sentence case for titles/headings, consistent throughout
 - **Punctuation**: Oxford comma in lists, em/en dashes appropriately
 - **Links**: Descriptive text, avoid "click here"
@@ -116,10 +127,12 @@ This document outlines the aesthetic choices and design guidelines for utilityro
 - **Tags**: Kebab-case, lowercase, descriptive (e.g., "heat-pump" not "HeatPump")
 
 ### File Organization
+
 - **Structure**: Flat in `src/`, components inline in index.tsx
 - **Naming**: Descriptive, lowercase with hyphens for files
 - **Comments**: JSDoc for functions, inline for complex logic
 
 ### Commit Messages
+
 - **Format**: "type: description" (e.g., "fix: update lint config")
 - **Types**: feat, fix, docs, style, refactor, test, chore
