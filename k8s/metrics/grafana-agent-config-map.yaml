@@ -38,9 +38,6 @@ data:
               scrape_interval: 60s
               scrape_timeout: 60s
               dns_sd_configs:
-                - names: [pipower.tailscale.svc]
-                  type: AAAA
-                  port: 9100
                 - names: [kleipower.tailscale.svc]
                   type: AAAA
                   port: 9100
