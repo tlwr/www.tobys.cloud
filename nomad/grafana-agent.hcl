@@ -37,14 +37,6 @@ job "grafana-agent" {
             configs:
               - name: smartmeter
                 scrape_configs:
-                  - job_name: 63
-                    scrape_interval: 30s
-                    scrape_timeout: 20s
-                    dns_sd_configs:
-                      - names: [pipower.finch-barb.ts.net]
-                        type: A
-                        port: 9220
-
                   - job_name: kleidijk
                     scrape_interval: 30s
                     scrape_timeout: 20s
@@ -52,16 +44,6 @@ job "grafana-agent" {
                       - names: [kleipower.finch-barb.ts.net]
                         type: A
                         port: 9220
-
-              - name: enphase-gateway
-                scrape_configs:
-                  - job_name: 63-solar
-                    scrape_interval: 30s
-                    scrape_timeout: 20s
-                    dns_sd_configs:
-                      - names: [pipower.finch-barb.ts.net]
-                        type: A
-                        port: 9365
 
               - name: unpoller
                 scrape_configs:

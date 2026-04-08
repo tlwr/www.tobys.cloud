@@ -4,13 +4,13 @@ job "smart-meter-exporter" {
   constraint {
     attribute = "${attr.unique.hostname}"
     operator  = "set_contains_any"
-    value     = "pipower,kleipower"
+    value     = "kleipower"
   }
 
   type = "service"
 
   group "servers" {
-    count = 2
+    count = 1
 
     task "exporter" {
       driver = "raw_exec"
