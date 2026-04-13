@@ -64,6 +64,23 @@ job "grafana-agent" {
                       - names: [thinkcentre.finch-barb.ts.net]
                         type: A
                         port: 2112
+
+              - name: node-exporter
+                scrape_configs:
+                  - job_name: node-exporter-baremetal
+                    scrape_interval: 60s
+                    scrape_timeout: 60s
+                    dns_sd_configs:
+                      - names: [kleipower.finch-barb.ts.net]
+                        type: AAAA
+                        port: 9100
+                      - names: [thinkcentre.finch-barb.ts.net]
+                        type: AAAA
+                        port: 9100
+                    relabel_configs:
+                      - source_labels: [__meta_dns_name]
+                        target_label: server
+                        regex: '(.*)[.]finch-barb[.]ts[.]net'
         EOH
       }
 
