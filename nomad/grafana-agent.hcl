@@ -72,10 +72,10 @@ job "grafana-agent" {
                     scrape_timeout: 60s
                     dns_sd_configs:
                       - names: [kleipower.finch-barb.ts.net]
-                        type: AAAA
+                        type: A
                         port: 9100
                       - names: [thinkcentre.finch-barb.ts.net]
-                        type: AAAA
+                        type: A
                         port: 9100
                     relabel_configs:
                       - source_labels: [__meta_dns_name]
