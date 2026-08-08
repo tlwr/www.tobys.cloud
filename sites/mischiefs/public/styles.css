@@ -73,19 +73,6 @@ header h1 {
   font-size: 3rem;
 }
 
-button {
-  background-color: var(--light);
-  border-radius: 5px;
-  border: 2px solid var(--dark);
-  color: var(--dark);
-  font-weight: 600;
-}
-
-button:hover {
-  background-color: var(--dark);
-  color: var(--light);
-}
-
 .container {
   max-width: 52em;
   margin-left: auto;

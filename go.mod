@@ -3,7 +3,6 @@ module github.com/tlwr/www.tobys.cloud
 go 1.23.7
 
 require (
-	github.com/ajstarks/svgo v0.0.0-20211024235047-1546f124cd8b
 	github.com/gomarkdown/markdown v0.0.0-20250311123330-531bef5e742b
 	github.com/meatballhat/negroni-logrus v1.1.1
 	github.com/onsi/ginkgo/v2 v2.20.1
