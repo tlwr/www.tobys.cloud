@@ -1,0 +1,7 @@
+name = "pom"
+main = "src/index.ts"
+compatibility_date = "2025-04-02"
+
+[[routes]]
+pattern = "pom.tobys.cloud/*"
+zone_name = "tobys.cloud"

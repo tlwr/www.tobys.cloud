@@ -1,0 +1,7 @@
+name = "what-is-my-ip"
+main = "src/index.ts"
+compatibility_date = "2025-04-02"
+
+[[routes]]
+pattern = "what-is-my-ip.tobys.cloud/*"
+zone_name = "tobys.cloud"

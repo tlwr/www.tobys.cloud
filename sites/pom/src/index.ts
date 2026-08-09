@@ -1,4 +1,5 @@
-const baseTemplate = [`<!doctype html>
+const baseTemplate = [
+  `<!doctype html>
 <html>
   <head>
     <meta charset="utf-8">
@@ -16,41 +17,38 @@ const baseTemplate = [`<!doctype html>
     </div>
 
     <main class="container">
-`, `
+`,
+  `
     </main>
-`, `
+`,
+  `
   </body>
-</html>`];
+</html>`,
+] as const;
 
-async function handle(request) {
-    let rendered;
+function render(body: string): string {
+  return baseTemplate[0] + body + baseTemplate[1] + baseTemplate[2];
+}
 
-    if (request.method == "POST") {
-        const form = await request.formData();
+export default {
+  async fetch(request: Request): Promise<Response> {
+    if (request.method === "POST") {
+      const form = await request.formData();
+      let minutes = parseInt(String(form.get("minutes") ?? "25"), 10);
+      if (Number.isNaN(minutes)) {
+        minutes = 25;
+      }
 
-        let minutes;
-        minutes = form.get("minutes");
-        if (minutes == undefined) {
-            minutes = "25";
-        }
-        minutes = parseInt(minutes, 10);
-        if (isNaN(minutes)) {
-            minutes = 25;
-        }
+      const finished = new Date(Date.now() + 1000 * 60 * minutes);
+      const host = new URL(request.url).host;
+      return Response.redirect(`https://${host}/${finished.getTime()}`, 302);
+    }
 
-        const now = new Date();
-        const delta = 1000 * 60 * minutes;
-        const finished = new Date(now.getTime() + delta);
+    const pathname = new URL(request.url).pathname;
+    let body: string;
 
-        const u = new URL(request.url);
-        const ru = `https://${u.host}/${finished.getTime()}`;
-
-        return Response.redirect(ru, 302);
-    } else {
-        const u = new URL(request.url);
-
-        if (/^[/]done/.test(u.pathname)) {
-            rendered = String.raw({ raw: baseTemplate }, [`
+    if (/^\/done/.test(pathname)) {
+      body = `
             done
 
             <script type="text/javascript">
@@ -64,23 +62,18 @@ async function handle(request) {
             <form action="/">
                 <button>reset</button>
             </form>
-            `,]);
-        } else if (/^[/]\d+$/.test(u.pathname)) {
-            const ts = parseInt(u.pathname.replace("/", ""), 10);
-            const d = new Date(ts);
+            `;
+    } else if (/^\/\d+$/.test(pathname)) {
+      const ts = parseInt(pathname.replace("/", ""), 10);
+      const end = new Date(ts);
+      let delta = Math.max(0, Math.floor((end.getTime() - Date.now()) / 1000));
 
-            const now = new Date();
-            let delta = d.getTime() - now.getTime();
-            if (delta < 0) delta = 0;
-            delta = delta / 1000; // js ms html s
-            delta = Math.floor(delta);
-
-            rendered = String.raw({ raw: baseTemplate }, [`
+      body = `
             <template id="end-ts">
-            ${d.getTime()}
+            ${end.getTime()}
             </template>
 
-            <meta http-equiv="refresh" content="${delta}; URL='/done" /> 
+            <meta http-equiv="refresh" content="${delta}; URL='/done" />
 
             <span id="mins"></span>m
             <span id="secs"></span>s
@@ -117,9 +110,9 @@ async function handle(request) {
             <form action="/">
                 <button>reset</button>
             </form>
-            `,]);
-        } else {
-            rendered = String.raw({ raw: baseTemplate }, [`
+            `;
+    } else {
+      body = `
                 <form method="POST">
                 <label for="minutes">Time (minutes)</label>
                 <input type="number"
@@ -127,18 +120,12 @@ async function handle(request) {
                     value="25" min="5" max="60" step="5"/>
                 <button id="start">start</button>
                 </form>
-            `,]);
-        }
+            `;
     }
 
-    return new Response(rendered, {
-    status: 200,
-    headers: {
-        'Content-Type': 'text/html',
-    },
-});
-}
-
-addEventListener('fetch', event => {
-  event.respondWith(handle(event.request));
-});
+    return new Response(render(body), {
+      status: 200,
+      headers: { "Content-Type": "text/html; charset=utf-8" },
+    });
+  },
+};

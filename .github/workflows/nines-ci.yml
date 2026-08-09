@@ -1,0 +1,32 @@
+name: CI for nines.tobys.cloud
+
+on:
+  push:
+    branches: [main]
+    paths: ['sites/nines/**']
+  pull_request:
+    branches: [main]
+    paths: ['sites/nines/**']
+
+jobs:
+  typecheck:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: sites/nines
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: sites/nines/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run typecheck
+        run: npm run typecheck

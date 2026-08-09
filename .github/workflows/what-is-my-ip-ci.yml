@@ -1,0 +1,35 @@
+name: CI for what-is-my-ip.tobys.cloud
+
+on:
+  push:
+    branches: [main]
+    paths: ['sites/what-is-my-ip/**']
+  pull_request:
+    branches: [main]
+    paths: ['sites/what-is-my-ip/**']
+
+jobs:
+  typecheck-and-test:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: sites/what-is-my-ip
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: sites/what-is-my-ip/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run typecheck
+        run: npm run typecheck
+
+      - name: Run tests
+        run: npm test
