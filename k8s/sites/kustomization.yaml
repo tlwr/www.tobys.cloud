@@ -11,13 +11,9 @@ images:
   - name: ghcr.io/tlwr/www-tobys-cloud-acceptance
     newTag: 956529e7c18f422d3b1a71469807b02910a883e3
 
-  - name: ghcr.io/tlwr/page-404
-    digest: 'sha256:9c341d5f84984244941270450191f529b544c92538fda3f265facc75705e290a'
-
 resources:
   - namespace.yaml
 
-  - page-404.yaml
   - www-toby-codes.yaml
   - www-tobys-cloud.yaml
 

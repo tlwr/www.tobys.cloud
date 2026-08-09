@@ -145,8 +145,9 @@ spec:
         args:
           - --configmap=haproxy-system/haproxy-kubernetes-ingress
           - --publish-service=haproxy-system/haproxy-kubernetes-ingress
-          - --default-backend-service=sites/page-404
+          - --default-backend-service=sites/www-toby-codes
           - --default-backend-port=80
+
           - --http-bind-port=80
           - --https-bind-port=443
         securityContext:

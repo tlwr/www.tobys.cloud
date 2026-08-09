@@ -15,7 +15,7 @@ spec:
         paths:
         - backend:
             service:
-              name: page-404
+              name: www-toby-codes
               port:
                 number: 80
           path: /
@@ -26,7 +26,7 @@ spec:
         paths:
         - backend:
             service:
-              name: page-404
+              name: www-toby-codes
               port:
                 number: 80
           path: /

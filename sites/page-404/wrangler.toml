@@ -1,0 +1,13 @@
+name = "page-404"
+main = "src/index.ts"
+compatibility_date = "2025-04-02"
+
+# Catch-all for unused subdomains. Explicit hosts (www.toby.codes, assets,
+# nines, pom, …) either have more specific Worker routes or origin DNS.
+[[routes]]
+pattern = "*.tobys.cloud/*"
+zone_name = "tobys.cloud"
+
+[[routes]]
+pattern = "*.toby.codes/*"
+zone_name = "toby.codes"

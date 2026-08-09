@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+const NOT_FOUND_HTML = `<!DOCTYPE html>
 <html lang="en-GB">
   <head>
     <meta charset="utf-8">
@@ -111,10 +111,10 @@
     <main class="container">
       <p class="term" aria-label="404 Not Found">
    __ __  ____  __ __     _   __      __     ______                      __
-  / // / / __ \/ // /    / | / /___  / /_   / ____/___  __  ______  ____/ /
- / // /_/ / / / // /_   /  |/ / __ \/ __/  / /_  / __ \/ / / / __ \/ __  /
+  / // / / __ \\/ // /    / | / /___  / /_   / ____/___  __  ______  ____/ /
+ / // /_/ / / / // /_   /  |/ / __ \\/ __/  / /_  / __ \\/ / / / __ \\/ __  /
 /__  __/ /_/ /__  __/  / /|  / /_/ / /_   / __/ / /_/ / /_/ / / / / /_/ /
-  /_/  \____/  /_/    /_/ |_/\____/\__/  /_/    \____/\__,_/_/ /_/\__,_/
+  /_/  \\____/  /_/    /_/ |_/\\____/\\__/  /_/    \\____/\\__,_/_/ /_/\\__,_/
       </p>
     </main>
 
@@ -123,3 +123,26 @@
     </footer>
   </body>
 </html>
+`;
+
+// www.toby.codes still has an origin on k8s. A *.toby.codes Worker route can
+// match it; fetch(request) goes to origin and does not re-invoke this Worker.
+const ORIGIN_PASSTHROUGH = new Set(["www.toby.codes"]);
+
+export default {
+  async fetch(request: Request): Promise<Response> {
+    const hostname = new URL(request.url).hostname;
+
+    if (ORIGIN_PASSTHROUGH.has(hostname)) {
+      return fetch(request);
+    }
+
+    return new Response(NOT_FOUND_HTML, {
+      status: 404,
+      headers: {
+        "content-type": "text/html; charset=utf-8",
+        "cache-control": "public, max-age=60",
+      },
+    });
+  },
+};
