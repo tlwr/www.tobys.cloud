@@ -1,0 +1,32 @@
+name: CI for page-404
+
+on:
+  push:
+    branches: [main]
+    paths: ['sites/page-404/**']
+  pull_request:
+    branches: [main]
+    paths: ['sites/page-404/**']
+
+jobs:
+  typecheck:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: sites/page-404
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: sites/page-404/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run typecheck
+        run: npm run typecheck

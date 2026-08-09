@@ -1,0 +1,32 @@
+name: CI for mischiefs.nl
+
+on:
+  push:
+    branches: [main]
+    paths: ['sites/mischiefs/**']
+  pull_request:
+    branches: [main]
+    paths: ['sites/mischiefs/**']
+
+jobs:
+  typecheck:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: sites/mischiefs
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: sites/mischiefs/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run typecheck
+        run: npm run typecheck
