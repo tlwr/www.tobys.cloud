@@ -6,6 +6,10 @@ compatibility_date = "2025-04-02"
 directory = "./public"
 binding = "ASSETS"
 
+# Use an explicit zone Route (not only a Custom Domain). page-404 binds
+# `*.tobys.cloud/*`; Cloudflare gives Routes precedence over Custom Domains,
+# so a Custom Domain alone loses to that wildcard. `assets.tobys.cloud/*` is
+# more specific and wins (same pattern as nines/pom Terraform routes).
 [[routes]]
-pattern = "assets.tobys.cloud"
-custom_domain = true
+pattern = "assets.tobys.cloud/*"
+zone_name = "tobys.cloud"
