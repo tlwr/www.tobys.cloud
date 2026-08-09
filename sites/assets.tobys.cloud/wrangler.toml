@@ -1,0 +1,11 @@
+name = "assets-tobys-cloud"
+main = "src/index.ts"
+compatibility_date = "2025-04-02"
+
+[assets]
+directory = "./public"
+binding = "ASSETS"
+
+[[routes]]
+pattern = "assets.tobys.cloud"
+custom_domain = true

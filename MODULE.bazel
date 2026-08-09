@@ -25,12 +25,10 @@ use_repo(
     "com_github_onsi_ginkgo_v2",
     "com_github_onsi_gomega",
     "com_github_phyber_negroni_gzip",
-    "com_github_prometheus_client_golang",
     "com_github_sirupsen_logrus",
     "com_github_unrolled_render",
     "com_github_unrolled_secure",
     "com_github_urfave_negroni",
-    "com_github_zbindenren_negroni_prometheus",
 )
 
 bazel_dep(name = "rules_ruby", version = "0.17.2")

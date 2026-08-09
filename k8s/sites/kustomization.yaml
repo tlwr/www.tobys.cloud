@@ -14,13 +14,9 @@ images:
   - name: ghcr.io/tlwr/page-404
     digest: 'sha256:9c341d5f84984244941270450191f529b544c92538fda3f265facc75705e290a'
 
-  - name: ghcr.io/tlwr/assets.tobys.cloud
-    digest: 'sha256:e0a410a5b670a721a9aee328827e4ed8b41667dca999eec17f8c77abb8318dc2'
-
 resources:
   - namespace.yaml
 
-  - assets-tobys-cloud.yaml
   - page-404.yaml
   - www-toby-codes.yaml
   - www-tobys-cloud.yaml
