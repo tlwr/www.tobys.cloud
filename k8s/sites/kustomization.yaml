@@ -5,16 +5,9 @@ kind: Kustomization
 namespace: sites
 
 images:
-  - name: ghcr.io/tlwr/www.toby.codes
-    digest: 'sha256:d31dc859dfe0eeb53ddb0b97bece7d162984a6a2f8cea8919154047c2b6c63dc'
-
   - name: ghcr.io/tlwr/www-tobys-cloud-acceptance
     newTag: 956529e7c18f422d3b1a71469807b02910a883e3
 
 resources:
   - namespace.yaml
-
-  - www-toby-codes.yaml
-  - www-tobys-cloud.yaml
-
   - acceptance-tests.yaml

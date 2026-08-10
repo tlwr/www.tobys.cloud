@@ -125,18 +125,8 @@ const NOT_FOUND_HTML = `<!DOCTYPE html>
 </html>
 `;
 
-// www.toby.codes still has an origin on k8s. A *.toby.codes Worker route can
-// match it; fetch(request) goes to origin and does not re-invoke this Worker.
-const ORIGIN_PASSTHROUGH = new Set(["www.toby.codes"]);
-
 export default {
-  async fetch(request: Request): Promise<Response> {
-    const hostname = new URL(request.url).hostname;
-
-    if (ORIGIN_PASSTHROUGH.has(hostname)) {
-      return fetch(request);
-    }
-
+  async fetch(_request: Request): Promise<Response> {
     return new Response(NOT_FOUND_HTML, {
       status: 404,
       headers: {

@@ -1,1 +1,4 @@
-lib
+node_modules
+.wrangler
+dist
+src/generated-posts.ts

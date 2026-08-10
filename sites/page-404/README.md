@@ -2,15 +2,13 @@
 
 Default 404 page for unused subdomains on `*.tobys.cloud` and `*.toby.codes`.
 
-Real sites keep **explicit DNS** (external-dns for k8s origins, Worker custom
-domains for CF sites). This Worker only handles residual/wildcard traffic on
-Cloudflare.
+Real sites keep **explicit DNS** (Worker zone routes / custom domains). This
+Worker only handles residual/wildcard traffic on Cloudflare. More specific
+routes (e.g. `www.toby.codes/*`) take precedence.
 
 ## Behaviour
 
 - Returns the branded 404 HTML with status `404`
-- If the request Host is `www.toby.codes` (still origin-hosted), passes through
-  to origin so a `*.toby.codes` route cannot steal the blog
 
 ## Develop
 

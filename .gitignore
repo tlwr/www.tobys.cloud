@@ -3,8 +3,6 @@
 
 bazel-*
 
-sites/page-404/page-404
-
 # Opencode Private Directories
 
 # Ignore the OpenCode directories

@@ -1,17 +1,22 @@
 # OpenCode Guidelines
 
 ## Build, Lint, Test Commands
-- **Build**: Use `bazel build //...` to build the project.
-- **Lint**: Run `bazel run //:lint` to lint the codebase.
-- **Test**: Execute tests using `bazel test //...`.
-- **Single Test**: To run a specific test, use `bazel test //path/to:target_test --test_arg=--gtest_filter=TestName.TestCase`.
+
+Sites under `sites/` are Cloudflare Workers (Node/TypeScript). From each site directory:
+
+- **Install**: `npm ci`
+- **Dev**: `npm run dev`
+- **Typecheck**: `npm run typecheck`
+- **Test** (where present): `npm test`
+- **Deploy**: `npm run deploy`
+
+Acceptance tests (Ruby / live sites):
+
+- `make acceptance-tests` — `cd acceptance && bundle exec rspec`
+- Image build/push: `make build-acceptance-tests` / `make push-acceptance-tests`
 
 ## Code Style Guidelines
-- **Imports**: Group imports logically; standard libraries should be imported first, followed by third-party libraries, and then local packages.
-- **Formatting**: Use `gofmt` for Go files and appropriate formatters for other languages in the repo.
-- **Types**: Prefer explicit types for function parameters and return values to enhance readability.
-- **Naming Conventions**: Use camelCase for variables and functions; constants should be in ALL_CAPS.
-- **Error Handling**: Always check for errors. Use `if err != nil { ... }` pattern, and return errors when appropriate.
 
-## Cursor and Copilot Rules
-- No specific Cursor or Copilot instructions found in the repository.
+- Prefer TypeScript with `strict` for Workers.
+- Keep site packages self-contained (`package.json` per site under `sites/`).
+- Error handling: fail closed on missing content; return proper HTTP status codes.

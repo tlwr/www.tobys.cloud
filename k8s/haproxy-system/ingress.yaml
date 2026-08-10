@@ -145,7 +145,7 @@ spec:
         args:
           - --configmap=haproxy-system/haproxy-kubernetes-ingress
           - --publish-service=haproxy-system/haproxy-kubernetes-ingress
-          - --default-backend-service=sites/www-toby-codes
+          - --default-backend-service=jasmijn/jvnl
           - --default-backend-port=80
 
           - --http-bind-port=80

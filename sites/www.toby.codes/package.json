@@ -1,0 +1,29 @@
+{
+  "name": "www.toby.codes",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "toby.codes personal site on Cloudflare Workers",
+  "scripts": {
+    "generate-posts": "node scripts/generate-posts.mjs",
+    "predev": "npm run generate-posts",
+    "predeploy": "npm run generate-posts",
+    "pretypecheck": "npm run generate-posts",
+    "pretest": "npm run generate-posts",
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run"
+  },
+
+  "dependencies": {
+    "hono": "^4.11.10",
+    "marked": "^17.0.3"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "^5.20260801.1",
+    "typescript": "^5.9.3",
+    "vitest": "^4.0.18",
+    "wrangler": "^4.66.0"
+  }
+}
