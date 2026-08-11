@@ -7,10 +7,15 @@ directory = "./public"
 binding = "ASSETS"
 run_worker_first = true
 
-# Console title: www-toby-codes-users. Binding name stays USERS for app code.
+# Console titles: www-toby-codes-users / www-toby-codes-posts.
+# Binding names stay short for app code.
 [[kv_namespaces]]
 binding = "USERS"
 id = "f75e3342fcce46eb98acd84749db36a3"
+
+[[kv_namespaces]]
+binding = "POSTS"
+id = "eee5ba33649d476ba1ae336acec193ce"
 
 # Custom Domains provision DNS for the hostnames. Zone Routes with /* are
 # more specific than page-404's *.toby.codes/* and win for request routing

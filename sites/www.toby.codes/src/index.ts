@@ -1,12 +1,14 @@
 import { Hono } from "hono";
 import { csrf } from "hono/csrf";
 import { marked } from "marked";
-import { clearSession, getIsLoggedIn, loginUser } from "./auth";
+import { clearSession, getIsLoggedIn, loginUser, requireAuth } from "./auth";
 import type { Env } from "./env";
-import { getPostMarkdown, listPosts } from "./posts";
+import { getPost, listPosts } from "./posts";
 import {
   INDEX_HTML,
   WORK_HTML,
+  adminIndexHtml,
+  adminPostsHtml,
   layout,
   loginHtml,
   postHtml,
@@ -49,7 +51,9 @@ app.get("/work", async (c) => {
 
 app.get("/posts", async (c) => {
   const isLoggedIn = await getIsLoggedIn(c);
-  const { ongoing, dated } = listPosts();
+  const { ongoing, dated } = await listPosts(c.env.POSTS, {
+    includeHidden: isLoggedIn,
+  });
   return c.html(layout(postsListHtml(ongoing, dated), { isLoggedIn }));
 });
 
@@ -61,8 +65,8 @@ app.get("/posts/:slug", async (c) => {
     slug = slug.slice(0, -3);
   }
 
-  const markdown = getPostMarkdown(slug);
-  if (markdown === null) {
+  const post = await getPost(c.env.POSTS, slug);
+  if (post === null || (!post.frontmatter.visible && !isLoggedIn)) {
     if (asMarkdown) {
       return c.text("404 NOT FOUND", 404, {
         "Content-Type": "text/plain; charset=utf-8",
@@ -71,14 +75,14 @@ app.get("/posts/:slug", async (c) => {
     return c.html(layout("<h2>404 NOT FOUND</h2>", { isLoggedIn }), 404);
   }
 
-  // Raw markdown: no layout/nav — just the source.
+  // Raw markdown: body only (frontmatter stripped), no layout/nav.
   if (asMarkdown) {
-    return c.body(markdown, 200, {
+    return c.body(post.body, 200, {
       "Content-Type": "text/markdown; charset=utf-8",
     });
   }
 
-  const body = await marked.parse(markdown);
+  const body = await marked.parse(post.body);
   return c.html(layout(postHtml(slug, body), { isLoggedIn }));
 });
 
@@ -95,8 +99,17 @@ app.post("/login", async (c) => {
   const body = await c.req.parseBody();
   const { username, password } = body;
   if (typeof username === "string" && typeof password === "string") {
-    if (await loginUser(c, username, password)) {
-      return c.redirect("/");
+    try {
+      if (await loginUser(c, username, password)) {
+        return c.redirect("/");
+      }
+    } catch (err) {
+      const msg =
+        err instanceof Error ? err.message : "Login failed (server misconfigured)";
+      return c.html(
+        layout(loginHtml(msg), { robots: "noindex", isLoggedIn: false }),
+        500,
+      );
     }
   }
   return c.html(
@@ -116,6 +129,30 @@ app.get("/logout", (c) => {
 app.post("/logout", (c) => {
   clearSession(c);
   return c.redirect("/");
+});
+
+// Admin (auth required; linked from nav when signed in).
+app.get("/admin", requireAuth, async (c) => {
+  return c.html(
+    layout(adminIndexHtml(), {
+      robots: "noindex",
+      isLoggedIn: true,
+      wide: true,
+    }),
+  );
+});
+
+app.get("/admin/posts", requireAuth, async (c) => {
+  const { ongoing, dated } = await listPosts(c.env.POSTS, {
+    includeHidden: true,
+  });
+  return c.html(
+    layout(adminPostsHtml(ongoing, dated), {
+      robots: "noindex",
+      isLoggedIn: true,
+      wide: true,
+    }),
+  );
 });
 
 app.notFound(async (c) => {

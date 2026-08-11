@@ -31,10 +31,18 @@ const assets404 = {
   fetch: async () => new Response("not found", { status: 404 }),
 } as unknown as Fetcher;
 
+const emptyPosts = {
+  get: async () => null,
+  put: async () => {},
+  delete: async () => {},
+  list: async () => ({ keys: [], list_complete: true, cacheStatus: null }),
+} as unknown as KVNamespace;
+
 function env(users: MemoryKV): Env {
   return {
     ASSETS: assets404,
     USERS: users as unknown as KVNamespace,
+    POSTS: emptyPosts,
     SESSION_SECRET: "test-session-secret",
     NODE_ENV: "test",
   };
@@ -134,6 +142,7 @@ describe("auth", () => {
     const homeHtml = await home.text();
     expect(homeHtml).toContain('href="/logout"');
     expect(homeHtml).toContain("Log out");
+    expect(homeHtml).toContain('href="/admin"');
     expect(homeHtml).not.toContain('href="/login"');
 
     const logout = await request(
@@ -143,5 +152,49 @@ describe("auth", () => {
     );
     expect(logout.status).toBe(302);
     expect(logout.headers.get("location")).toBe("/");
+  });
+
+  it("protects /admin and /admin/posts", async () => {
+    const unauth = await request("/admin", {}, users);
+    expect(unauth.status).toBe(302);
+    expect(unauth.headers.get("location")).toBe("/login");
+
+    const body = new URLSearchParams({
+      username: "toby",
+      password: "s3cret",
+    });
+    const loginRes = await request(
+      "/login",
+      { method: "POST", body, headers: { Origin: "http://localhost" } },
+      users,
+    );
+    const rawCookies =
+      typeof loginRes.headers.getSetCookie === "function"
+        ? loginRes.headers.getSetCookie()
+        : [loginRes.headers.get("set-cookie") ?? ""];
+    const cookieHeader = rawCookies
+      .filter(Boolean)
+      .map((c) => c.split(";")[0])
+      .join("; ");
+
+    const admin = await request(
+      "/admin",
+      { headers: { Cookie: cookieHeader } },
+      users,
+    );
+    expect(admin.status).toBe(200);
+    const adminHtml = await admin.text();
+    expect(adminHtml).toContain('href="/admin/posts"');
+
+    const posts = await request(
+      "/admin/posts",
+      { headers: { Cookie: cookieHeader } },
+      users,
+    );
+    expect(posts.status).toBe(200);
+    const postsHtml = await posts.text();
+    expect(postsHtml).toContain("Dated");
+    expect(postsHtml).toContain("Undated");
+    expect(postsHtml).toMatch(/🟢 on|🔴 off/);
   });
 });

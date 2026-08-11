@@ -32,11 +32,11 @@ function run(args, { allowFail = false } = {}) {
   }
 }
 
-function parseTomlBindingUsers(toml) {
-  const block = toml.match(
-    /\[\[kv_namespaces\]\]\s*binding\s*=\s*"USERS"\s*id\s*=\s*"([^"]+)"/,
+function parseTomlBindingId(toml, binding) {
+  const re = new RegExp(
+    `\\[\\[kv_namespaces\\]\\]\\s*binding\\s*=\\s*"${binding}"\\s*id\\s*=\\s*"([^"]+)"`,
   );
-  return block?.[1] ?? null;
+  return toml.match(re)?.[1] ?? null;
 }
 
 let failed = 0;
@@ -70,17 +70,23 @@ if (secretNames.has("SESSION_SECRET")) {
   bad("SESSION_SECRET is missing — run: npm run set-session-secret");
 }
 
-// --- wrangler.toml USERS id ---
+// --- wrangler.toml KV ids ---
 const tomlPath = path.join(root, "wrangler.toml");
 const toml = fs.readFileSync(tomlPath, "utf8");
-const usersId = parseTomlBindingUsers(toml);
+const usersId = parseTomlBindingId(toml, "USERS");
+const postsId = parseTomlBindingId(toml, "POSTS");
 if (usersId) {
   ok(`USERS kv id in wrangler.toml: ${usersId}`);
 } else {
-  bad('USERS kv id missing from wrangler.toml ([[kv_namespaces]] binding = "USERS")');
+  bad('USERS kv id missing from wrangler.toml');
+}
+if (postsId) {
+  ok(`POSTS kv id in wrangler.toml: ${postsId}`);
+} else {
+  bad('POSTS kv id missing from wrangler.toml');
 }
 
-// --- remote KV readable ---
+// --- remote USERS KV ---
 if (usersId) {
   try {
     const listOut = run([
@@ -107,6 +113,36 @@ if (usersId) {
     }
   } catch (err) {
     bad(`USERS KV not reachable remotely: ${err.stderr || err.message}`);
+  }
+}
+
+// --- remote POSTS KV ---
+if (postsId) {
+  try {
+    const listOut = run([
+      "wrangler",
+      "kv",
+      "key",
+      "list",
+      "--remote",
+      "--binding=POSTS",
+    ]);
+    let keys = [];
+    try {
+      keys = JSON.parse(listOut || "[]");
+    } catch {
+      keys = [];
+    }
+    const n = Array.isArray(keys) ? keys.length : 0;
+    if (n > 0) {
+      ok(`POSTS KV reachable; ${n} key(s) present`);
+    } else {
+      bad(
+        "POSTS KV reachable but empty — run: npm run push-posts -- --remote",
+      );
+    }
+  } catch (err) {
+    bad(`POSTS KV not reachable remotely: ${err.stderr || err.message}`);
   }
 }
 

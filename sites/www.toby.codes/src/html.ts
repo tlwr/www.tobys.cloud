@@ -1,11 +1,15 @@
 export function layout(
   body: string,
-  options?: { robots?: string; isLoggedIn?: boolean },
+  options?: { robots?: string; isLoggedIn?: boolean; wide?: boolean },
 ): string {
   const robots = options?.robots ?? "index, follow";
   const authNav = options?.isLoggedIn
-    ? `\n          <a href="/logout">Log out</a>`
+    ? `\n          <a href="/admin">Admin</a>\n          <a href="/logout">Log out</a>`
     : "";
+  // Public pages keep the shared 52em container; admin/editor use a wider shell.
+  const containerAttr = options?.wide
+    ? 'class="container" style="max-width: min(96rem, 96vw);"'
+    : 'class="container"';
   return `<!DOCTYPE html>
 <html lang="en-GB">
   <head>
@@ -18,7 +22,7 @@ export function layout(
   </head>
 
   <body>
-    <div class="container">
+    <div ${containerAttr}>
       <header>
         <h1>Toby Lorne</h1>
         <nav>
@@ -29,7 +33,7 @@ export function layout(
       </header>
     </div>
 
-    <div class="container">
+    <div ${containerAttr}>
       ${body}
     </div>
   </body>
@@ -202,6 +206,74 @@ export function postHtml(slug: string, bodyHtml: string): string {
   </p>
 ${bodyHtml}
 </main>`;
+}
+
+export function adminIndexHtml(): string {
+  return `<main role="main" class="homepage">
+  <h2>Admin</h2>
+  <ul class="no-bullet">
+    <li><a href="/admin/posts">Posts</a></li>
+  </ul>
+</main>`;
+}
+
+export function adminPostsHtml(
+  ongoing: { slug: string; title: string; visible: boolean }[],
+  dated: { slug: string; title: string; date?: string; visible: boolean }[],
+): string {
+  return `<main role="main" class="homepage">
+  <p><a href="/admin">← Admin</a></p>
+  <h2>Posts</h2>
+
+  <h3>Dated</h3>
+  ${adminPostsTable(dated, true)}
+
+  <h3>Undated</h3>
+  ${adminPostsTable(ongoing, false)}
+</main>`;
+}
+
+function adminPostsTable(
+  posts: { slug: string; title: string; date?: string; visible: boolean }[],
+  showDate: boolean,
+): string {
+  if (posts.length === 0) {
+    return `<p><em>None</em></p>`;
+  }
+
+  const header = showDate
+    ? `<tr><th>Visible</th><th>Date</th><th>Title</th><th>Slug</th></tr>`
+    : `<tr><th>Visible</th><th>Title</th><th>Slug</th></tr>`;
+
+  const rows = posts
+    .map((p) => {
+      const visible = p.visible ? "🟢 on" : "🔴 off";
+      const titleLink = `<a href="/posts/${escapeHtml(p.slug)}">${escapeHtml(p.title)}</a>`;
+      const slugCell = `<code>${escapeHtml(p.slug)}</code>`;
+      if (showDate) {
+        return `<tr>
+      <td>${visible}</td>
+      <td><span style="font-family: monospace;">${escapeHtml(p.date ?? "")}</span></td>
+      <td>${titleLink}</td>
+      <td>${slugCell}</td>
+    </tr>`;
+      }
+      return `<tr>
+      <td>${visible}</td>
+      <td>${titleLink}</td>
+      <td>${slugCell}</td>
+    </tr>`;
+    })
+    .join("\n");
+
+  return `<table>
+  <thead>
+    ${header}
+  </thead>
+  <tbody>
+${rows}
+  </tbody>
+</table>`;
 }
 
 /** Login form body — not linked from public nav. */

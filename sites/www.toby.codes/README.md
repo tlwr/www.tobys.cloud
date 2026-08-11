@@ -3,8 +3,9 @@
 Personal site for [Toby Lorne](https://www.toby.codes), on Cloudflare Workers
 (Hono + marked). Markdown posts live in `posts/`; static files in `public/`.
 
-Post storage is file-backed for now so an editor (like utilityroom.club) can
-later write to KV/R2 without changing public routes.
+Posts are stored in **POSTS** KV (`www-toby-codes-posts`). The repo `posts/`
+directory is the git source of truth for bulk sync; the app prefers KV and
+falls back to the generate-posts bundle if KV is empty.
 
 ## Auth
 
@@ -25,9 +26,10 @@ Multi-user login (utilityroom-style): bcrypt hashes in **USERS** KV
 ### Local secrets
 
 ```bash
-cp .dev.vars.example .dev.vars
-# set SESSION_SECRET to a long random string, e.g. openssl rand -base64 32
+# Creates .dev.vars with a random SESSION_SECRET if missing (also runs on npm run dev)
+npm run ensure-dev-vars
 npm run seed-local
+npm run push-posts -- --local
 npm run dev
 ```
 
@@ -40,10 +42,25 @@ npm run set-session-secret
 # Seed a user into production KV
 npm run seed-remote -- toby 'your-password'
 
+# Sync posts/*.md → remote POSTS KV
+npm run push-posts -- --remote
+
 # Verify secrets + KV match what the app expects
 npm run check-remote
 
 npm run deploy
+```
+
+### Posts sync
+
+```bash
+# Repo → KV
+npm run push-posts -- --local
+npm run push-posts -- --remote
+
+# KV → repo (after browser edits; then git commit)
+npm run pull-posts -- --local
+npm run pull-posts -- --remote
 ```
 
 ### Tools
@@ -53,7 +70,9 @@ npm run deploy
 | `npm run seed-local` | Put user in local Miniflare KV (defaults: toby / secret) |
 | `npm run seed-remote` | Put user in remote `www-toby-codes-users` |
 | `npm run set-session-secret` | Crypto-random `SESSION_SECRET` → remote Worker |
-| `npm run check-remote` | Assert secret + KV binding + at least one user |
+| `npm run check-remote` | Assert secret + USERS/POSTS KV setup |
+| `npm run push-posts` | Sync `posts/*.md` → POSTS KV (`--local` \| `--remote`) |
+| `npm run pull-posts` | Sync POSTS KV → `posts/*.md` (`--local` \| `--remote`) |
 
 ## Develop
 

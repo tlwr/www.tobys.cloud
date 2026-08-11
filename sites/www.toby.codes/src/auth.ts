@@ -10,11 +10,20 @@ import type { Env } from "./env";
 
 type AppContext = Context<{ Bindings: Env }>;
 
-export function getSessionSecret(c: AppContext): string {
-  const secret = c.env.SESSION_SECRET;
+/** Returns null when unset — never invents a secret. */
+export function getSessionSecret(c: AppContext): string | null {
+  const secret = c.env.SESSION_SECRET?.trim();
+  return secret ? secret : null;
+}
+
+/**
+ * Required for login / signing cookies. Throws if missing (no insecure fallback).
+ */
+export function requireSessionSecret(c: AppContext): string {
+  const secret = getSessionSecret(c);
   if (!secret) {
     throw new Error(
-      "SESSION_SECRET is not set. For remote: npm run set-session-secret. For local: put SESSION_SECRET in .dev.vars (see .dev.vars.example).",
+      "SESSION_SECRET is not set. For remote: npm run set-session-secret. For local: cp .dev.vars.example .dev.vars and set SESSION_SECRET (or npm run ensure-dev-vars).",
     );
   }
   return secret;
@@ -24,6 +33,10 @@ export async function getLoggedInUsername(
   c: AppContext,
 ): Promise<string | null> {
   const sessionSecret = getSessionSecret(c);
+  // Without a secret we cannot verify cookies — treat as logged out (public pages stay up).
+  if (!sessionSecret) {
+    return null;
+  }
   const username = await getSignedCookie(c, sessionSecret, "username");
   if (username === false || !username) {
     return null;
@@ -45,6 +58,9 @@ export async function loginUser(
   if (!username || !password) {
     return false;
   }
+
+  // Fail closed: cannot mint sessions without a configured secret.
+  const sessionSecret = requireSessionSecret(c);
 
   const userData = await c.env.USERS.get(username);
   if (!userData) {
@@ -69,7 +85,6 @@ export async function loginUser(
     return false;
   }
 
-  const sessionSecret = getSessionSecret(c);
   const secure = new URL(c.req.url).protocol === "https:";
   const options = {
     httpOnly: true,
@@ -98,7 +113,7 @@ export function clearSession(c: AppContext): void {
   deleteCookie(c, "loggedInAt", { path: "/" });
 }
 
-/** Use on future editor/admin routes. Not applied to public pages yet. */
+/** Protect admin/editor routes; unauthenticated users go to /login. */
 export async function requireAuth(
   c: AppContext,
   next: Next,

@@ -13,10 +13,18 @@ const emptyUsers = {
   list: async () => ({ keys: [], list_complete: true, cacheStatus: null }),
 } as unknown as KVNamespace;
 
+const emptyPosts = {
+  get: async () => null,
+  put: async () => {},
+  delete: async () => {},
+  list: async () => ({ keys: [], list_complete: true, cacheStatus: null }),
+} as unknown as KVNamespace;
+
 function env(): Env {
   return {
     ASSETS: assets404,
     USERS: emptyUsers,
+    POSTS: emptyPosts,
     SESSION_SECRET: "test-session-secret",
   };
 }
@@ -39,18 +47,64 @@ describe("post routes", () => {
     expect(html).toContain('href="/posts"');
   });
 
-  it("serves raw markdown without layout for .md suffix", async () => {
+  it("serves raw markdown without layout or frontmatter for .md suffix", async () => {
+    const posts = {
+      get: async (key: string) => {
+        if (key === "With-Meta") {
+          return "---\nvisible: true\n---\n# Title\n\nBody only.\n";
+        }
+        return null;
+      },
+      put: async () => {},
+      delete: async () => {},
+      list: async () => ({
+        keys: [{ name: "With-Meta" }],
+        list_complete: true,
+        cacheStatus: null,
+      }),
+    } as unknown as KVNamespace;
+
     const res = await app.request(
-      "/posts/2020-02-FOSDEM-2020.md",
+      "/posts/With-Meta.md",
       {},
-      env(),
+      { ...env(), POSTS: posts },
     );
     expect(res.status).toBe(200);
     expect(res.headers.get("content-type")).toContain("text/markdown");
     const body = await res.text();
-    expect(body).toContain("Eurostar");
+    expect(body).toContain("# Title");
+    expect(body).toContain("Body only.");
+    expect(body).not.toContain("visible:");
+    expect(body).not.toContain("---");
     expect(body).not.toContain("<nav>");
     expect(body).not.toContain("Toby Lorne");
+  });
+
+  it("404s hidden posts for anonymous users", async () => {
+    const posts = {
+      get: async () => "---\nvisible: false\n---\n# Draft\n",
+      put: async () => {},
+      delete: async () => {},
+      list: async () => ({
+        keys: [{ name: "Draft" }],
+        list_complete: true,
+        cacheStatus: null,
+      }),
+    } as unknown as KVNamespace;
+
+    const html = await app.request(
+      "/posts/Draft",
+      {},
+      { ...env(), POSTS: posts },
+    );
+    expect(html.status).toBe(404);
+
+    const md = await app.request(
+      "/posts/Draft.md",
+      {},
+      { ...env(), POSTS: posts },
+    );
+    expect(md.status).toBe(404);
   });
 
   it("returns plain 404 for missing .md", async () => {

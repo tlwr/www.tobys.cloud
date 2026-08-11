@@ -6,7 +6,7 @@
   "description": "toby.codes personal site on Cloudflare Workers",
   "scripts": {
     "generate-posts": "node tools/generate-posts.mjs",
-    "predev": "npm run generate-posts",
+    "predev": "npm run generate-posts && npm run ensure-dev-vars",
     "predeploy": "npm run generate-posts",
     "pretypecheck": "npm run generate-posts",
     "pretest": "npm run generate-posts",
@@ -17,7 +17,10 @@
     "seed-local": "node tools/seed-local.mjs",
     "seed-remote": "node tools/seed-remote.mjs",
     "check-remote": "node tools/check-remote.mjs",
-    "set-session-secret": "node tools/set-session-secret.mjs"
+    "set-session-secret": "node tools/set-session-secret.mjs",
+    "ensure-dev-vars": "node tools/ensure-dev-vars.mjs",
+    "push-posts": "node tools/push-posts.mjs",
+    "pull-posts": "node tools/pull-posts.mjs"
   },
 
   "dependencies": {
