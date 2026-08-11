@@ -103,6 +103,18 @@ export async function getPostBody(
   return post?.body ?? null;
 }
 
+/** Write full raw markdown (including frontmatter) for an existing or new slug. */
+export async function putPost(
+  postsKv: KVNamespace,
+  slug: string,
+  raw: string,
+): Promise<void> {
+  if (!SLUG_RX.test(slug)) {
+    throw new Error("invalid slug");
+  }
+  await postsKv.put(slug, raw);
+}
+
 /**
  * List posts. When `includeHidden` is false (public), drafts are omitted.
  * Requires reading each document to resolve frontmatter `visible`.

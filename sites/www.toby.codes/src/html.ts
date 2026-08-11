@@ -1,6 +1,11 @@
 export function layout(
   body: string,
-  options?: { robots?: string; isLoggedIn?: boolean; wide?: boolean },
+  options?: {
+    robots?: string;
+    isLoggedIn?: boolean;
+    wide?: boolean;
+    htmx?: boolean;
+  },
 ): string {
   const robots = options?.robots ?? "index, follow";
   const authNav = options?.isLoggedIn
@@ -10,6 +15,9 @@ export function layout(
   const containerAttr = options?.wide
     ? 'class="container" style="max-width: min(96rem, 96vw);"'
     : 'class="container"';
+  const htmxScript = options?.htmx
+    ? `\n    <script src="https://cdnjs.cloudflare.com/ajax/libs/htmx/1.9.12/htmx.min.js" integrity="sha512-JvpjarJlOl4sW26MnEb3IdSAcGdeTeOaAlu2gUZtfFrRgnChdzELOZKl0mN6ZvI0X+xiX5UMvxjK2Rx2z/fliw==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>`
+    : "";
   return `<!DOCTYPE html>
 <html lang="en-GB">
   <head>
@@ -18,7 +26,7 @@ export function layout(
     <meta name="robots" content="${robots}">
     <link rel="stylesheet" href="https://assets.tobys.cloud/styles.css" type="text/css">
     <link rel="icon" href="https://assets.tobys.cloud/favicon.ico">
-    <title>Toby Lorne</title>
+    <title>Toby Lorne</title>${htmxScript}
   </head>
 
   <body>
@@ -248,19 +256,21 @@ function adminPostsTable(
   const rows = posts
     .map((p) => {
       const visible = p.visible ? "🟢 on" : "🔴 off";
-      const titleLink = `<a href="/posts/${escapeHtml(p.slug)}">${escapeHtml(p.title)}</a>`;
+      const editHref = `/admin/posts/${escapeHtml(p.slug)}/edit`;
+      const titleLink = `<a href="${editHref}">${escapeHtml(p.title)}</a>`;
+      const viewLink = `<a href="/posts/${escapeHtml(p.slug)}">view</a>`;
       const slugCell = `<code>${escapeHtml(p.slug)}</code>`;
       if (showDate) {
         return `<tr>
       <td>${visible}</td>
       <td><span style="font-family: monospace;">${escapeHtml(p.date ?? "")}</span></td>
-      <td>${titleLink}</td>
+      <td>${titleLink} · ${viewLink}</td>
       <td>${slugCell}</td>
     </tr>`;
       }
       return `<tr>
       <td>${visible}</td>
-      <td>${titleLink}</td>
+      <td>${titleLink} · ${viewLink}</td>
       <td>${slugCell}</td>
     </tr>`;
     })
@@ -274,6 +284,150 @@ function adminPostsTable(
 ${rows}
   </tbody>
 </table>`;
+}
+
+/** Split markdown / preview editor. `raw` includes frontmatter. */
+export function adminPostEditHtml(slug: string, raw: string): string {
+  const safeSlug = escapeHtml(slug);
+  const safeRaw = escapeHtml(raw);
+  return `<main role="main" class="homepage">
+  <style>
+    .editor-toolbar {
+      display: grid;
+      grid-template-columns: 1fr auto 1fr;
+      gap: 0.75rem 1rem;
+      align-items: center;
+      margin: 1rem 0;
+    }
+    .editor-toolbar-links {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.75rem 1rem;
+      align-items: center;
+      justify-content: flex-start;
+    }
+    .editor-toolbar-status {
+      text-align: center;
+      min-height: 1.5em;
+    }
+    .editor-toolbar-actions {
+      display: flex;
+      justify-content: flex-end;
+      align-items: center;
+    }
+    .editor-toolbar button:disabled {
+      opacity: 0.6;
+    }
+    .editor-split {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1rem;
+      height: calc(100vh - 14rem);
+      min-height: 16rem;
+    }
+    .editor-split textarea,
+    .editor-preview {
+      height: 100%;
+      overflow: auto;
+      box-sizing: border-box;
+      border: 1px solid var(--dark, #111);
+      padding: 0.75rem;
+      margin: 0;
+      background: var(--light, #f2f0ec);
+      color: var(--dark, #111);
+    }
+    .editor-split textarea {
+      width: 100%;
+      resize: none;
+      font-family: ui-monospace, "Berkeley Mono", monospace;
+      font-size: 0.9rem;
+      line-height: 1.45;
+    }
+    .editor-preview { line-height: 1.5; }
+    #save-status:empty { display: none; }
+    @media (max-width: 52em) {
+      .editor-toolbar {
+        grid-template-columns: 1fr;
+        justify-items: stretch;
+      }
+      .editor-toolbar-status,
+      .editor-toolbar-actions {
+        justify-content: flex-start;
+        text-align: left;
+      }
+      .editor-split {
+        grid-template-columns: 1fr;
+        height: auto;
+      }
+      .editor-split textarea,
+      .editor-preview {
+        min-height: 40vh;
+        height: 40vh;
+      }
+    }
+  </style>
+
+  <p><a href="/admin/posts">← Posts</a></p>
+  <h2>Edit <code>${safeSlug}</code></h2>
+
+  <form id="editor-form"
+        hx-post="/admin/posts/${safeSlug}"
+        hx-target="#save-status"
+        hx-swap="innerHTML"
+        hx-disabled-elt="#save-btn">
+    <div class="editor-toolbar">
+      <div class="editor-toolbar-links">
+        <a href="/posts/${safeSlug}" target="_blank" rel="noopener">Open public ↗</a>
+        <a href="/posts/${safeSlug}.md" target="_blank" rel="noopener">Raw .md ↗</a>
+      </div>
+      <div class="editor-toolbar-status">
+        <span id="save-status" aria-live="polite"></span>
+      </div>
+      <div class="editor-toolbar-actions">
+        <button type="submit" id="save-btn">Save</button>
+      </div>
+    </div>
+
+    <div class="editor-split">
+      <label class="visually-hidden" for="markdown" style="position:absolute;left:-9999px">Markdown</label>
+      <textarea id="markdown"
+                name="markdown"
+                spellcheck="false"
+                hx-post="/admin/posts/preview"
+                hx-trigger="input delay:250ms, load"
+                hx-target="#preview"
+                hx-include="this"
+                hx-swap="innerHTML">${safeRaw}</textarea>
+      <div id="preview" class="editor-preview" aria-live="polite"></div>
+    </div>
+  </form>
+
+  <script>
+    (function () {
+      var ta = document.getElementById("markdown");
+      var form = document.getElementById("editor-form");
+      var statusEl = document.getElementById("save-status");
+      var dirty = false;
+      var clearTimer = null;
+      if (!ta || !form || !statusEl) return;
+      ta.addEventListener("input", function () { dirty = true; });
+      form.addEventListener("htmx:afterRequest", function (e) {
+        if (!(e.detail.successful && e.detail.elt === form)) return;
+        dirty = false;
+        if (clearTimer) clearTimeout(clearTimer);
+        clearTimer = setTimeout(function () {
+          statusEl.innerHTML = "";
+          clearTimer = null;
+        }, 5000);
+      });
+      window.addEventListener("beforeunload", function (e) {
+        if (!dirty) return;
+        e.preventDefault();
+        e.returnValue = "";
+      });
+    })();
+  </script>
+</main>`;
 }
 
 /** Login form body — not linked from public nav. */

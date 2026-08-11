@@ -3,11 +3,13 @@ import { csrf } from "hono/csrf";
 import { marked } from "marked";
 import { clearSession, getIsLoggedIn, loginUser, requireAuth } from "./auth";
 import type { Env } from "./env";
-import { getPost, listPosts } from "./posts";
+import { parsePost } from "./frontmatter";
+import { getPost, listPosts, putPost } from "./posts";
 import {
   INDEX_HTML,
   WORK_HTML,
   adminIndexHtml,
+  adminPostEditHtml,
   adminPostsHtml,
   layout,
   loginHtml,
@@ -59,7 +61,7 @@ app.get("/posts", async (c) => {
 
 app.get("/posts/:slug", async (c) => {
   const isLoggedIn = await getIsLoggedIn(c);
-  let slug = c.req.param("slug");
+  let slug = c.req.param("slug") ?? "";
   const asMarkdown = slug.endsWith(".md");
   if (asMarkdown) {
     slug = slug.slice(0, -3);
@@ -153,6 +155,50 @@ app.get("/admin/posts", requireAuth, async (c) => {
       wide: true,
     }),
   );
+});
+
+// Preview: full raw markdown in, strip frontmatter, return HTML fragment.
+app.post("/admin/posts/preview", requireAuth, async (c) => {
+  const body = await c.req.parseBody();
+  const markdown = typeof body.markdown === "string" ? body.markdown : "";
+  const { body: mdBody } = parsePost(markdown);
+  const html = await marked.parse(mdBody);
+  return c.html(html);
+});
+
+app.get("/admin/posts/:slug/edit", requireAuth, async (c) => {
+  const slug = c.req.param("slug") ?? "";
+  const post = await getPost(c.env.POSTS, slug);
+  if (post === null) {
+    return c.html(
+      layout("<h2>404 NOT FOUND</h2>", {
+        robots: "noindex",
+        isLoggedIn: true,
+        wide: true,
+      }),
+      404,
+    );
+  }
+  return c.html(
+    layout(adminPostEditHtml(slug, post.raw), {
+      robots: "noindex",
+      isLoggedIn: true,
+      wide: true,
+      htmx: true,
+    }),
+  );
+});
+
+app.post("/admin/posts/:slug", requireAuth, async (c) => {
+  const slug = c.req.param("slug") ?? "";
+  const existing = await getPost(c.env.POSTS, slug);
+  if (existing === null) {
+    return c.html("<span>Not found</span>", 404);
+  }
+  const body = await c.req.parseBody();
+  const markdown = typeof body.markdown === "string" ? body.markdown : "";
+  await putPost(c.env.POSTS, slug, markdown);
+  return c.html("<span>Saved</span>");
 });
 
 app.notFound(async (c) => {
