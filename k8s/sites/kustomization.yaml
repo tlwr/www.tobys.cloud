@@ -6,7 +6,7 @@ namespace: sites
 
 images:
   - name: ghcr.io/tlwr/www-tobys-cloud-acceptance
-    newTag: 956529e7c18f422d3b1a71469807b02910a883e3
+    newTag: 6548cdb423ccd4f7c89a8c15336576bbd3ed2c18
 
 resources:
   - namespace.yaml

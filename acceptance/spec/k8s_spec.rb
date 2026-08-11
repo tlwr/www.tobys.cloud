@@ -7,17 +7,15 @@ describe 'kubernetes', type: :feature do
   let(:pod_name) { 'acceptance-tests-static-busybox' }
 
   let(:client) do
-    bzl_ext_kubeconfig = Dir.glob('../**/*/kubeconfig.yaml').first
-
-    return K8s::Client.config(K8s::Config.load_file(bzl_ext_kubeconfig)) if File.exist?(bzl_ext_kubeconfig)
-
-    if ENV['KUBECONFIG']
-      return K8s::Client.in_cluster_config
-    elsif ENV['USER'] == 'toby'
-      return K8s::Client.config(K8s::Config.load_file(File.expand_path '~/.kube/config'))
-    else
+    sa_token = '/var/run/secrets/kubernetes.io/serviceaccount/token'
+    if File.exist?(sa_token)
       return K8s::Client.in_cluster_config
     end
+
+    kubeconfig = ENV['KUBECONFIG']
+    kubeconfig = File.expand_path('~/.kube/config') if kubeconfig.nil? || kubeconfig.empty?
+
+    K8s::Client.config(K8s::Config.load_file(kubeconfig))
   end
 
   def delete_pod

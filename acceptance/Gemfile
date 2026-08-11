@@ -1,0 +1,11 @@
+ruby '~> 3'
+source 'https://rubygems.org'
+
+gem 'http'
+gem 'k8s-ruby'
+gem 'mechanize'
+gem 'mechanize'
+gem 'mutex_m'
+gem 'nkf'
+gem 'rspec'
+gem 'rspec'
