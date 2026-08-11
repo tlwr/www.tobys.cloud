@@ -55,14 +55,31 @@ app.get("/posts", async (c) => {
 
 app.get("/posts/:slug", async (c) => {
   const isLoggedIn = await getIsLoggedIn(c);
-  const slug = c.req.param("slug");
+  let slug = c.req.param("slug");
+  const asMarkdown = slug.endsWith(".md");
+  if (asMarkdown) {
+    slug = slug.slice(0, -3);
+  }
+
   const markdown = getPostMarkdown(slug);
   if (markdown === null) {
+    if (asMarkdown) {
+      return c.text("404 NOT FOUND", 404, {
+        "Content-Type": "text/plain; charset=utf-8",
+      });
+    }
     return c.html(layout("<h2>404 NOT FOUND</h2>", { isLoggedIn }), 404);
   }
 
+  // Raw markdown: no layout/nav — just the source.
+  if (asMarkdown) {
+    return c.body(markdown, 200, {
+      "Content-Type": "text/markdown; charset=utf-8",
+    });
+  }
+
   const body = await marked.parse(markdown);
-  return c.html(layout(postHtml(body), { isLoggedIn }));
+  return c.html(layout(postHtml(slug, body), { isLoggedIn }));
 });
 
 // Unlisted auth routes (login not in nav; logout appears when signed in).

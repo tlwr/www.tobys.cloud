@@ -194,8 +194,12 @@ ${datedItems}
 </main>`;
 }
 
-export function postHtml(bodyHtml: string): string {
+export function postHtml(slug: string, bodyHtml: string): string {
+  const mdHref = `/posts/${encodeURIComponent(slug)}.md`;
   return `<main role="main" class="homepage">
+  <p style="margin-top: 1.5rem; margin-bottom: 1.5rem;">
+    <a href="${mdHref}">Read as markdown</a>
+  </p>
 ${bodyHtml}
 </main>`;
 }
