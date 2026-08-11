@@ -1,10 +1,17 @@
-export function layout(body: string): string {
+export function layout(
+  body: string,
+  options?: { robots?: string; isLoggedIn?: boolean },
+): string {
+  const robots = options?.robots ?? "index, follow";
+  const authNav = options?.isLoggedIn
+    ? `\n          <a href="/logout">Log out</a>`
+    : "";
   return `<!DOCTYPE html>
 <html lang="en-GB">
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <meta name="robots" content="index, follow">
+    <meta name="robots" content="${robots}">
     <link rel="stylesheet" href="https://assets.tobys.cloud/styles.css" type="text/css">
     <link rel="icon" href="https://assets.tobys.cloud/favicon.ico">
     <title>Toby Lorne</title>
@@ -17,7 +24,7 @@ export function layout(body: string): string {
         <nav>
           <a href="/">About</a>
           <a href="/posts">Posts</a>
-          <a href="/work">Work</a>
+          <a href="/work">Work</a>${authNav}
         </nav>
       </header>
     </div>
@@ -190,6 +197,30 @@ ${datedItems}
 export function postHtml(bodyHtml: string): string {
   return `<main role="main" class="homepage">
 ${bodyHtml}
+</main>`;
+}
+
+/** Login form body — not linked from public nav. */
+export function loginHtml(error?: string): string {
+  const err = error
+    ? `<p role="alert">${escapeHtml(error)}</p>`
+    : "";
+  return `<main role="main" class="homepage">
+  <h2>Login</h2>
+  ${err}
+  <form method="post" action="/login">
+    <p>
+      <label for="username">Username</label><br>
+      <input id="username" type="text" name="username" autocomplete="username" required>
+    </p>
+    <p>
+      <label for="password">Password</label><br>
+      <input id="password" type="password" name="password" autocomplete="current-password" required>
+    </p>
+    <p>
+      <button type="submit">Log in</button>
+    </p>
+  </form>
 </main>`;
 }
 

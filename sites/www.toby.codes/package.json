@@ -5,7 +5,7 @@
   "type": "module",
   "description": "toby.codes personal site on Cloudflare Workers",
   "scripts": {
-    "generate-posts": "node scripts/generate-posts.mjs",
+    "generate-posts": "node tools/generate-posts.mjs",
     "predev": "npm run generate-posts",
     "predeploy": "npm run generate-posts",
     "pretypecheck": "npm run generate-posts",
@@ -13,17 +13,25 @@
     "dev": "wrangler dev",
     "deploy": "wrangler deploy",
     "typecheck": "tsc --noEmit",
-    "test": "vitest run"
+    "test": "vitest run",
+    "seed-local": "node tools/seed-local.mjs",
+    "seed-remote": "node tools/seed-remote.mjs",
+    "check-remote": "node tools/check-remote.mjs",
+    "set-session-secret": "node tools/set-session-secret.mjs"
   },
 
   "dependencies": {
+    "bcryptjs": "^2.4.3",
     "hono": "^4.11.10",
-    "marked": "^17.0.3"
+    "marked": "^17.0.3",
+    "zod": "^4.3.6"
   },
   "devDependencies": {
     "@cloudflare/workers-types": "^5.20260801.1",
+    "@types/bcryptjs": "^2.4.3",
     "typescript": "^5.9.3",
     "vitest": "^4.0.18",
     "wrangler": "^4.66.0"
   }
 }
+
