@@ -4,12 +4,20 @@ import { marked } from "marked";
 import { clearSession, getIsLoggedIn, loginUser, requireAuth } from "./auth";
 import type { Env } from "./env";
 import { parsePost } from "./frontmatter";
-import { getPost, listPosts, putPost } from "./posts";
+import {
+  deletePost,
+  getPost,
+  isValidSlug,
+  listPosts,
+  NEW_POST_TEMPLATE,
+  putPost,
+} from "./posts";
 import {
   INDEX_HTML,
   WORK_HTML,
   adminIndexHtml,
   adminPostEditHtml,
+  adminPostNewHtml,
   adminPostsHtml,
   layout,
   loginHtml,
@@ -53,9 +61,8 @@ app.get("/work", async (c) => {
 
 app.get("/posts", async (c) => {
   const isLoggedIn = await getIsLoggedIn(c);
-  const { ongoing, dated } = await listPosts(c.env.POSTS, {
-    includeHidden: isLoggedIn,
-  });
+  // Drafts only on /admin/posts — public list is always visible posts.
+  const { ongoing, dated } = await listPosts(c.env.POSTS);
   return c.html(layout(postsListHtml(ongoing, dated), { isLoggedIn }));
 });
 
@@ -166,6 +173,42 @@ app.post("/admin/posts/preview", requireAuth, async (c) => {
   return c.html(html);
 });
 
+// Static paths before :slug so "new" is not captured as a slug.
+app.get("/admin/posts/new", requireAuth, async (c) => {
+  return c.html(
+    layout(adminPostNewHtml(NEW_POST_TEMPLATE), {
+      robots: "noindex",
+      isLoggedIn: true,
+      wide: true,
+      htmx: true,
+    }),
+  );
+});
+
+// Create post (form from /admin/posts/new).
+app.post("/admin/posts", requireAuth, async (c) => {
+  const body = await c.req.parseBody();
+  const slug = typeof body.slug === "string" ? body.slug.trim() : "";
+  const markdown =
+    typeof body.markdown === "string" ? body.markdown : NEW_POST_TEMPLATE;
+
+  if (!isValidSlug(slug)) {
+    return c.html(
+      "<span>Invalid slug (letters, numbers, hyphens, underscores)</span>",
+      400,
+    );
+  }
+
+  const existing = await getPost(c.env.POSTS, slug);
+  if (existing !== null) {
+    return c.html("<span>Slug already exists</span>", 409);
+  }
+
+  await putPost(c.env.POSTS, slug, markdown);
+  c.header("HX-Redirect", `/admin/posts/${slug}/edit`);
+  return c.html("<span>Created</span>");
+});
+
 app.get("/admin/posts/:slug/edit", requireAuth, async (c) => {
   const slug = c.req.param("slug") ?? "";
   const post = await getPost(c.env.POSTS, slug);
@@ -180,12 +223,17 @@ app.get("/admin/posts/:slug/edit", requireAuth, async (c) => {
     );
   }
   return c.html(
-    layout(adminPostEditHtml(slug, post.raw), {
-      robots: "noindex",
-      isLoggedIn: true,
-      wide: true,
-      htmx: true,
-    }),
+    layout(
+      adminPostEditHtml(slug, post.raw, {
+        canDelete: !post.frontmatter.visible,
+      }),
+      {
+        robots: "noindex",
+        isLoggedIn: true,
+        wide: true,
+        htmx: true,
+      },
+    ),
   );
 });
 
@@ -199,6 +247,31 @@ app.post("/admin/posts/:slug", requireAuth, async (c) => {
   const markdown = typeof body.markdown === "string" ? body.markdown : "";
   await putPost(c.env.POSTS, slug, markdown);
   return c.html("<span>Saved</span>");
+});
+
+// Only non-visible (draft) posts can be deleted.
+app.post("/admin/posts/:slug/delete", requireAuth, async (c) => {
+  const slug = c.req.param("slug") ?? "";
+  const result = await deletePost(c.env.POSTS, slug);
+  if (!result.ok) {
+    if (result.reason === "visible") {
+      return c.html(
+        layout(
+          `<h2>Cannot delete</h2><p>Only non-visible posts can be deleted. Set <code>visible: false</code> first, or keep the post.</p><p><a href="/admin/posts">← Posts</a></p>`,
+          { robots: "noindex", isLoggedIn: true, wide: true },
+        ),
+        403,
+      );
+    }
+    return c.html(
+      layout(
+        `<h2>404 NOT FOUND</h2><p><a href="/admin/posts">← Posts</a></p>`,
+        { robots: "noindex", isLoggedIn: true, wide: true },
+      ),
+      404,
+    );
+  }
+  return c.redirect("/admin/posts");
 });
 
 app.notFound(async (c) => {

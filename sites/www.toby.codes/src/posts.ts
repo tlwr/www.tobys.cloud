@@ -9,7 +9,18 @@ export type PostMeta = {
 };
 
 const DATE_RX = /^(2[0-9]{3}-[0-1][0-9])-(.*)$/;
-const SLUG_RX = /^[-_a-zA-Z0-9]+$/;
+export const SLUG_RX = /^[-_a-zA-Z0-9]+$/;
+
+/** Default body for new posts (draft until frontmatter is changed). */
+export const NEW_POST_TEMPLATE = `---
+visible: false
+---
+
+`;
+
+export function isValidSlug(slug: string): boolean {
+  return SLUG_RX.test(slug);
+}
 
 export function metaFromSlug(slug: string, visible = true): PostMeta {
   const matches = DATE_RX.exec(slug);
@@ -113,6 +124,31 @@ export async function putPost(
     throw new Error("invalid slug");
   }
   await postsKv.put(slug, raw);
+}
+
+export type DeletePostResult =
+  | { ok: true }
+  | { ok: false; reason: "invalid_slug" | "not_found" | "visible" };
+
+/**
+ * Delete a post from KV. Only non-visible (draft) posts may be deleted.
+ */
+export async function deletePost(
+  postsKv: KVNamespace,
+  slug: string,
+): Promise<DeletePostResult> {
+  if (!SLUG_RX.test(slug)) {
+    return { ok: false, reason: "invalid_slug" };
+  }
+  const post = await getPost(postsKv, slug);
+  if (post === null) {
+    return { ok: false, reason: "not_found" };
+  }
+  if (post.frontmatter.visible) {
+    return { ok: false, reason: "visible" };
+  }
+  await postsKv.delete(slug);
+  return { ok: true };
 }
 
 /**

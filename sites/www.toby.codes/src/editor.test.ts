@@ -158,4 +158,165 @@ describe("post editor", () => {
     expect(res.status).toBe(302);
     expect(res.headers.get("location")).toBe("/login");
   });
+
+  it("posts list links to new post", async () => {
+    const cookie = await loginCookie(users, posts);
+    const res = await app.request(
+      "/admin/posts",
+      { headers: { Cookie: cookie, Origin: "http://localhost" } },
+      env(users, posts),
+    );
+    expect(res.status).toBe(200);
+    const html = await res.text();
+    expect(html).toContain('href="/admin/posts/new"');
+    expect(html).toContain("New post");
+  });
+
+  it("new post form has slug pattern and draft frontmatter", async () => {
+    const cookie = await loginCookie(users, posts);
+    const res = await app.request(
+      "/admin/posts/new",
+      { headers: { Cookie: cookie, Origin: "http://localhost" } },
+      env(users, posts),
+    );
+    expect(res.status).toBe(200);
+    const html = await res.text();
+    expect(html).toContain("htmx.min.js");
+    expect(html).toContain('id="slug"');
+    expect(html).toContain('pattern="[-_A-Za-z0-9]+"');
+    expect(html).toContain("visible: false");
+    expect(html).toContain('hx-post="/admin/posts"');
+    expect(html).toContain('id="markdown"');
+  });
+
+  it("creates a new post and redirects to editor", async () => {
+    const cookie = await loginCookie(users, posts);
+    const markdown = "---\nvisible: false\n---\n\n# Draft\n";
+    const body = new URLSearchParams({
+      slug: "2026-08-My-draft",
+      markdown,
+    });
+    const res = await app.request(
+      "/admin/posts",
+      {
+        method: "POST",
+        body,
+        headers: {
+          Cookie: cookie,
+          Origin: "http://localhost",
+        },
+      },
+      env(users, posts),
+    );
+    expect(res.status).toBe(200);
+    expect(await res.text()).toContain("Created");
+    expect(res.headers.get("HX-Redirect")).toBe(
+      "/admin/posts/2026-08-My-draft/edit",
+    );
+    expect(await posts.get("2026-08-My-draft")).toBe(markdown);
+  });
+
+  it("rejects invalid slug on create", async () => {
+    const cookie = await loginCookie(users, posts);
+    const body = new URLSearchParams({
+      slug: "bad slug!",
+      markdown: "---\nvisible: false\n---\n",
+    });
+    const res = await app.request(
+      "/admin/posts",
+      {
+        method: "POST",
+        body,
+        headers: {
+          Cookie: cookie,
+          Origin: "http://localhost",
+        },
+      },
+      env(users, posts),
+    );
+    expect(res.status).toBe(400);
+    expect(await res.text()).toContain("Invalid slug");
+  });
+
+  it("rejects duplicate slug on create", async () => {
+    const cookie = await loginCookie(users, posts);
+    const body = new URLSearchParams({
+      slug: "Sample",
+      markdown: "---\nvisible: false\n---\n",
+    });
+    const res = await app.request(
+      "/admin/posts",
+      {
+        method: "POST",
+        body,
+        headers: {
+          Cookie: cookie,
+          Origin: "http://localhost",
+        },
+      },
+      env(users, posts),
+    );
+    expect(res.status).toBe(409);
+    expect(await res.text()).toContain("already exists");
+  });
+
+  it("shows delete only for non-visible posts on list and editor", async () => {
+    await posts.put("Draft", "---\nvisible: false\n---\n# Draft\n");
+    const cookie = await loginCookie(users, posts);
+
+    const listRes = await app.request(
+      "/admin/posts",
+      { headers: { Cookie: cookie, Origin: "http://localhost" } },
+      env(users, posts),
+    );
+    const listHtml = await listRes.text();
+    expect(listHtml).toContain('action="/admin/posts/Draft/delete"');
+    expect(listHtml).not.toContain('action="/admin/posts/Sample/delete"');
+
+    const draftEdit = await app.request(
+      "/admin/posts/Draft/edit",
+      { headers: { Cookie: cookie, Origin: "http://localhost" } },
+      env(users, posts),
+    );
+    expect(await draftEdit.text()).toContain(
+      'action="/admin/posts/Draft/delete"',
+    );
+
+    const publicEdit = await app.request(
+      "/admin/posts/Sample/edit",
+      { headers: { Cookie: cookie, Origin: "http://localhost" } },
+      env(users, posts),
+    );
+    expect(await publicEdit.text()).not.toContain(
+      'action="/admin/posts/Sample/delete"',
+    );
+  });
+
+  it("deletes a draft and rejects deleting a visible post", async () => {
+    await posts.put("Draft", "---\nvisible: false\n---\n# Draft\n");
+    const cookie = await loginCookie(users, posts);
+
+    const deny = await app.request(
+      "/admin/posts/Sample/delete",
+      {
+        method: "POST",
+        headers: { Cookie: cookie, Origin: "http://localhost" },
+      },
+      env(users, posts),
+    );
+    expect(deny.status).toBe(403);
+    expect(await posts.get("Sample")).not.toBeNull();
+
+    const ok = await app.request(
+      "/admin/posts/Draft/delete",
+      {
+        method: "POST",
+        headers: { Cookie: cookie, Origin: "http://localhost" },
+      },
+      env(users, posts),
+    );
+    expect(ok.status).toBe(302);
+    expect(ok.headers.get("location")).toBe("/admin/posts");
+    expect(await posts.get("Draft")).toBeNull();
+  });
 });

@@ -8,8 +8,13 @@ export function layout(
   },
 ): string {
   const robots = options?.robots ?? "index, follow";
+  // Admin tools sit on the right of the nav (action-bar style), separate from public links.
   const authNav = options?.isLoggedIn
-    ? `\n          <a href="/admin">Admin</a>\n          <a href="/logout">Log out</a>`
+    ? `
+        <div class="site-nav-admin">
+          <a href="/admin">Admin</a>
+          <a href="/logout">Log out</a>
+        </div>`
     : "";
   // Public pages keep the shared 52em container; admin/editor use a wider shell.
   const containerAttr = options?.wide
@@ -26,17 +31,38 @@ export function layout(
     <meta name="robots" content="${robots}">
     <link rel="stylesheet" href="https://assets.tobys.cloud/styles.css" type="text/css">
     <link rel="icon" href="https://assets.tobys.cloud/favicon.ico">
-    <title>Toby Lorne</title>${htmxScript}
+    <title>Toby Lorne</title>
+    <style>
+      nav.site-nav {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 0.75rem 1rem;
+        justify-content: space-between;
+      }
+      .site-nav-primary,
+      .site-nav-admin {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 0.75rem 1rem;
+      }
+      .site-nav-admin {
+        margin-left: auto;
+      }
+    </style>${htmxScript}
   </head>
 
   <body>
     <div ${containerAttr}>
       <header>
         <h1>Toby Lorne</h1>
-        <nav>
-          <a href="/">About</a>
-          <a href="/posts">Posts</a>
-          <a href="/work">Work</a>${authNav}
+        <nav class="site-nav">
+          <div class="site-nav-primary">
+            <a href="/">About</a>
+            <a href="/posts">Posts</a>
+            <a href="/work">Work</a>
+          </div>${authNav}
         </nav>
       </header>
     </div>
@@ -225,73 +251,7 @@ export function adminIndexHtml(): string {
 </main>`;
 }
 
-export function adminPostsHtml(
-  ongoing: { slug: string; title: string; visible: boolean }[],
-  dated: { slug: string; title: string; date?: string; visible: boolean }[],
-): string {
-  return `<main role="main" class="homepage">
-  <p><a href="/admin">← Admin</a></p>
-  <h2>Posts</h2>
-
-  <h3>Dated</h3>
-  ${adminPostsTable(dated, true)}
-
-  <h3>Undated</h3>
-  ${adminPostsTable(ongoing, false)}
-</main>`;
-}
-
-function adminPostsTable(
-  posts: { slug: string; title: string; date?: string; visible: boolean }[],
-  showDate: boolean,
-): string {
-  if (posts.length === 0) {
-    return `<p><em>None</em></p>`;
-  }
-
-  const header = showDate
-    ? `<tr><th>Visible</th><th>Date</th><th>Title</th><th>Slug</th></tr>`
-    : `<tr><th>Visible</th><th>Title</th><th>Slug</th></tr>`;
-
-  const rows = posts
-    .map((p) => {
-      const visible = p.visible ? "🟢 on" : "🔴 off";
-      const editHref = `/admin/posts/${escapeHtml(p.slug)}/edit`;
-      const titleLink = `<a href="${editHref}">${escapeHtml(p.title)}</a>`;
-      const viewLink = `<a href="/posts/${escapeHtml(p.slug)}">view</a>`;
-      const slugCell = `<code>${escapeHtml(p.slug)}</code>`;
-      if (showDate) {
-        return `<tr>
-      <td>${visible}</td>
-      <td><span style="font-family: monospace;">${escapeHtml(p.date ?? "")}</span></td>
-      <td>${titleLink} · ${viewLink}</td>
-      <td>${slugCell}</td>
-    </tr>`;
-      }
-      return `<tr>
-      <td>${visible}</td>
-      <td>${titleLink} · ${viewLink}</td>
-      <td>${slugCell}</td>
-    </tr>`;
-    })
-    .join("\n");
-
-  return `<table>
-  <thead>
-    ${header}
-  </thead>
-  <tbody>
-${rows}
-  </tbody>
-</table>`;
-}
-
-/** Split markdown / preview editor. `raw` includes frontmatter. */
-export function adminPostEditHtml(slug: string, raw: string): string {
-  const safeSlug = escapeHtml(slug);
-  const safeRaw = escapeHtml(raw);
-  return `<main role="main" class="homepage">
-  <style>
+const ADMIN_UI_STYLES = `
     .editor-toolbar {
       display: grid;
       grid-template-columns: 1fr auto 1fr;
@@ -314,15 +274,32 @@ export function adminPostEditHtml(slug: string, raw: string): string {
       display: flex;
       justify-content: flex-end;
       align-items: center;
+      gap: 0.75rem;
     }
     .editor-toolbar button:disabled {
       opacity: 0.6;
+    }
+    .editor-slug-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem 1rem;
+      align-items: center;
+      margin: 0.5rem 0 1rem;
+    }
+    .editor-slug-row input[type="text"] {
+      font-family: ui-monospace, "Berkeley Mono", monospace;
+      font-size: 1rem;
+      padding: 0.35rem 0.5rem;
+      min-width: min(28rem, 100%);
+      border: 1px solid var(--dark, #111);
+      background: var(--light, #f2f0ec);
+      color: var(--dark, #111);
     }
     .editor-split {
       display: grid;
       grid-template-columns: 1fr 1fr;
       gap: 1rem;
-      height: calc(100vh - 14rem);
+      height: calc(100vh - 16rem);
       min-height: 16rem;
     }
     .editor-split textarea,
@@ -365,27 +342,197 @@ export function adminPostEditHtml(slug: string, raw: string): string {
         height: 40vh;
       }
     }
-  </style>
+`;
+
+export function adminPostsHtml(
+  ongoing: { slug: string; title: string; visible: boolean }[],
+  dated: { slug: string; title: string; date?: string; visible: boolean }[],
+): string {
+  return `<main role="main" class="homepage">
+  <style>${ADMIN_UI_STYLES}</style>
+  <p><a href="/admin">← Admin</a></p>
+  <h2>Posts</h2>
+
+  <div class="editor-toolbar">
+    <div class="editor-toolbar-links">
+      <a href="/admin/posts/new">New post</a>
+    </div>
+    <div class="editor-toolbar-status"></div>
+    <div class="editor-toolbar-actions"></div>
+  </div>
+
+  <h3>Dated</h3>
+  ${adminPostsTable(dated, true)}
+
+  <h3>Undated</h3>
+  ${adminPostsTable(ongoing, false)}
+</main>`;
+}
+
+function adminPostsTable(
+  posts: { slug: string; title: string; date?: string; visible: boolean }[],
+  showDate: boolean,
+): string {
+  if (posts.length === 0) {
+    return `<p><em>None</em></p>`;
+  }
+
+  const header = showDate
+    ? `<tr><th>Visible</th><th>Date</th><th>Title</th><th>Slug</th></tr>`
+    : `<tr><th>Visible</th><th>Title</th><th>Slug</th></tr>`;
+
+  const rows = posts
+    .map((p) => {
+      const visible = p.visible ? "🟢 on" : "🔴 off";
+      const safeSlug = escapeHtml(p.slug);
+      const editHref = `/admin/posts/${safeSlug}/edit`;
+      const titleLink = `<a href="${editHref}">${escapeHtml(p.title)}</a>`;
+      const viewLink = `<a href="/posts/${safeSlug}">view</a>`;
+      // Delete only for drafts — endpoint enforces the same rule.
+      const deleteLink = p.visible
+        ? ""
+        : ` · ${deletePostForm(p.slug, "delete")}`;
+      const slugCell = `<code>${safeSlug}</code>`;
+      if (showDate) {
+        return `<tr>
+      <td>${visible}</td>
+      <td><span style="font-family: monospace;">${escapeHtml(p.date ?? "")}</span></td>
+      <td>${titleLink} · ${viewLink}${deleteLink}</td>
+      <td>${slugCell}</td>
+    </tr>`;
+      }
+      return `<tr>
+      <td>${visible}</td>
+      <td>${titleLink} · ${viewLink}${deleteLink}</td>
+      <td>${slugCell}</td>
+    </tr>`;
+    })
+    .join("\n");
+
+  return `<table>
+  <thead>
+    ${header}
+  </thead>
+  <tbody>
+${rows}
+  </tbody>
+</table>`;
+}
+
+/** Inline delete form — only rendered for non-visible posts. */
+function deletePostForm(slug: string, label = "Delete"): string {
+  const safeSlug = escapeHtml(slug);
+  return `<form method="post"
+        action="/admin/posts/${safeSlug}/delete"
+        style="display:inline"
+        onsubmit="return confirm('Delete draft ${safeSlug}? This cannot be undone.');">
+    <button type="submit">${escapeHtml(label)}</button>
+  </form>`;
+}
+
+/** Split markdown / preview editor. `raw` includes frontmatter. */
+export function adminPostEditHtml(
+  slug: string,
+  raw: string,
+  options?: { canDelete?: boolean },
+): string {
+  const safeSlug = escapeHtml(slug);
+  const safeRaw = escapeHtml(raw);
+  // Delete form must sit outside the editor form (no nested forms).
+  const deleteControl = options?.canDelete
+    ? deletePostForm(slug, "Delete draft")
+    : "";
+  return `<main role="main" class="homepage">
+  <style>${ADMIN_UI_STYLES}</style>
 
   <p><a href="/admin/posts">← Posts</a></p>
   <h2>Edit <code>${safeSlug}</code></h2>
+
+  <div class="editor-toolbar">
+    <div class="editor-toolbar-links">
+      <a href="/posts/${safeSlug}" target="_blank" rel="noopener">Open public ↗</a>
+      <a href="/posts/${safeSlug}.md" target="_blank" rel="noopener">Raw .md ↗</a>
+      ${deleteControl}
+    </div>
+    <div class="editor-toolbar-status">
+      <span id="save-status" aria-live="polite"></span>
+    </div>
+    <div class="editor-toolbar-actions">
+      <button type="submit" id="save-btn" form="editor-form">Save</button>
+    </div>
+  </div>
 
   <form id="editor-form"
         hx-post="/admin/posts/${safeSlug}"
         hx-target="#save-status"
         hx-swap="innerHTML"
         hx-disabled-elt="#save-btn">
+    <div class="editor-split">
+      <label class="visually-hidden" for="markdown" style="position:absolute;left:-9999px">Markdown</label>
+      <textarea id="markdown"
+                name="markdown"
+                spellcheck="false"
+                hx-post="/admin/posts/preview"
+                hx-trigger="input delay:250ms, load"
+                hx-target="#preview"
+                hx-include="this"
+                hx-swap="innerHTML">${safeRaw}</textarea>
+      <div id="preview" class="editor-preview" aria-live="polite"></div>
+    </div>
+  </form>
+
+  ${editorClientScript()}
+</main>`;
+}
+
+/** New post: slug field + editor, prefilled draft frontmatter. */
+export function adminPostNewHtml(
+  raw: string,
+  options?: { slug?: string; error?: string },
+): string {
+  const safeRaw = escapeHtml(raw);
+  const safeSlug = escapeHtml(options?.slug ?? "");
+  const err = options?.error
+    ? `<p role="alert">${escapeHtml(options.error)}</p>`
+    : "";
+  return `<main role="main" class="homepage">
+  <style>${ADMIN_UI_STYLES}</style>
+
+  <p><a href="/admin/posts">← Posts</a></p>
+  <h2>New post</h2>
+  ${err}
+
+  <form id="editor-form"
+        method="post"
+        action="/admin/posts"
+        hx-post="/admin/posts"
+        hx-target="#save-status"
+        hx-swap="innerHTML"
+        hx-disabled-elt="#save-btn">
     <div class="editor-toolbar">
       <div class="editor-toolbar-links">
-        <a href="/posts/${safeSlug}" target="_blank" rel="noopener">Open public ↗</a>
-        <a href="/posts/${safeSlug}.md" target="_blank" rel="noopener">Raw .md ↗</a>
+        <span style="opacity: 0.7;">Slug is permanent after create</span>
       </div>
       <div class="editor-toolbar-status">
         <span id="save-status" aria-live="polite"></span>
       </div>
       <div class="editor-toolbar-actions">
-        <button type="submit" id="save-btn">Save</button>
+        <button type="submit" id="save-btn">Create</button>
       </div>
+    </div>
+
+    <div class="editor-slug-row">
+      <label for="slug"><strong>Slug</strong></label>
+      <input id="slug"
+             type="text"
+             name="slug"
+             value="${safeSlug}"
+             required
+             pattern="[-_A-Za-z0-9]+"
+             title="Letters, numbers, hyphens, and underscores only"
+             autocomplete="off"
+             spellcheck="false"
+             placeholder="2026-08-My-post-title">
     </div>
 
     <div class="editor-split">
@@ -402,17 +549,58 @@ export function adminPostEditHtml(slug: string, raw: string): string {
     </div>
   </form>
 
-  <script>
+  ${editorClientScript({ slugInput: true })}
+</main>`;
+}
+
+function editorClientScript(
+  options: { slugInput?: boolean } = {},
+): string {
+  const slugInput = options.slugInput === true;
+  return `<script>
     (function () {
       var ta = document.getElementById("markdown");
       var form = document.getElementById("editor-form");
       var statusEl = document.getElementById("save-status");
+      var slugEl = document.getElementById("slug");
       var dirty = false;
       var clearTimer = null;
       if (!ta || !form || !statusEl) return;
-      ta.addEventListener("input", function () { dirty = true; });
+
+      function markDirty() { dirty = true; }
+      ta.addEventListener("input", markDirty);
+      if (slugEl) slugEl.addEventListener("input", markDirty);
+
+      ${
+        slugInput
+          ? `
+      if (slugEl) {
+        slugEl.addEventListener("input", function () {
+          var v = slugEl.value.trim();
+          if (!v) {
+            slugEl.setCustomValidity("Slug is required");
+          } else if (!/^[-_A-Za-z0-9]+$/.test(v)) {
+            slugEl.setCustomValidity("Letters, numbers, hyphens, and underscores only");
+          } else {
+            slugEl.setCustomValidity("");
+          }
+        });
+      }
+      `
+          : ""
+      }
+
+      // Clear dirty on intentional submit so HX-Redirect / navigation does not
+      // trip the beforeunload "leave site?" dialog. Restore if the request fails.
+      form.addEventListener("submit", function () {
+        dirty = false;
+      });
       form.addEventListener("htmx:afterRequest", function (e) {
-        if (!(e.detail.successful && e.detail.elt === form)) return;
+        if (e.detail.elt !== form) return;
+        if (!e.detail.successful) {
+          dirty = true;
+          return;
+        }
         dirty = false;
         if (clearTimer) clearTimeout(clearTimer);
         clearTimer = setTimeout(function () {
@@ -426,8 +614,7 @@ export function adminPostEditHtml(slug: string, raw: string): string {
         e.returnValue = "";
       });
     })();
-  </script>
-</main>`;
+  </script>`;
 }
 
 /** Login form body — not linked from public nav. */

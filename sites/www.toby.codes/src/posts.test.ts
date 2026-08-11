@@ -1,5 +1,12 @@
 import { describe, expect, it } from "vitest";
-import { getPost, listPosts } from "./posts";
+import {
+  deletePost,
+  getPost,
+  isValidSlug,
+  listPosts,
+  NEW_POST_TEMPLATE,
+  putPost,
+} from "./posts";
 
 class MemoryKV {
   private store = new Map<string, string>();
@@ -75,5 +82,42 @@ describe("posts", () => {
     const kv = new MemoryKV() as unknown as KVNamespace;
     expect(await getPost(kv, "does-not-exist")).toBeNull();
     expect(await getPost(kv, "../etc/passwd")).toBeNull();
+  });
+
+  it("validates slugs and ships draft template", () => {
+    expect(isValidSlug("2026-08-My-post")).toBe(true);
+    expect(isValidSlug("Sample_1")).toBe(true);
+    expect(isValidSlug("bad slug")).toBe(false);
+    expect(isValidSlug("../x")).toBe(false);
+    expect(NEW_POST_TEMPLATE).toContain("visible: false");
+  });
+
+  it("deletes only non-visible posts", async () => {
+    const kv = new MemoryKV({
+      Draft: "---\nvisible: false\n---\n# Draft\n",
+      Public: "---\nvisible: true\n---\n# Public\n",
+    }) as unknown as KVNamespace;
+
+    expect(await deletePost(kv, "Public")).toEqual({
+      ok: false,
+      reason: "visible",
+    });
+    expect(await kv.get("Public")).not.toBeNull();
+
+    expect(await deletePost(kv, "Draft")).toEqual({ ok: true });
+    expect(await kv.get("Draft")).toBeNull();
+
+    expect(await deletePost(kv, "missing")).toEqual({
+      ok: false,
+      reason: "not_found",
+    });
+  });
+
+  it("putPost writes for create then delete removes", async () => {
+    const kv = new MemoryKV() as unknown as KVNamespace;
+    await putPost(kv, "Temp-draft", NEW_POST_TEMPLATE);
+    expect(await getPost(kv, "Temp-draft")).not.toBeNull();
+    expect(await deletePost(kv, "Temp-draft")).toEqual({ ok: true });
+    expect(await getPost(kv, "Temp-draft")).toBeNull();
   });
 });
