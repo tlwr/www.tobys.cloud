@@ -20,11 +20,19 @@ const emptyPosts = {
   list: async () => ({ keys: [], list_complete: true, cacheStatus: null }),
 } as unknown as KVNamespace;
 
+const emptyTags = {
+  get: async () => null,
+  put: async () => {},
+  delete: async () => {},
+  list: async () => ({ keys: [], list_complete: true, cacheStatus: null }),
+} as unknown as KVNamespace;
+
 function env(): Env {
   return {
     ASSETS: assets404,
     USERS: emptyUsers,
     POSTS: emptyPosts,
+    TAGS: emptyTags,
     SESSION_SECRET: "test-session-secret",
   };
 }

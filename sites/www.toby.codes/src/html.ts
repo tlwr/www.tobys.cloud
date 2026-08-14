@@ -194,9 +194,22 @@ export const WORK_HTML = `<main role="main" class="homepage">
   </section>
 </main>`;
 
+function tagsLinksHtml(tags: string[]): string {
+  if (tags.length === 0) {
+    return "";
+  }
+  return tags
+    .map((t) => {
+      const safe = escapeHtml(t);
+      return `<a href="/posts-by-tag/${safe}">${safe}</a>`;
+    })
+    .join(" ");
+}
+
 export function postsListHtml(
   ongoing: { slug: string; title: string }[],
   dated: { slug: string; title: string; date?: string }[],
+  tags: string[] = [],
 ): string {
   const ongoingItems = ongoing
     .map(
@@ -217,6 +230,13 @@ export function postsListHtml(
     )
     .join("\n");
 
+  const tagsBlock =
+    tags.length > 0
+      ? `
+  <h3>Tags</h3>
+  <p class="post-tags">${tagsLinksHtml(tags)}</p>`
+      : "";
+
   return `<main role="main" class="homepage">
   <h2>Posts</h2>
 
@@ -229,15 +249,77 @@ ${ongoingItems}
   <ul class="no-bullet">
 ${datedItems}
   </ul>
+${tagsBlock}
 </main>`;
 }
 
-export function postHtml(slug: string, bodyHtml: string): string {
+export function postsByTagHtml(
+  tag: string,
+  ongoing: { slug: string; title: string }[],
+  dated: { slug: string; title: string; date?: string }[],
+): string {
+  const safeTag = escapeHtml(tag);
+  const ongoingItems = ongoing
+    .map(
+      (p) =>
+        `    <li itemprop="headline">
+      <a href="/posts/${escapeHtml(p.slug)}">${escapeHtml(p.title)}</a>
+    </li>`,
+    )
+    .join("\n");
+
+  const datedItems = dated
+    .map(
+      (p) =>
+        `    <li itemprop="headline">
+      <span style="font-family: monospace;">${escapeHtml(p.date ?? "")}</span>
+      <a href="/posts/${escapeHtml(p.slug)}">${escapeHtml(p.title)}</a>
+    </li>`,
+    )
+    .join("\n");
+
+  const empty =
+    ongoing.length === 0 && dated.length === 0
+      ? `\n  <p><em>No visible posts with this tag.</em></p>`
+      : "";
+
+  return `<main role="main" class="homepage">
+  <p><a href="/posts">← Posts</a></p>
+  <h2>Tag: <code>${safeTag}</code></h2>
+${empty}
+  ${
+    ongoing.length > 0
+      ? `<h3>Ongoing</h3>
+  <ul class="no-bullet">
+${ongoingItems}
+  </ul>`
+      : ""
+  }
+  ${
+    dated.length > 0
+      ? `<h3>Posts</h3>
+  <ul class="no-bullet">
+${datedItems}
+  </ul>`
+      : ""
+  }
+</main>`;
+}
+
+export function postHtml(
+  slug: string,
+  bodyHtml: string,
+  tags: string[] = [],
+): string {
   const mdHref = `/posts/${encodeURIComponent(slug)}.md`;
+  const tagsBlock =
+    tags.length > 0
+      ? `\n  <p class="post-tags">${tagsLinksHtml(tags)}</p>`
+      : "";
   return `<main role="main" class="homepage">
   <p style="margin-top: 1.5rem; margin-bottom: 1.5rem;">
     <a href="${mdHref}">Read as markdown</a>
-  </p>
+  </p>${tagsBlock}
 ${bodyHtml}
 </main>`;
 }
@@ -247,7 +329,56 @@ export function adminIndexHtml(): string {
   <h2>Admin</h2>
   <ul class="no-bullet">
     <li><a href="/admin/posts">Posts</a></li>
+    <li><a href="/admin/tags">Tags</a></li>
   </ul>
+</main>`;
+}
+
+export function adminTagsHtml(
+  tags: { tag: string; slugs: string[] }[],
+): string {
+  const rows =
+    tags.length === 0
+      ? `<tr><td colspan="3"><em>No tags yet. Add kebab-case tags in post frontmatter, e.g. <code>tags: cloudflare, workers</code>.</em></td></tr>`
+      : tags
+          .map((t) => {
+            const safe = escapeHtml(t.tag);
+            return `<tr>
+      <td><code><a href="/posts-by-tag/${safe}">${safe}</a></code></td>
+      <td>${t.slugs.length}</td>
+      <td>
+        <form method="post"
+              action="/admin/tags/${safe}/delete"
+              style="display:inline"
+              onsubmit="return confirm('Delete tag ${safe}? It will be removed from all posts.');">
+          <button type="submit">Delete</button>
+        </form>
+      </td>
+    </tr>`;
+          })
+          .join("\n");
+
+  return `<main role="main" class="homepage">
+  <style>${ADMIN_UI_STYLES}</style>
+  <p><a href="/admin">← Admin</a></p>
+  <h2>Tags</h2>
+
+  <div class="editor-toolbar">
+    <div class="editor-toolbar-links">
+      <a href="/admin/posts">Posts</a>
+    </div>
+    <div class="editor-toolbar-status"></div>
+    <div class="editor-toolbar-actions"></div>
+  </div>
+
+  <table>
+    <thead>
+      <tr><th>Tag</th><th>Posts</th><th></th></tr>
+    </thead>
+    <tbody>
+${rows}
+    </tbody>
+  </table>
 </main>`;
 }
 

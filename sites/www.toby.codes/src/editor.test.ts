@@ -37,11 +37,12 @@ const assets404 = {
   fetch: async () => new Response("not found", { status: 404 }),
 } as unknown as Fetcher;
 
-function env(users: MemoryKV, posts: MemoryKV): Env {
+function env(users: MemoryKV, posts: MemoryKV, tags?: MemoryKV): Env {
   return {
     ASSETS: assets404,
     USERS: users as unknown as KVNamespace,
     POSTS: posts as unknown as KVNamespace,
+    TAGS: (tags ?? new MemoryKV()) as unknown as KVNamespace,
     SESSION_SECRET: "test-session-secret",
   };
 }
@@ -318,5 +319,72 @@ describe("post editor", () => {
     expect(ok.status).toBe(302);
     expect(ok.headers.get("location")).toBe("/admin/posts");
     expect(await posts.get("Draft")).toBeNull();
+  });
+
+  it("indexes tags on save and exposes public + admin tag UIs", async () => {
+    const tags = new MemoryKV();
+    const cookie = await loginCookie(users, posts);
+    const markdown =
+      "---\nvisible: true\ntags: workers, cloudflare\n---\n# Hello\n\nWorld.\n";
+    const save = await app.request(
+      "/admin/posts/Sample",
+      {
+        method: "POST",
+        body: new URLSearchParams({ markdown }),
+        headers: { Cookie: cookie, Origin: "http://localhost" },
+      },
+      env(users, posts, tags),
+    );
+    expect(save.status).toBe(200);
+    expect(JSON.parse((await tags.get("workers"))!)).toEqual(["Sample"]);
+    expect(JSON.parse((await tags.get("cloudflare"))!)).toEqual(["Sample"]);
+
+    const list = await app.request(
+      "/posts",
+      {},
+      env(users, posts, tags),
+    );
+    const listHtml = await list.text();
+    expect(listHtml).toContain('href="/posts-by-tag/cloudflare"');
+    expect(listHtml).toContain('href="/posts-by-tag/workers"');
+
+    const postPage = await app.request(
+      "/posts/Sample",
+      {},
+      env(users, posts, tags),
+    );
+    const postHtml = await postPage.text();
+    expect(postHtml).toContain("Read as markdown");
+    expect(postHtml).toContain('href="/posts-by-tag/workers"');
+
+    const byTag = await app.request(
+      "/posts-by-tag/workers",
+      {},
+      env(users, posts, tags),
+    );
+    expect(byTag.status).toBe(200);
+    expect(await byTag.text()).toContain("Sample");
+
+    const adminTags = await app.request(
+      "/admin/tags",
+      { headers: { Cookie: cookie, Origin: "http://localhost" } },
+      env(users, posts, tags),
+    );
+    const adminHtml = await adminTags.text();
+    expect(adminHtml).toContain("workers");
+    expect(adminHtml).toContain('action="/admin/tags/workers/delete"');
+
+    const del = await app.request(
+      "/admin/tags/workers/delete",
+      {
+        method: "POST",
+        headers: { Cookie: cookie, Origin: "http://localhost" },
+      },
+      env(users, posts, tags),
+    );
+    expect(del.status).toBe(302);
+    expect(await tags.get("workers")).toBeNull();
+    expect(await posts.get("Sample")).toContain("cloudflare");
+    expect(await posts.get("Sample")).not.toContain("workers");
   });
 });

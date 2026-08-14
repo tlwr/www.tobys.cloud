@@ -38,11 +38,19 @@ const emptyPosts = {
   list: async () => ({ keys: [], list_complete: true, cacheStatus: null }),
 } as unknown as KVNamespace;
 
+const emptyTags = {
+  get: async () => null,
+  put: async () => {},
+  delete: async () => {},
+  list: async () => ({ keys: [], list_complete: true, cacheStatus: null }),
+} as unknown as KVNamespace;
+
 function env(users: MemoryKV): Env {
   return {
     ASSETS: assets404,
     USERS: users as unknown as KVNamespace,
     POSTS: emptyPosts,
+    TAGS: emptyTags,
     SESSION_SECRET: "test-session-secret",
     NODE_ENV: "test",
   };
@@ -185,6 +193,7 @@ describe("auth", () => {
     expect(admin.status).toBe(200);
     const adminHtml = await admin.text();
     expect(adminHtml).toContain('href="/admin/posts"');
+    expect(adminHtml).toContain('href="/admin/tags"');
 
     const posts = await request(
       "/admin/posts",

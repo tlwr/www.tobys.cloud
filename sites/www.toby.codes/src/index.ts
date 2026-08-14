@@ -3,7 +3,7 @@ import { csrf } from "hono/csrf";
 import { marked } from "marked";
 import { clearSession, getIsLoggedIn, loginUser, requireAuth } from "./auth";
 import type { Env } from "./env";
-import { parsePost } from "./frontmatter";
+import { isValidTag, parsePost } from "./frontmatter";
 import {
   deletePost,
   getPost,
@@ -13,15 +13,25 @@ import {
   putPost,
 } from "./posts";
 import {
+  deleteTag,
+  listPostsByTag,
+  listTagNames,
+  listTags,
+  syncPostTags,
+  unindexPost,
+} from "./tags";
+import {
   INDEX_HTML,
   WORK_HTML,
   adminIndexHtml,
   adminPostEditHtml,
   adminPostNewHtml,
   adminPostsHtml,
+  adminTagsHtml,
   layout,
   loginHtml,
   postHtml,
+  postsByTagHtml,
   postsListHtml,
 } from "./html";
 
@@ -62,8 +72,28 @@ app.get("/work", async (c) => {
 app.get("/posts", async (c) => {
   const isLoggedIn = await getIsLoggedIn(c);
   // Drafts only on /admin/posts — public list is always visible posts.
-  const { ongoing, dated } = await listPosts(c.env.POSTS);
-  return c.html(layout(postsListHtml(ongoing, dated), { isLoggedIn }));
+  const [{ ongoing, dated }, tags] = await Promise.all([
+    listPosts(c.env.POSTS),
+    listTagNames(c.env.TAGS),
+  ]);
+  return c.html(layout(postsListHtml(ongoing, dated, tags), { isLoggedIn }));
+});
+
+app.get("/posts-by-tag/:tag", async (c) => {
+  const isLoggedIn = await getIsLoggedIn(c);
+  const tag = (c.req.param("tag") ?? "").toLowerCase();
+  if (!isValidTag(tag)) {
+    return c.html(layout("<h2>404 NOT FOUND</h2>", { isLoggedIn }), 404);
+  }
+  const listed = await listPostsByTag(c.env.POSTS, c.env.TAGS, tag);
+  if (listed === null) {
+    return c.html(layout("<h2>404 NOT FOUND</h2>", { isLoggedIn }), 404);
+  }
+  return c.html(
+    layout(postsByTagHtml(listed.tag, listed.ongoing, listed.dated), {
+      isLoggedIn,
+    }),
+  );
 });
 
 app.get("/posts/:slug", async (c) => {
@@ -92,7 +122,9 @@ app.get("/posts/:slug", async (c) => {
   }
 
   const body = await marked.parse(post.body);
-  return c.html(layout(postHtml(slug, body), { isLoggedIn }));
+  return c.html(
+    layout(postHtml(slug, body, post.frontmatter.tags), { isLoggedIn }),
+  );
 });
 
 // Unlisted auth routes (login not in nav; logout appears when signed in).
@@ -164,6 +196,32 @@ app.get("/admin/posts", requireAuth, async (c) => {
   );
 });
 
+app.get("/admin/tags", requireAuth, async (c) => {
+  const tags = await listTags(c.env.TAGS);
+  return c.html(
+    layout(adminTagsHtml(tags), {
+      robots: "noindex",
+      isLoggedIn: true,
+      wide: true,
+    }),
+  );
+});
+
+app.post("/admin/tags/:tag/delete", requireAuth, async (c) => {
+  const tag = (c.req.param("tag") ?? "").toLowerCase();
+  const result = await deleteTag(c.env.POSTS, c.env.TAGS, tag);
+  if (!result.ok) {
+    return c.html(
+      layout(
+        `<h2>404 NOT FOUND</h2><p><a href="/admin/tags">← Tags</a></p>`,
+        { robots: "noindex", isLoggedIn: true, wide: true },
+      ),
+      404,
+    );
+  }
+  return c.redirect("/admin/tags");
+});
+
 // Preview: full raw markdown in, strip frontmatter, return HTML fragment.
 app.post("/admin/posts/preview", requireAuth, async (c) => {
   const body = await c.req.parseBody();
@@ -205,6 +263,8 @@ app.post("/admin/posts", requireAuth, async (c) => {
   }
 
   await putPost(c.env.POSTS, slug, markdown);
+  const { frontmatter } = parsePost(markdown);
+  await syncPostTags(c.env.TAGS, slug, frontmatter.tags, []);
   c.header("HX-Redirect", `/admin/posts/${slug}/edit`);
   return c.html("<span>Created</span>");
 });
@@ -246,12 +306,20 @@ app.post("/admin/posts/:slug", requireAuth, async (c) => {
   const body = await c.req.parseBody();
   const markdown = typeof body.markdown === "string" ? body.markdown : "";
   await putPost(c.env.POSTS, slug, markdown);
+  const { frontmatter } = parsePost(markdown);
+  await syncPostTags(
+    c.env.TAGS,
+    slug,
+    frontmatter.tags,
+    existing.frontmatter.tags,
+  );
   return c.html("<span>Saved</span>");
 });
 
 // Only non-visible (draft) posts can be deleted.
 app.post("/admin/posts/:slug/delete", requireAuth, async (c) => {
   const slug = c.req.param("slug") ?? "";
+  const existing = await getPost(c.env.POSTS, slug);
   const result = await deletePost(c.env.POSTS, slug);
   if (!result.ok) {
     if (result.reason === "visible") {
@@ -270,6 +338,9 @@ app.post("/admin/posts/:slug/delete", requireAuth, async (c) => {
       ),
       404,
     );
+  }
+  if (existing) {
+    await unindexPost(c.env.TAGS, slug, existing.frontmatter.tags);
   }
   return c.redirect("/admin/posts");
 });
