@@ -77,6 +77,9 @@ job "grafana-agent" {
                       - names: [thinkcentre.finch-barb.ts.net]
                         type: A
                         port: 9100
+                      - names: [se-01.finch-barb.ts.net]
+                        type: A
+                        port: 9100
                     relabel_configs:
                       - source_labels: [__meta_dns_name]
                         target_label: server

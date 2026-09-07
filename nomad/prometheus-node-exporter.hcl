@@ -1,5 +1,5 @@
 job "prometheus-node-exporter" {
-  datacenters = ["jvg", "kd"]
+  datacenters = ["jvg", "kd", "se"]
 
   type = "system"
 
