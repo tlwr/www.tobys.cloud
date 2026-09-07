@@ -15,6 +15,7 @@ Acceptance tests (Ruby / live sites):
 - `make acceptance-tests` — `cd acceptance && bundle exec rspec`
 - Image build/push: `make build-acceptance-tests` / `make push-acceptance-tests`
 - Scheduled run: Nomad periodic batch `nomad/acceptance-tests.hcl` on thinkcentre (`*/30`)
+- BGP smoke: `nomad/se-01-web.hcl` (Caddy + HTTP-01 on se-01, `https://se-01.tobys.cloud/`)
 
 ## Code Style Guidelines
 
