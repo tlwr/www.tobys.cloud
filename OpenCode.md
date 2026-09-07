@@ -14,6 +14,7 @@ Acceptance tests (Ruby / live sites):
 
 - `make acceptance-tests` — `cd acceptance && bundle exec rspec`
 - Image build/push: `make build-acceptance-tests` / `make push-acceptance-tests`
+- Scheduled run: Nomad periodic batch `nomad/acceptance-tests.hcl` on thinkcentre (`*/30`)
 
 ## Code Style Guidelines
 

@@ -1,0 +1,43 @@
+name = "jasmijnvink-com"
+main = "src/index.ts"
+compatibility_date = "2025-04-02"
+
+[assets]
+directory = "./public"
+binding = "ASSETS"
+run_worker_first = true
+
+[[kv_namespaces]]
+binding = "USERS"
+id = "2578293a010645e89ddb89c57c8c4f2a"
+
+[[kv_namespaces]]
+binding = "PICTURES"
+id = "a3cdb6a9c8f44b1b90e6a5315991a558"
+
+[[kv_namespaces]]
+binding = "TAGS"
+id = "8ea662cf4ce24b7f8a79b7b48f36eddd"
+
+[[r2_buckets]]
+binding = "IMAGES"
+bucket_name = "jasmijnvink-com-images"
+
+# custom_domain creates proxied DNS; zone routes win request routing.
+[[routes]]
+pattern = "jasmijnvink.com"
+zone_name = "jasmijnvink.com"
+custom_domain = true
+
+[[routes]]
+pattern = "www.jasmijnvink.com"
+zone_name = "jasmijnvink.com"
+custom_domain = true
+
+[[routes]]
+pattern = "jasmijnvink.com/*"
+zone_name = "jasmijnvink.com"
+
+[[routes]]
+pattern = "www.jasmijnvink.com/*"
+zone_name = "jasmijnvink.com"
