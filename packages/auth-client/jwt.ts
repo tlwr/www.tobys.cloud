@@ -36,7 +36,8 @@ function fromB64url(s: string): ArrayBuffer {
 }
 
 function webcrypto(): Crypto {
-  const c = globalThis.crypto;
+  // Workers types expose `crypto` as a global, not on `typeof globalThis`.
+  const c = (globalThis as unknown as { crypto?: Crypto }).crypto;
   if (!c?.subtle) {
     throw new Error("Web Crypto API is not available");
   }

@@ -1,4 +1,3 @@
-import { File as NodeFile } from 'node:buffer'
 import { webcrypto } from 'node:crypto'
 import { describe, it, expect } from 'vitest'
 import { Miniflare } from 'miniflare'
@@ -7,13 +6,15 @@ import path from 'path'
 import { fileURLToPath } from 'url'
 import { issuePayload, signAuthToken } from '@tobys/auth-client'
 
-// Node 18 (and some test runners) have no global File / Web Crypto.
-const g = globalThis as typeof globalThis & { File?: typeof NodeFile }
-if (typeof g.crypto?.subtle === 'undefined') {
-  Object.defineProperty(g, 'crypto', { value: webcrypto, configurable: true })
-}
-if (typeof g.File === 'undefined') {
-  g.File = NodeFile
+// Node 18 has no Web Crypto global; JWT signing in tests uses globalThis.crypto.
+if (
+  typeof (globalThis as unknown as { crypto?: Crypto }).crypto?.subtle ===
+  'undefined'
+) {
+  Object.defineProperty(globalThis, 'crypto', {
+    value: webcrypto,
+    configurable: true,
+  })
 }
 
 // eslint-disable-next-line no-underscore-dangle

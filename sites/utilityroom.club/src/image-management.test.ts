@@ -1,4 +1,3 @@
-import { File } from 'node:buffer'
 import { describe, it, expect, beforeAll, afterAll } from 'vitest'
 import { Miniflare } from 'miniflare'
 import {
@@ -100,7 +99,8 @@ describe('Image Management', () => {
         const formData = new FormData()
         formData.append(
           'image',
-          new File([pngData], 'test.png', { type: 'image/png' }),
+          new Blob([pngData], { type: 'image/png' }),
+          'test.png',
         )
 
         const response = await mf.dispatchFetch(
@@ -143,7 +143,8 @@ describe('Image Management', () => {
         const formData1 = new FormData()
         formData1.append(
           'image',
-          new File([pngData], 'test.png', { type: 'image/png' }),
+          new Blob([pngData], { type: 'image/png' }),
+          'test.png',
         )
 
         await mf.dispatchFetch(
@@ -160,7 +161,8 @@ describe('Image Management', () => {
         const formData2 = new FormData()
         formData2.append(
           'image',
-          new File([pngData], 'test2.png', { type: 'image/png' }),
+          new Blob([pngData], { type: 'image/png' }),
+          'test2.png',
         )
 
         await mf.dispatchFetch(
@@ -193,7 +195,8 @@ describe('Image Management', () => {
         const formData1 = new FormData()
         formData1.append(
           'image',
-          new File([pngData1], 'test1.png', { type: 'image/png' }),
+          new Blob([pngData1], { type: 'image/png' }),
+          'test1.png',
         )
 
         await mf.dispatchFetch(
@@ -215,7 +218,8 @@ describe('Image Management', () => {
         const formData2 = new FormData()
         formData2.append(
           'image',
-          new File([pngData2], 'test2.png', { type: 'image/png' }),
+          new Blob([pngData2], { type: 'image/png' }),
+          'test2.png',
         )
 
         await mf.dispatchFetch(
@@ -248,7 +252,8 @@ describe('Image Management', () => {
         const formData = new FormData()
         formData.append(
           'image',
-          new File([pngData], 'test.png', { type: 'image/png' }),
+          new Blob([pngData], { type: 'image/png' }),
+          'test.png',
         )
 
         const response = await mf.dispatchFetch(
@@ -275,7 +280,8 @@ describe('Image Management', () => {
         const formData = new FormData()
         formData.append(
           'image',
-          new File([pngData], 'test.png', { type: 'image/png' }),
+          new Blob([pngData], { type: 'image/png' }),
+          'test.png',
         )
 
         await mf.dispatchFetch(
@@ -314,7 +320,8 @@ describe('Image Management', () => {
         const formData = new FormData()
         formData.append(
           'image',
-          new File([pngData], 'test.png', { type: 'image/png' }),
+          new Blob([pngData], { type: 'image/png' }),
+          'test.png',
         )
 
         await mf.dispatchFetch(
@@ -351,7 +358,8 @@ describe('Image Management', () => {
         const formData = new FormData()
         formData.append(
           'image',
-          new File([pngData], 'test.png', { type: 'image/png' }),
+          new Blob([pngData], { type: 'image/png' }),
+          'test.png',
         )
 
         await mf.dispatchFetch(
@@ -416,7 +424,8 @@ describe('Image Management', () => {
         const formData1 = new FormData()
         formData1.append(
           'image',
-          new File([pngData1], 'test1.png', { type: 'image/png' }),
+          new Blob([pngData1], { type: 'image/png' }),
+          'test1.png',
         )
         await mf.dispatchFetch(
           'http://localhost/admin/edit/residential-heat-pump-installation/image-upload',
@@ -431,7 +440,8 @@ describe('Image Management', () => {
         const formData2 = new FormData()
         formData2.append(
           'image',
-          new File([pngData2], 'test2.png', { type: 'image/png' }),
+          new Blob([pngData2], { type: 'image/png' }),
+          'test2.png',
         )
         await mf.dispatchFetch(
           'http://localhost/admin/edit/residential-heat-pump-installation/image-upload',
@@ -477,7 +487,8 @@ describe('Image Management', () => {
         const formData = new FormData()
         formData.append(
           'image',
-          new File([pngData], 'test.png', { type: 'image/png' }),
+          new Blob([pngData], { type: 'image/png' }),
+          'test.png',
         )
 
         await mf.dispatchFetch(
@@ -559,7 +570,8 @@ describe('Image Management', () => {
         const formData = new FormData()
         formData.append(
           'image',
-          new File([pngData], 'test.png', { type: 'image/png' }),
+          new Blob([pngData], { type: 'image/png' }),
+          'test.png',
         )
 
         await mf.dispatchFetch(
@@ -618,7 +630,8 @@ describe('Image Management', () => {
         const formData = new FormData()
         formData.append(
           'image',
-          new File([pngData], 'test.png', { type: 'image/png' }),
+          new Blob([pngData], { type: 'image/png' }),
+          'test.png',
         )
 
         await mf.dispatchFetch(
@@ -674,7 +687,8 @@ describe('Image Management', () => {
         const formData1 = new FormData()
         formData1.append(
           'image',
-          new File([pngData1], 'test1.png', { type: 'image/png' }),
+          new Blob([pngData1], { type: 'image/png' }),
+          'test1.png',
         )
 
         await mf.dispatchFetch(
@@ -690,7 +704,8 @@ describe('Image Management', () => {
         const formData2 = new FormData()
         formData2.append(
           'image',
-          new File([pngData2], 'test2.png', { type: 'image/png' }),
+          new Blob([pngData2], { type: 'image/png' }),
+          'test2.png',
         )
 
         await mf.dispatchFetch(
