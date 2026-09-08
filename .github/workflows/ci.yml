@@ -1,0 +1,47 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  affected:
+    runs-on: ubuntu-latest
+    outputs:
+      sites: ${{ steps.list.outputs.sites }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: List affected sites
+        id: list
+        env:
+          BASE: ${{ github.event.pull_request.base.sha || github.event.before }}
+        run: |
+          echo "sites=$(node tools/catalog.mjs affected-json "${BASE:-}")" >> "$GITHUB_OUTPUT"
+
+  ci:
+    needs: affected
+    if: needs.affected.outputs.sites != '[]'
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        site: ${{ fromJson(needs.affected.outputs.sites) }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: extractions/setup-just@v2
+      - name: Site metadata
+        id: meta
+        run: |
+          echo "node=$(node tools/catalog.mjs get '${{ matrix.site }}' node)" >> "$GITHUB_OUTPUT"
+          echo "lock=$(node tools/catalog.mjs path '${{ matrix.site }}')/package-lock.json" >> "$GITHUB_OUTPUT"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ steps.meta.outputs.node }}
+          cache: npm
+          cache-dependency-path: ${{ steps.meta.outputs.lock }}
+      - name: CI ${{ matrix.site }}
+        run: just ci ${{ matrix.site }}

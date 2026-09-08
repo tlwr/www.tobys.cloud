@@ -1,0 +1,98 @@
+{
+  "aliases": {
+    "auth": "auth.tobys.cloud",
+    "toby": "www.toby.codes",
+    "jvnl": "jasmijnvink.com",
+    "utilityroom": "utilityroom.club",
+    "assets": "assets.tobys.cloud",
+    "ip": "what-is-my-ip"
+  },
+  "packages": [
+    {
+      "name": "auth-client",
+      "path": "packages/auth-client"
+    }
+  ],
+  "sites": [
+    {
+      "name": "auth.tobys.cloud",
+      "path": "sites/auth.tobys.cloud",
+      "depends": ["auth-client"],
+      "node": "20",
+      "install": "npm ci",
+      "ci": ["typecheck", "test"]
+    },
+    {
+      "name": "www.toby.codes",
+      "path": "sites/www.toby.codes",
+      "depends": ["auth-client"],
+      "node": "20",
+      "install": "npm ci",
+      "ci": ["typecheck", "test"]
+    },
+    {
+      "name": "jasmijnvink.com",
+      "path": "sites/jasmijnvink.com",
+      "depends": ["auth-client"],
+      "node": "20",
+      "install": "npm ci",
+      "ci": ["typecheck", "test"]
+    },
+    {
+      "name": "utilityroom.club",
+      "path": "sites/utilityroom.club",
+      "depends": ["auth-client"],
+      "node": "18",
+      "install": "npm ci --legacy-peer-deps --ignore-scripts",
+      "ci": ["lint", "typecheck", "build", "test"]
+    },
+    {
+      "name": "assets.tobys.cloud",
+      "path": "sites/assets.tobys.cloud",
+      "depends": [],
+      "node": "20",
+      "install": "npm ci",
+      "ci": ["typecheck"]
+    },
+    {
+      "name": "mischiefs",
+      "path": "sites/mischiefs",
+      "depends": [],
+      "node": "20",
+      "install": "npm ci",
+      "ci": ["typecheck"]
+    },
+    {
+      "name": "nines",
+      "path": "sites/nines",
+      "depends": [],
+      "node": "20",
+      "install": "npm ci",
+      "ci": ["typecheck"]
+    },
+    {
+      "name": "page-404",
+      "path": "sites/page-404",
+      "depends": [],
+      "node": "20",
+      "install": "npm ci",
+      "ci": ["typecheck"]
+    },
+    {
+      "name": "pom",
+      "path": "sites/pom",
+      "depends": [],
+      "node": "20",
+      "install": "npm ci",
+      "ci": ["typecheck"]
+    },
+    {
+      "name": "what-is-my-ip",
+      "path": "sites/what-is-my-ip",
+      "depends": [],
+      "node": "20",
+      "install": "npm ci",
+      "ci": ["typecheck", "test"]
+    }
+  ]
+}
