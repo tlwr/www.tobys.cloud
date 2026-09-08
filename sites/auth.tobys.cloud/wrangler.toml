@@ -5,11 +5,15 @@ compatibility_date = "2025-04-02"
 [dev]
 port = 8788
 
-# Create with:
-#   npx wrangler kv namespace create auth-tobys-cloud-users --binding USERS --update-config
 [[kv_namespaces]]
 binding = "USERS"
 id = "9aa195d53abc46818a9ffa61bbc019af"
+
+[[d1_databases]]
+binding = "AUDIT"
+database_name = "auth-tobys-cloud-audit"
+database_id = "a3b3bbf1-56dc-42f1-aa4e-22408ef57bd0"
+migrations_dir = "migrations"
 
 [[routes]]
 pattern = "auth.tobys.cloud"

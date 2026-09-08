@@ -17,8 +17,10 @@ import {
   type AuthClientId,
   type AuthEnv,
 } from "@tobys/auth-client";
+import { auditMeta, listAudit, writeAudit } from "./audit";
 import type { Env } from "./env";
 import {
+  auditHtml,
   forbiddenHtml,
   layout,
   loginHtml,
@@ -129,6 +131,21 @@ app.get("/", requireLocalAuth(), async (c) => {
   return page(c, usersIndexHtml(users));
 });
 
+app.get("/audit", requireLocalAuth(), async (c) => {
+  try {
+    const { events, nextCursor } = await listAudit(c.env.AUDIT, {
+      cursor: c.req.query("cursor"),
+    });
+    return page(c, auditHtml(events, { nextCursor }), { title: "Audit" });
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    console.error("audit list failed", err);
+    return page(c, `<h2>Audit log</h2><p class="err">${msg}</p>`, {
+      title: "Audit",
+    });
+  }
+});
+
 app.get("/login", async (c) => {
   const next = safeLocalPath(c.req.query("next"));
   const client = c.req.query("client") ?? "";
@@ -166,14 +183,30 @@ app.post("/login", async (c) => {
   if (!secret) {
     return show("Server misconfigured (AUTH_JWT_SECRET)", 500);
   }
+  const meta = auditMeta(c);
   const user = await getUser(c.env.USERS, email);
   if (!user || !password) {
+    await writeAudit(c.env.AUDIT, {
+      type: "login.failure",
+      email,
+      ...meta,
+    });
     return show("Invalid credentials");
   }
   const ok = await bcrypt.compare(password, user.hashedPassword);
   if (!ok) {
+    await writeAudit(c.env.AUDIT, {
+      type: "login.failure",
+      email,
+      ...meta,
+    });
     return show("Invalid credentials");
   }
+  await writeAudit(c.env.AUDIT, {
+    type: "login.success",
+    email: user.email,
+    ...meta,
+  });
   await setSessionCookie(c, {
     sub: user.email,
     aud: "auth",
@@ -245,7 +278,15 @@ app.get("/logout", (c) => {
   return c.redirect("/login");
 });
 
-app.post("/logout", (c) => {
+app.post("/logout", async (c) => {
+  const id = await getIdentity(c, "auth");
+  if (id) {
+    await writeAudit(c.env.AUDIT, {
+      type: "logout",
+      email: id.sub,
+      ...auditMeta(c),
+    });
+  }
   clearSession(c);
   return c.redirect("/login");
 });

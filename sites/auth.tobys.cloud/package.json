@@ -14,7 +14,9 @@
     "seed-remote": "node tools/seed-remote.mjs",
     "set-auth-jwt-secret": "node tools/set-secrets.mjs",
     "set-session-secret": "node tools/set-secrets.mjs",
-    "ensure-dev-vars": "node tools/ensure-dev-vars.mjs"
+    "ensure-dev-vars": "node tools/ensure-dev-vars.mjs",
+    "db:migrate:local": "wrangler d1 migrations apply auth-tobys-cloud-audit --local",
+    "db:migrate": "wrangler d1 migrations apply auth-tobys-cloud-audit --remote"
   },
   "dependencies": {
     "@tobys/auth-client": "file:../../packages/auth-client",

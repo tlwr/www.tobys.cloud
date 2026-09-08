@@ -1,4 +1,5 @@
 import { ALL_PERMISSIONS, AUTH_CLIENTS } from "@tobys/auth-client";
+import type { AuditEvent } from "./audit";
 import type { User } from "./users";
 
 export function escapeHtml(s: string): string {
@@ -16,6 +17,7 @@ export function layout(
   const nav = opts.email
     ? `<nav>
         <a href="/">Users</a>
+        <a href="/audit">Audit</a>
         <a href="/users/new">New user</a>
         <form method="post" action="/logout" style="display:inline">
           <button type="submit">Log out</button>
@@ -171,4 +173,33 @@ export function userEditHtml(user: User, opts: { error?: string } = {}): string 
 
 export function forbiddenHtml(): string {
   return `<h2>Forbidden</h2><p>You do not have permission to use this application.</p>`;
+}
+
+export function auditHtml(
+  events: AuditEvent[],
+  opts: { nextCursor?: string | null } = {},
+): string {
+  const rows =
+    events.length === 0
+      ? `<tr><td colspan="4"><em>No events</em></td></tr>`
+      : events
+          .map((e) => {
+            const when = new Date(e.ts).toISOString().replace("T", " ").replace("Z", " UTC");
+            return `<tr>
+      <td>${escapeHtml(when)}</td>
+      <td>${escapeHtml(e.type)}</td>
+      <td>${escapeHtml(e.email || "—")}</td>
+      <td class="muted">${escapeHtml(e.ip ?? "—")}</td>
+    </tr>`;
+          })
+          .join("\n");
+  const more = opts.nextCursor
+    ? `<p><a href="/audit?cursor=${encodeURIComponent(opts.nextCursor)}">Older →</a></p>`
+    : "";
+  return `<h2>Audit log</h2>
+  <table>
+    <thead><tr><th>When</th><th>Event</th><th>Email</th><th>IP</th></tr></thead>
+    <tbody>${rows}</tbody>
+  </table>
+  ${more}`;
 }

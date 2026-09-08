@@ -1,6 +1,7 @@
 import { describe, expect, it, beforeEach } from "vitest";
 import bcrypt from "bcryptjs";
 import { app } from "./index";
+import { AUDIT_PAGE_SIZE, writeAudit } from "./audit";
 import type { Env } from "./env";
 import { verifyAuthToken } from "@tobys/auth-client";
 
@@ -24,16 +25,75 @@ class MemoryKV {
   }
 }
 
+class MemoryD1 {
+  events: {
+    id: string;
+    ts: number;
+    type: string;
+    email: string;
+    ip: string | null;
+    ua: string | null;
+  }[] = [];
+
+  async batch(_statements: unknown[]) {
+    return [];
+  }
+
+  prepare(sql: string) {
+    const events = this.events;
+    const paged = sql.includes("WHERE");
+    return {
+      bind(...args: unknown[]) {
+        return {
+          async run() {
+            events.push({
+              id: String(args[0]),
+              ts: Number(args[1]),
+              type: String(args[2]),
+              email: String(args[3]),
+              ip: args[4] == null ? null : String(args[4]),
+              ua: args[5] == null ? null : String(args[5]),
+            });
+            return { success: true };
+          },
+          async all() {
+            let rows = [...events].sort(
+              (a, b) => b.ts - a.ts || (a.id < b.id ? 1 : a.id > b.id ? -1 : 0),
+            );
+            if (paged) {
+              const ts = Number(args[0]);
+              const id = String(args[2]);
+              const limit = Number(args[3]);
+              rows = rows.filter(
+                (r) => r.ts < ts || (r.ts === ts && r.id < id),
+              );
+              return { results: rows.slice(0, limit) };
+            }
+            return { results: rows.slice(0, Number(args[0])) };
+          },
+        };
+      },
+    };
+  }
+}
+
 const SECRET = "test-jwt-secret-at-least-32-chars";
 
-function env(users: MemoryKV): Env & { AUTH_JWT_SECRET: string } {
+function env(
+  users: MemoryKV,
+  audit: MemoryD1 = new MemoryD1(),
+): Env & { AUTH_JWT_SECRET: string } {
   return {
     USERS: users as unknown as KVNamespace,
+    AUDIT: audit as unknown as D1Database,
     AUTH_JWT_SECRET: SECRET,
   };
 }
 
-async function loginCookie(users: MemoryKV): Promise<string> {
+async function loginCookie(
+  users: MemoryKV,
+  audit?: MemoryD1,
+): Promise<string> {
   const res = await app.request(
     "/login",
     {
@@ -44,7 +104,7 @@ async function loginCookie(users: MemoryKV): Promise<string> {
       }),
       headers: { Origin: "http://localhost:8788" },
     },
-    env(users),
+    env(users, audit),
   );
   const raw =
     typeof res.headers.getSetCookie === "function"
@@ -225,5 +285,100 @@ describe("auth.tobys.cloud", () => {
     expect(res.status).toBe(200);
     expect(await res.text()).toContain("last auth:admin");
     expect(await users.get("toby@toby.codes")).not.toBeNull();
+  });
+
+  it("rejects unauthenticated audit page", async () => {
+    const res = await app.request("/audit", {}, env(users));
+    expect(res.status).toBe(302);
+    expect(res.headers.get("location")).toContain("/login");
+  });
+
+  it("records login success and failure with the email", async () => {
+    const audit = new MemoryD1();
+    await app.request(
+      "/login",
+      {
+        method: "POST",
+        body: new URLSearchParams({
+          email: "toby@toby.codes",
+          password: "wrong",
+        }),
+        headers: {
+          Origin: "http://localhost:8788",
+          "CF-Connecting-IP": "203.0.113.9",
+        },
+      },
+      env(users, audit),
+    );
+    const cookie = await loginCookie(users, audit);
+    const res = await app.request(
+      "/audit",
+      { headers: { Cookie: cookie, Origin: "http://localhost:8788" } },
+      env(users, audit),
+    );
+    expect(res.status).toBe(200);
+    const html = await res.text();
+    expect(html).toContain("login.success");
+    expect(html).toContain("login.failure");
+    expect(html).toContain("toby@toby.codes");
+    expect(html).toContain("203.0.113.9");
+    const successAt = html.indexOf("login.success");
+    const failureAt = html.indexOf("login.failure");
+    expect(successAt).toBeGreaterThan(-1);
+    expect(failureAt).toBeGreaterThan(successAt);
+  });
+
+  it("records logout from the admin form", async () => {
+    const audit = new MemoryD1();
+    const cookie = await loginCookie(users, audit);
+    await app.request(
+      "/logout",
+      {
+        method: "POST",
+        headers: { Cookie: cookie, Origin: "http://localhost:8788" },
+      },
+      env(users, audit),
+    );
+    const again = await loginCookie(users, audit);
+    const res = await app.request(
+      "/audit",
+      { headers: { Cookie: again, Origin: "http://localhost:8788" } },
+      env(users, audit),
+    );
+    const html = await res.text();
+    expect(html).toContain("logout");
+    expect(html).toContain("toby@toby.codes");
+  });
+
+  it("paginates audit events newest first", async () => {
+    const audit = new MemoryD1();
+    const e = env(users, audit);
+    const start = Date.now();
+    for (let i = 0; i < AUDIT_PAGE_SIZE + 2; i += 1) {
+      await writeAudit(e.AUDIT, {
+        type: i % 2 === 0 ? "login.success" : "login.failure",
+        email: `user${i}@toby.codes`,
+        ts: start + i,
+      });
+    }
+    const cookie = await loginCookie(users, audit);
+    const first = await app.request(
+      "/audit",
+      { headers: { Cookie: cookie, Origin: "http://localhost:8788" } },
+      e,
+    );
+    const firstHtml = await first.text();
+    expect(firstHtml).toContain("Older");
+    expect(firstHtml).toContain(`user${AUDIT_PAGE_SIZE + 1}@toby.codes`);
+    expect(firstHtml).not.toContain("user0@toby.codes");
+    const href = firstHtml.match(/\/audit\?cursor=([^"]+)/)?.[1];
+    expect(href).toBeTruthy();
+    const second = await app.request(
+      `/audit?cursor=${href}`,
+      { headers: { Cookie: cookie, Origin: "http://localhost:8788" } },
+      e,
+    );
+    const secondHtml = await second.text();
+    expect(secondHtml).toContain("user0@toby.codes");
   });
 });
