@@ -8,6 +8,7 @@ import {
   getIsLoggedIn as getIsLoggedInCentral,
   handleCallback,
   logoutUrl,
+  originAllowed,
   requireAuth as requireAuthCentral,
 } from '@tobys/auth-client'
 import { Hono, Context } from 'hono'
@@ -275,16 +276,13 @@ const app = new Hono<{ Bindings: Bindings }>()
 app.use('*', cors())
 app.use('*', logger())
 
-app.use('*', async (c, next) => {
-  const middleware = csrf({
-    origin:
-      c.env.NODE_ENV === 'production'
-        ? 'https://utilityroom.club'
-        : ['http://localhost:8787', 'http://localhost'],
-  })
-
-  return middleware(c, next)
-})
+app.use(
+  '*',
+  csrf({
+    origin: (origin, c) =>
+      originAllowed('utilityroom', origin, new URL(c.req.url).origin),
+  }),
+)
 
 // Home page - list all projects
 app.get('/', async (c) => {

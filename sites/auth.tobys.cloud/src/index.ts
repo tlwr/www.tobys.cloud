@@ -10,6 +10,7 @@ import {
   handleCallback,
   isAuthClientId,
   originAllowed,
+  redirectOriginAllowed,
   requireLocalAuth,
   setSessionCookie,
   signTicket,
@@ -42,13 +43,13 @@ type Bindings = Env & AuthEnv;
 
 const app = new Hono<{ Bindings: Bindings }>();
 
-const CSRF_ORIGINS = [
-  "https://auth.tobys.cloud",
-  "http://localhost:8788",
-  "http://127.0.0.1:8788",
-];
-
-app.use("*", async (c, next) => csrf({ origin: CSRF_ORIGINS })(c, next));
+app.use(
+  "*",
+  csrf({
+    origin: (origin, c) =>
+      originAllowed("auth", origin, new URL(c.req.url).origin),
+  }),
+);
 
 function asString(v: unknown): string {
   return typeof v === "string" ? v : "";
@@ -183,7 +184,10 @@ app.post("/login", async (c) => {
   });
   if (isAuthClientId(client) && client !== "auth" && redirect) {
     const dest = parseRedirect(redirect);
-    if (dest && originAllowed(client, dest.origin)) {
+    if (
+      dest &&
+      originAllowed(client, dest.origin, new URL(c.req.url).origin)
+    ) {
       return finishAuthorize(c, user.email, client, dest, next);
     }
   }
@@ -210,7 +214,7 @@ app.get("/authorize", async (c) => {
     }
     return c.redirect(`/login?next=${encodeURIComponent(next)}`);
   }
-  if (!originAllowed(clientRaw, dest.origin)) {
+  if (!originAllowed(clientRaw, dest.origin, new URL(c.req.url).origin)) {
     return c.text("Redirect origin not allowed", 400);
   }
   const id = await getIdentity(c, "auth");
@@ -230,8 +234,9 @@ app.get("/logout", (c) => {
   const redirect = c.req.query("redirect");
   const dest = redirect ? parseRedirect(redirect) : null;
   if (dest) {
-    const allowed = Object.values(AUTH_CLIENTS).some((cl) =>
-      cl.origins.includes(dest.origin),
+    const allowed = redirectOriginAllowed(
+      dest.origin,
+      new URL(c.req.url).origin,
     );
     if (allowed) {
       return c.redirect(dest.toString());

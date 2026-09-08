@@ -1,3 +1,4 @@
+import { originAllowed } from "@tobys/auth-client";
 import { Hono, type Context } from "hono";
 import { csrf } from "hono/csrf";
 import { deleteCookie, getCookie, setCookie } from "hono/cookie";
@@ -45,14 +46,6 @@ export type { Env };
 
 const app = new Hono<{ Bindings: Env }>();
 
-const CSRF_ORIGINS = [
-  "https://jasmijnvink.com",
-  "https://www.jasmijnvink.com",
-  "http://localhost:8787",
-  "http://localhost",
-  "http://127.0.0.1:8787",
-];
-
 app.use("*", async (c, next) => {
   const url = new URL(c.req.url);
   if (url.hostname === "www.jasmijnvink.com") {
@@ -62,7 +55,13 @@ app.use("*", async (c, next) => {
   await next();
 });
 
-app.use("*", async (c, next) => csrf({ origin: CSRF_ORIGINS })(c, next));
+app.use(
+  "*",
+  csrf({
+    origin: (origin, c) =>
+      originAllowed("jvnl", origin, new URL(c.req.url).origin),
+  }),
+);
 
 type AppContext = Context<{ Bindings: Env }>;
 

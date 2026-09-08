@@ -92,7 +92,7 @@ describe("auth.tobys.cloud", () => {
     const cookie = await loginCookie(users);
     const redirect = "https://www.toby.codes/auth/callback";
     const res = await app.request(
-      `/authorize?client=toby-codes&redirect=${encodeURIComponent(redirect)}&next=/admin`,
+      `https://auth.tobys.cloud/authorize?client=toby-codes&redirect=${encodeURIComponent(redirect)}&next=/admin`,
       { headers: { Cookie: cookie } },
       env(users),
     );
@@ -107,6 +107,30 @@ describe("auth.tobys.cloud", () => {
     });
     expect(payload?.sub).toBe("toby@toby.codes");
     expect(payload?.perms).toContain("toby-codes:admin");
+  });
+
+  it("rejects a localhost redirect when the issuer is production", async () => {
+    const cookie = await loginCookie(users);
+    const res = await app.request(
+      `https://auth.tobys.cloud/authorize?client=toby-codes&redirect=${encodeURIComponent("http://localhost:8787/auth/callback")}`,
+      { headers: { Cookie: cookie } },
+      env(users),
+    );
+    expect(res.status).toBe(400);
+  });
+
+  it("allows a localhost redirect when the issuer is loopback", async () => {
+    const cookie = await loginCookie(users);
+    const redirect = "http://localhost:8787/auth/callback";
+    const res = await app.request(
+      `http://localhost:8788/authorize?client=toby-codes&redirect=${encodeURIComponent(redirect)}&next=/admin`,
+      { headers: { Cookie: cookie } },
+      env(users),
+    );
+    expect(res.status).toBe(302);
+    const loc = new URL(res.headers.get("location") ?? "");
+    expect(loc.origin).toBe("http://localhost:8787");
+    expect(loc.pathname).toBe("/auth/callback");
   });
 
   it("forbids authorize without the client permission", async () => {
@@ -138,7 +162,7 @@ describe("auth.tobys.cloud", () => {
       .map((c) => c.split(";")[0])
       .join("; ");
     const res = await app.request(
-      `/authorize?client=toby-codes&redirect=${encodeURIComponent("https://www.toby.codes/auth/callback")}`,
+      `https://auth.tobys.cloud/authorize?client=toby-codes&redirect=${encodeURIComponent("https://www.toby.codes/auth/callback")}`,
       { headers: { Cookie: cookie } },
       env(users),
     );
@@ -148,7 +172,7 @@ describe("auth.tobys.cloud", () => {
   it("rejects redirect to an unknown origin", async () => {
     const cookie = await loginCookie(users);
     const res = await app.request(
-      `/authorize?client=toby-codes&redirect=${encodeURIComponent("https://evil.example/auth/callback")}`,
+      `https://auth.tobys.cloud/authorize?client=toby-codes&redirect=${encodeURIComponent("https://evil.example/auth/callback")}`,
       { headers: { Cookie: cookie } },
       env(users),
     );

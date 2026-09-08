@@ -2,7 +2,9 @@ export {
   ALL_PERMISSIONS,
   AUTH_CLIENTS,
   isAuthClientId,
+  isLoopbackOrigin,
   originAllowed,
+  redirectOriginAllowed,
   type AuthClient,
   type AuthClientId,
 } from "./clients";

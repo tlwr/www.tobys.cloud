@@ -1,3 +1,4 @@
+import { originAllowed } from "@tobys/auth-client";
 import { Hono } from "hono";
 import { csrf } from "hono/csrf";
 import { marked } from "marked";
@@ -45,17 +46,14 @@ export type { Env };
 
 const app = new Hono<{ Bindings: Env }>();
 
-// Always allow prod + local origins. Do not gate on NODE_ENV — that var is
-// often unset on Workers, which previously left live POSTs CSRF-blocked.
-const CSRF_ORIGINS = [
-  "https://www.toby.codes",
-  "https://toby.codes",
-  "http://localhost:8787",
-  "http://localhost",
-  "http://127.0.0.1:8787",
-];
-
-app.use("*", async (c, next) => csrf({ origin: CSRF_ORIGINS })(c, next));
+// Localhost CSRF origins are accepted only when this Worker is loopback.
+app.use(
+  "*",
+  csrf({
+    origin: (origin, c) =>
+      originAllowed("toby-codes", origin, new URL(c.req.url).origin),
+  }),
+);
 
 app.get("/health", (c) => c.text("healthy"));
 

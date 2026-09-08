@@ -198,7 +198,8 @@ export async function handleCallback(
   if (!payload) {
     return c.redirect(authorizeUrl(c, client, next));
   }
-  if (!originAllowed(client, new URL(c.req.url).origin)) {
+  const requestOrigin = new URL(c.req.url).origin;
+  if (!originAllowed(client, requestOrigin, requestOrigin)) {
     return c.text("Invalid origin", 400);
   }
   await setSessionCookie(c, payload);
