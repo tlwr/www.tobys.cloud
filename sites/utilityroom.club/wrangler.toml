@@ -5,13 +5,12 @@ compatibility_date = "2025-04-02"
 [build]
 jsx_factory = "h"
 
+[vars]
+AUTH_ISSUER = "https://auth.tobys.cloud"
+
 [[kv_namespaces]]
 binding = "PROJECTS"
 id = "47e06254587f46cfa4904cd122d770b5"
-
-[[kv_namespaces]]
-binding = "USERS"
-id = "efdf6c84461145da86c85d34893ee69b"
 
 [[r2_buckets]]
 binding = "ASSETS"

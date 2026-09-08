@@ -1,5 +1,4 @@
 import { spawn, execSync } from 'child_process'
-import bcrypt from 'bcryptjs'
 
 const sampleProjects = [
   {
@@ -96,15 +95,10 @@ async function main() {
       )
     }
 
-    // Seed admin user
-    const hashedPassword = await bcrypt.hash('secret', 10)
-    const userData = JSON.stringify({ username: 'admin', hashedPassword })
-    execSync(
-      `wrangler kv key put --local --binding=USERS "admin" '${userData}'`,
-      { stdio: 'inherit' },
+    console.log('Local PROJECTS KV seeded successfully!')
+    console.log(
+      'Create an account with utilityroom:admin at http://localhost:8788',
     )
-
-    console.log('Local KV seeded successfully!')
   } catch (error) {
     console.error('Seeding failed:', error.message)
     wrangler.kill('SIGTERM')

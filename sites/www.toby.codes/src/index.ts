@@ -1,7 +1,13 @@
 import { Hono } from "hono";
 import { csrf } from "hono/csrf";
 import { marked } from "marked";
-import { clearSession, getIsLoggedIn, loginUser, requireAuth } from "./auth";
+import {
+  getIsLoggedIn,
+  handleAuthCallback,
+  loginRedirect,
+  logoutAndRedirect,
+  requireAuth,
+} from "./auth";
 import type { Env } from "./env";
 import { isValidTag, parsePost } from "./frontmatter";
 import {
@@ -29,7 +35,7 @@ import {
   adminPostsHtml,
   adminTagsHtml,
   layout,
-  loginHtml,
+
   postHtml,
   postsByTagHtml,
   postsListHtml,
@@ -127,50 +133,10 @@ app.get("/posts/:slug", async (c) => {
   );
 });
 
-// Unlisted auth routes (login not in nav; logout appears when signed in).
-app.get("/login", async (c) => {
-  const isLoggedIn = await getIsLoggedIn(c);
-  if (isLoggedIn) {
-    return c.redirect("/");
-  }
-  return c.html(layout(loginHtml(), { robots: "noindex", isLoggedIn: false }));
-});
-
-app.post("/login", async (c) => {
-  const body = await c.req.parseBody();
-  const { username, password } = body;
-  if (typeof username === "string" && typeof password === "string") {
-    try {
-      if (await loginUser(c, username, password)) {
-        return c.redirect("/");
-      }
-    } catch (err) {
-      const msg =
-        err instanceof Error ? err.message : "Login failed (server misconfigured)";
-      return c.html(
-        layout(loginHtml(msg), { robots: "noindex", isLoggedIn: false }),
-        500,
-      );
-    }
-  }
-  return c.html(
-    layout(loginHtml("Invalid credentials"), {
-      robots: "noindex",
-      isLoggedIn: false,
-    }),
-    401,
-  );
-});
-
-app.get("/logout", (c) => {
-  clearSession(c);
-  return c.redirect("/");
-});
-
-app.post("/logout", (c) => {
-  clearSession(c);
-  return c.redirect("/");
-});
+app.get("/login", (c) => loginRedirect(c));
+app.get("/auth/callback", (c) => handleAuthCallback(c));
+app.get("/logout", (c) => logoutAndRedirect(c));
+app.post("/logout", (c) => logoutAndRedirect(c));
 
 // Admin (auth required; linked from nav when signed in).
 app.get("/admin", requireAuth, async (c) => {

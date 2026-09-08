@@ -1,0 +1,9 @@
+{
+  "name": "@tobys/auth-client",
+  "private": true,
+  "type": "module",
+  "exports": "./index.ts",
+  "peerDependencies": {
+    "hono": "^4.11.10"
+  }
+}

@@ -3,10 +3,14 @@ name: CI for utilityroom.club
 on:
   push:
     branches: [main]
-    paths: ['sites/utilityroom.club/**']
+    paths:
+      - 'sites/utilityroom.club/**'
+      - 'packages/auth-client/**'
   pull_request:
     branches: [main]
-    paths: ['sites/utilityroom.club/**']
+    paths:
+      - 'sites/utilityroom.club/**'
+      - 'packages/auth-client/**'
 
 jobs:
   lint-and-build:

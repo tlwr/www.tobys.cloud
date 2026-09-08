@@ -1,12 +1,14 @@
 import { describe, it, expect } from 'vitest'
 import { Miniflare } from 'miniflare'
-import bcrypt from 'bcryptjs'
 import * as esbuild from 'esbuild'
 import path from 'path'
 import { fileURLToPath } from 'url'
+import { issuePayload, signAuthToken } from '@tobys/auth-client'
 
 // eslint-disable-next-line no-underscore-dangle
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
+
+export const TEST_JWT_SECRET = 'test-jwt-secret-at-least-32-chars!!'
 
 export async function buildProject(): Promise<void> {
   await esbuild.build({
@@ -15,38 +17,28 @@ export async function buildProject(): Promise<void> {
     bundle: true,
     format: 'esm',
     platform: 'node',
+    nodePaths: [path.resolve(__dirname, '../node_modules')],
   })
 }
 
-export async function getAuthenticatedHeaders(
-  mf: Miniflare,
-): Promise<Record<string, unknown>> {
-  const params = new URLSearchParams({ username: 'admin', password: 'secret' })
-  const loginResponse = await mf.dispatchFetch('http://localhost/login', {
-    method: 'POST',
-    body: params.toString(),
+export async function getAuthenticatedHeaders(): Promise<
+  Record<string, unknown>
+> {
+  const jwt = await signAuthToken(
+    TEST_JWT_SECRET,
+    issuePayload(
+      'admin@utilityroom.club',
+      'utilityroom',
+      ['utilityroom:admin'],
+      'session',
+      3600,
+    ),
+  )
+  return {
     headers: {
-      'Content-Type': 'application/x-www-form-urlencoded',
+      cookie: `auth_session=${jwt}`,
       Origin: 'http://localhost:8787',
     },
-    redirect: 'manual',
-  })
-
-  if (loginResponse.status !== 302) {
-    throw new Error('Login failed')
-  }
-
-  const setCookie = loginResponse.headers.get('set-cookie')!
-  if (
-    !setCookie ||
-    !setCookie.includes('username=') ||
-    !setCookie.includes('loggedInAt=')
-  ) {
-    throw new Error('Invalid login response')
-  }
-
-  return {
-    headers: { cookie: setCookie, Origin: 'http://localhost:8787' },
     redirect: 'manual',
   }
 }
@@ -55,8 +47,12 @@ export async function setupMiniflare(): Promise<Miniflare> {
   return new Miniflare({
     compatibilityDate: '2025-04-02',
     modules: [{ type: 'ESModule', path: 'dist/index.js' }],
-    kvNamespaces: ['PROJECTS', 'USERS'],
+    kvNamespaces: ['PROJECTS'],
     r2Buckets: ['ASSETS'],
+    bindings: {
+      AUTH_JWT_SECRET: TEST_JWT_SECRET,
+      AUTH_ISSUER: 'https://auth.tobys.cloud',
+    },
   })
 }
 
@@ -120,14 +116,6 @@ This project involved retrofitting an existing commercial building with modern V
       }),
     )
   }
-
-  // Seed admin user for tests
-  const hashedPassword = await bcrypt.hash('secret', 10)
-  const usersKV = await mf.getKVNamespace('USERS')
-  await usersKV.put(
-    'admin',
-    JSON.stringify({ username: 'admin', hashedPassword }),
-  )
 }
 
 export async function teardownMiniflare(mf: Miniflare): Promise<void> {

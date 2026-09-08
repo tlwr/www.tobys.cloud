@@ -748,30 +748,6 @@ function editorClientScript(
   </script>`;
 }
 
-/** Login form body — not linked from public nav. */
-export function loginHtml(error?: string): string {
-  const err = error
-    ? `<p role="alert">${escapeHtml(error)}</p>`
-    : "";
-  return `<main role="main" class="homepage">
-  <h2>Login</h2>
-  ${err}
-  <form method="post" action="/login">
-    <p>
-      <label for="username">Username</label><br>
-      <input id="username" type="text" name="username" autocomplete="username" required>
-    </p>
-    <p>
-      <label for="password">Password</label><br>
-      <input id="password" type="password" name="password" autocomplete="current-password" required>
-    </p>
-    <p>
-      <button type="submit">Log in</button>
-    </p>
-  </form>
-</main>`;
-}
-
 function escapeHtml(s: string): string {
   return s
     .replace(/&/g, "&amp;")

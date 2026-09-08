@@ -77,7 +77,7 @@ describe('Utility Room Club', () => {
     })
 
     it('renders commercial project', async () => {
-      const authHeaders = await getAuthenticatedHeaders(mf)
+      const authHeaders = await getAuthenticatedHeaders()
       const response = await mf.dispatchFetch(
         'http://localhost/project/commercial-hvac-retrofit',
         {
@@ -100,26 +100,14 @@ describe('Utility Room Club', () => {
   })
 
   describe('Login page', () => {
-    it('shows login form', async () => {
-      const response = await mf.dispatchFetch('http://localhost/login')
-      expect(response.status).toBe(200)
-      const html = await response.text()
-      expect(html).toContain('Login')
-      expect(html).toContain('<form')
-    })
-
-    it('rejects invalid credentials', async () => {
+    it('redirects to the central issuer', async () => {
       const response = await mf.dispatchFetch('http://localhost/login', {
-        method: 'POST',
-        body: new URLSearchParams({ username: 'admin', password: 'wrong' }),
-        headers: {
-          'Content-Type': 'application/x-www-form-urlencoded',
-          Origin: 'http://localhost:8787',
-        },
+        redirect: 'manual',
       })
-      expect(response.status).toBe(401)
-      const text = await response.text()
-      expect(text).toContain('Invalid credentials')
+      expect(response.status).toBe(302)
+      const loc = response.headers.get('location') ?? ''
+      expect(loc).toContain('https://auth.tobys.cloud/authorize')
+      expect(loc).toContain('client=utilityroom')
     })
   })
 
@@ -160,7 +148,7 @@ describe('Utility Room Club', () => {
           },
         )
         expect(response.status).toBe(302)
-        expect(response.headers.get('location')).toBe('/login')
+        expect(response.headers.get('location') ?? '').toContain('/authorize')
       })
 
       describe('Create new project', () => {
@@ -172,7 +160,7 @@ describe('Utility Room Club', () => {
               body: new URLSearchParams({
                 title: 'Residential Heat Pump Installation',
               }),
-              ...(await getAuthenticatedHeaders(mf)),
+              ...(await getAuthenticatedHeaders()),
             },
           )
           expect(response.status).toBe(400)
@@ -189,7 +177,7 @@ describe('Utility Room Club', () => {
               body: new URLSearchParams({
                 title: `Test Project ${timestamp}`,
               }),
-              ...(await getAuthenticatedHeaders(mf)),
+              ...(await getAuthenticatedHeaders()),
             },
           )
           expect(response.status).toBe(302)
@@ -203,13 +191,15 @@ describe('Utility Room Club', () => {
         const logoutResponse = await mf.dispatchFetch(
           'http://localhost/logout',
           {
-            ...(await getAuthenticatedHeaders(mf)),
+            ...(await getAuthenticatedHeaders()),
           },
         )
         expect(logoutResponse.status).toBe(302)
-        expect(logoutResponse.headers.get('location')).toBe('/')
+        expect(logoutResponse.headers.get('location') ?? '').toContain(
+          'https://auth.tobys.cloud/logout',
+        )
         const setCookie = logoutResponse.headers.get('set-cookie')!
-        expect(setCookie).toContain('username=')
+        expect(setCookie).toContain('auth_session=')
         expect(setCookie).toContain('Max-Age=0')
       })
     })

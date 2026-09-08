@@ -1,0 +1,31 @@
+{
+  "name": "auth.tobys.cloud",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Central login and RBAC for tobys.cloud sites",
+  "scripts": {
+    "predev": "npm run ensure-dev-vars",
+    "dev": "wrangler dev --port 8788",
+    "deploy": "wrangler deploy",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "seed-local": "node tools/seed-local.mjs",
+    "seed-remote": "node tools/seed-remote.mjs",
+    "set-auth-jwt-secret": "node tools/set-secrets.mjs",
+    "set-session-secret": "node tools/set-secrets.mjs",
+    "ensure-dev-vars": "node tools/ensure-dev-vars.mjs"
+  },
+  "dependencies": {
+    "@tobys/auth-client": "file:../../packages/auth-client",
+    "bcryptjs": "^2.4.3",
+    "hono": "^4.11.10"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "^5.20260801.1",
+    "@types/bcryptjs": "^2.4.3",
+    "typescript": "^5.9.3",
+    "vitest": "^4.0.18",
+    "wrangler": "^4.66.0"
+  }
+}

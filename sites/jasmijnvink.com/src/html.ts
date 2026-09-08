@@ -302,31 +302,6 @@ export function tagNewHtml(options: { id?: string; errors?: string[] } = {}): st
 </div>`;
 }
 
-export function loginHtml(error?: string): string {
-  const err = error ? `<p class="flash-err">${escapeHtml(error)}</p>` : "";
-  return `<div class="form-card">
-  <h2>Inloggen</h2>
-  ${err}
-  <form method="post" action="/inloggen">
-    <div class="row">
-      <label for="email">E-mail</label>
-      <input id="email" type="email" name="email" autocomplete="email" required>
-    </div>
-    <div class="row">
-      <label for="password">Wachtwoord</label>
-      <input id="password" type="password" name="password" autocomplete="current-password" required>
-    </div>
-    <div class="row check">
-      <input id="remember_me" type="checkbox" name="remember_me" value="1">
-      <label for="remember_me">Onthoud mij</label>
-    </div>
-    <div class="row">
-      <button type="submit" class="primary">Inloggen</button>
-    </div>
-  </form>
-</div>`;
-}
-
 export function notFoundHtml(): string {
   return `<h1>404 NOT FOUND</h1>`;
 }

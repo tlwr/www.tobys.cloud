@@ -14,3 +14,14 @@ bazel-*
 **/node_modules
 **/.wrangler
 **/dist
+
+.DS_Store
+
+# Local secrets (Wrangler / dotenv). Keep *.example files.
+.dev.vars
+.dev.env
+.env
+.env.*
+!.env.example
+!.dev.vars.example
+!.dev.env.example

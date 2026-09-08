@@ -6,13 +6,6 @@ const assets404 = {
   fetch: async () => new Response("not found", { status: 404 }),
 } as unknown as Fetcher;
 
-const emptyUsers = {
-  get: async () => null,
-  put: async () => {},
-  delete: async () => {},
-  list: async () => ({ keys: [], list_complete: true, cacheStatus: null }),
-} as unknown as KVNamespace;
-
 const emptyPosts = {
   get: async () => null,
   put: async () => {},
@@ -30,10 +23,10 @@ const emptyTags = {
 function env(): Env {
   return {
     ASSETS: assets404,
-    USERS: emptyUsers,
     POSTS: emptyPosts,
     TAGS: emptyTags,
-    SESSION_SECRET: "test-session-secret",
+    AUTH_JWT_SECRET: "test-jwt-secret-at-least-32-chars!!",
+    AUTH_ISSUER: "https://auth.tobys.cloud",
   };
 }
 

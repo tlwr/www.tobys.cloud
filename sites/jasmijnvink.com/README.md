@@ -7,31 +7,30 @@ numeric `/pictures/:id` URLs, kebab-case tags, unlisted `/inloggen`.
 
 | Binding | Resource | Contents |
 |---------|----------|----------|
-| `USERS` | KV | email → `{ username, hashedPassword }` (bcrypt, Devise-compatible) |
 | `PICTURES` | KV | integer id → picture JSON |
 | `TAGS` | KV | kebab tag → JSON array of picture ids |
 | `IMAGES` | R2 `jasmijnvink-com-images` | original bytes at `pictures/:id` |
 | `ASSETS` | Worker static assets | CSS, fonts, favicon |
 
-`SESSION_SECRET` is required (no fallback).
+Auth is centralised at [auth.tobys.cloud](https://auth.tobys.cloud). Permission:
+`jvnl:admin`. `AUTH_JWT_SECRET` must match the auth Worker.
 
 ## Develop
 
 ```bash
 npm ci
 npm run ensure-dev-vars
-npm run seed-local
 npm run dev
 npm test
 npm run typecheck
 ```
 
-Default local user: `jasmijn@example.com` / `secret`.
+`/inloggen` redirects to the issuer. Create an account with `jvnl:admin` at
+http://localhost:8788 (auth Worker, port 8788).
 
 Create Cloudflare resources (once), then paste ids into `wrangler.toml`:
 
 ```bash
-npx wrangler kv namespace create jasmijnvink-com-users --binding USERS --update-config
 npx wrangler kv namespace create jasmijnvink-com-pictures --binding PICTURES --update-config
 npx wrangler kv namespace create jasmijnvink-com-tags --binding TAGS --update-config
 npx wrangler r2 bucket create jasmijnvink-com-images
@@ -40,16 +39,14 @@ npx wrangler r2 bucket create jasmijnvink-com-images
 ## Deploy
 
 ```bash
-npm run set-session-secret
-npm run seed-remote -- 'email@example.com' 'password'
+npm run set-auth-jwt-secret -- '<same AUTH_JWT_SECRET as auth.tobys.cloud>'
 npm run deploy
 ```
 
-Or import the live Rails sqlite + Active Storage tree (preserves ids):
+Import the live Rails sqlite + Active Storage tree (pictures/tags/images only;
+users live on auth.tobys.cloud):
 
 ```bash
-kubectl -n jasmijn cp <pod>:/pvc/sqlite/production.sqlite3 ./import/production.sqlite3
-kubectl -n jasmijn cp <pod>:/pvc/storage ./import/storage
 npm run import-from-rails -- --db ./import/production.sqlite3 --storage ./import/storage --remote
 ```
 

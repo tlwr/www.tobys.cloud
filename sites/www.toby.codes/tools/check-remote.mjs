@@ -3,9 +3,8 @@
  * Verify remote Worker config matches what the app expects.
  *
  * Checks:
- *   - SESSION_SECRET secret is set
- *   - USERS KV binding id is configured and reachable
- *   - optional: at least one user key exists
+ *   - AUTH_JWT_SECRET secret is set
+ *   - POSTS KV binding id is configured and reachable
  *
  * Usage:
  *   npm run check-remote
@@ -52,7 +51,6 @@ function bad(msg) {
 
 console.log("Checking remote setup for www-toby-codes…\n");
 
-// --- SESSION_SECRET ---
 let secrets = [];
 try {
   const out = run(["wrangler", "secret", "list"]);
@@ -64,59 +62,21 @@ try {
 const secretNames = new Set(
   (Array.isArray(secrets) ? secrets : []).map((s) => s.name ?? s),
 );
-if (secretNames.has("SESSION_SECRET")) {
-  ok("SESSION_SECRET is set (value not shown)");
+if (secretNames.has("AUTH_JWT_SECRET")) {
+  ok("AUTH_JWT_SECRET is set (value not shown)");
 } else {
-  bad("SESSION_SECRET is missing — run: npm run set-session-secret");
+  bad("AUTH_JWT_SECRET is missing — run: npm run set-auth-jwt-secret -- <secret>");
 }
 
-// --- wrangler.toml KV ids ---
 const tomlPath = path.join(root, "wrangler.toml");
 const toml = fs.readFileSync(tomlPath, "utf8");
-const usersId = parseTomlBindingId(toml, "USERS");
 const postsId = parseTomlBindingId(toml, "POSTS");
-if (usersId) {
-  ok(`USERS kv id in wrangler.toml: ${usersId}`);
-} else {
-  bad('USERS kv id missing from wrangler.toml');
-}
 if (postsId) {
   ok(`POSTS kv id in wrangler.toml: ${postsId}`);
 } else {
-  bad('POSTS kv id missing from wrangler.toml');
+  bad("POSTS kv id missing from wrangler.toml");
 }
 
-// --- remote USERS KV ---
-if (usersId) {
-  try {
-    const listOut = run([
-      "wrangler",
-      "kv",
-      "key",
-      "list",
-      "--remote",
-      "--binding=USERS",
-    ]);
-    let keys = [];
-    try {
-      keys = JSON.parse(listOut || "[]");
-    } catch {
-      keys = [];
-    }
-    const n = Array.isArray(keys) ? keys.length : 0;
-    if (n > 0) {
-      ok(`USERS KV reachable; ${n} key(s) present`);
-    } else {
-      bad(
-        "USERS KV reachable but empty — run: npm run seed-remote -- <user> <pass>",
-      );
-    }
-  } catch (err) {
-    bad(`USERS KV not reachable remotely: ${err.stderr || err.message}`);
-  }
-}
-
-// --- remote POSTS KV ---
 if (postsId) {
   try {
     const listOut = run([
@@ -137,16 +97,13 @@ if (postsId) {
     if (n > 0) {
       ok(`POSTS KV reachable; ${n} key(s) present`);
     } else {
-      bad(
-        "POSTS KV reachable but empty — run: npm run push-posts -- --remote",
-      );
+      bad("POSTS KV reachable but empty — run: npm run push-posts -- --remote");
     }
   } catch (err) {
     bad(`POSTS KV not reachable remotely: ${err.stderr || err.message}`);
   }
 }
 
-// --- no preview_id (we intentionally use a single namespace) ---
 if (/preview_id\s*=/.test(toml)) {
   bad("wrangler.toml still has preview_id; remove unused preview KV");
 } else {

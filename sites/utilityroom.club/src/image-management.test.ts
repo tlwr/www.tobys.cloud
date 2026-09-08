@@ -108,7 +108,7 @@ describe('Image Management', () => {
             method: 'POST',
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
             body: formData as any,
-            ...(await getAuthenticatedHeaders(mf)),
+            ...(await getAuthenticatedHeaders()),
           },
         )
 
@@ -151,7 +151,7 @@ describe('Image Management', () => {
             method: 'POST',
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
             body: formData1 as any,
-            ...(await getAuthenticatedHeaders(mf)),
+            ...(await getAuthenticatedHeaders()),
           },
         )
 
@@ -168,7 +168,7 @@ describe('Image Management', () => {
             method: 'POST',
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
             body: formData2 as any,
-            ...(await getAuthenticatedHeaders(mf)),
+            ...(await getAuthenticatedHeaders()),
           },
         )
 
@@ -201,7 +201,7 @@ describe('Image Management', () => {
             method: 'POST',
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
             body: formData1 as any,
-            ...(await getAuthenticatedHeaders(mf)),
+            ...(await getAuthenticatedHeaders()),
           },
         )
 
@@ -223,7 +223,7 @@ describe('Image Management', () => {
             method: 'POST',
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
             body: formData2 as any,
-            ...(await getAuthenticatedHeaders(mf)),
+            ...(await getAuthenticatedHeaders()),
           },
         )
 
@@ -283,7 +283,7 @@ describe('Image Management', () => {
             method: 'POST',
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
             body: formData as any,
-            ...(await getAuthenticatedHeaders(mf)),
+            ...(await getAuthenticatedHeaders()),
           },
         )
 
@@ -300,7 +300,7 @@ describe('Image Management', () => {
       it('KV project update - verify images array updated correctly', async () => {
         const initialProjectResponse = await mf.dispatchFetch(
           'http://localhost/admin/edit/residential-heat-pump-installation',
-          await getAuthenticatedHeaders(mf),
+          await getAuthenticatedHeaders(),
         )
         const initialHtml = await initialProjectResponse.text()
         const initialImageCount = (initialHtml.match(/<tr key="/g) || []).length
@@ -322,7 +322,7 @@ describe('Image Management', () => {
             method: 'POST',
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
             body: formData as any,
-            ...(await getAuthenticatedHeaders(mf)),
+            ...(await getAuthenticatedHeaders()),
           },
         )
 
@@ -359,7 +359,7 @@ describe('Image Management', () => {
             method: 'POST',
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
             body: formData as any,
-            ...(await getAuthenticatedHeaders(mf)),
+            ...(await getAuthenticatedHeaders()),
           },
         )
 
@@ -376,7 +376,7 @@ describe('Image Management', () => {
           `http://localhost/admin/edit/residential-heat-pump-installation/image/${imageHash}`,
           {
             method: 'DELETE',
-            ...(await getAuthenticatedHeaders(mf)),
+            ...(await getAuthenticatedHeaders()),
           },
         )
 
@@ -423,7 +423,7 @@ describe('Image Management', () => {
             method: 'POST',
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
             body: formData1 as any,
-            ...(await getAuthenticatedHeaders(mf)),
+            ...(await getAuthenticatedHeaders()),
           },
         )
 
@@ -438,7 +438,7 @@ describe('Image Management', () => {
             method: 'POST',
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
             body: formData2 as any,
-            ...(await getAuthenticatedHeaders(mf)),
+            ...(await getAuthenticatedHeaders()),
           },
         )
 
@@ -455,7 +455,7 @@ describe('Image Management', () => {
           `http://localhost/admin/edit/residential-heat-pump-installation/image/${imageHashToDelete}`,
           {
             method: 'DELETE',
-            ...(await getAuthenticatedHeaders(mf)),
+            ...(await getAuthenticatedHeaders()),
           },
         )
 
@@ -485,7 +485,7 @@ describe('Image Management', () => {
             method: 'POST',
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
             body: formData as any,
-            ...(await getAuthenticatedHeaders(mf)),
+            ...(await getAuthenticatedHeaders()),
           },
         )
 
@@ -502,7 +502,7 @@ describe('Image Management', () => {
           `http://localhost/admin/edit/residential-heat-pump-installation/image/${imageHash}`,
           {
             method: 'DELETE',
-            ...(await getAuthenticatedHeaders(mf)),
+            ...(await getAuthenticatedHeaders()),
           },
         )
 
@@ -527,7 +527,7 @@ describe('Image Management', () => {
           'http://localhost/admin/edit/residential-heat-pump-installation/image/nonexistenthash12345678901234567890123456789012',
           {
             method: 'DELETE',
-            ...(await getAuthenticatedHeaders(mf)),
+            ...(await getAuthenticatedHeaders()),
           },
         )
 
@@ -539,7 +539,7 @@ describe('Image Management', () => {
           'http://localhost/admin/edit/non-existent-project/image/somehash12345678901234567890123456789012',
           {
             method: 'DELETE',
-            ...(await getAuthenticatedHeaders(mf)),
+            ...(await getAuthenticatedHeaders()),
           },
         )
 
@@ -567,7 +567,7 @@ describe('Image Management', () => {
             method: 'POST',
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
             body: formData as any,
-            ...(await getAuthenticatedHeaders(mf)),
+            ...(await getAuthenticatedHeaders()),
           },
         )
 
@@ -584,7 +584,7 @@ describe('Image Management', () => {
           `http://localhost/admin/edit/commercial-hvac-retrofit/image/${validHash}`,
           {
             method: 'DELETE',
-            ...(await getAuthenticatedHeaders(mf)),
+            ...(await getAuthenticatedHeaders()),
           },
         )
 
@@ -626,7 +626,7 @@ describe('Image Management', () => {
             method: 'POST',
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
             body: formData as any,
-            ...(await getAuthenticatedHeaders(mf)),
+            ...(await getAuthenticatedHeaders()),
           },
         )
 
@@ -648,7 +648,7 @@ describe('Image Management', () => {
           `http://localhost/admin/edit/residential-heat-pump-installation/image/${imageHash}`,
           {
             method: 'DELETE',
-            ...(await getAuthenticatedHeaders(mf)),
+            ...(await getAuthenticatedHeaders()),
           },
         )
 
@@ -682,7 +682,7 @@ describe('Image Management', () => {
             method: 'POST',
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
             body: formData1 as any,
-            ...(await getAuthenticatedHeaders(mf)),
+            ...(await getAuthenticatedHeaders()),
           },
         )
 
@@ -698,7 +698,7 @@ describe('Image Management', () => {
             method: 'POST',
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
             body: formData2 as any,
-            ...(await getAuthenticatedHeaders(mf)),
+            ...(await getAuthenticatedHeaders()),
           },
         )
 
@@ -714,7 +714,7 @@ describe('Image Management', () => {
           `http://localhost/admin/edit/residential-heat-pump-installation/image/${imageToDelete}`,
           {
             method: 'DELETE',
-            ...(await getAuthenticatedHeaders(mf)),
+            ...(await getAuthenticatedHeaders()),
           },
         )
 

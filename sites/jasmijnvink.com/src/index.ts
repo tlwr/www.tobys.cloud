@@ -2,16 +2,17 @@ import { Hono, type Context } from "hono";
 import { csrf } from "hono/csrf";
 import { deleteCookie, getCookie, setCookie } from "hono/cookie";
 import {
-  clearSession,
   getIsLoggedIn,
-  loginUser,
+  handleAuthCallback,
+  loginRedirect,
+  logoutAndRedirect,
   requireAuth,
 } from "./auth";
 import type { Env } from "./env";
 import {
   homeHtml,
   layout,
-  loginHtml,
+
   notFoundHtml,
   pictureEditHtml,
   pictureNewHtml,
@@ -144,42 +145,10 @@ app.get("/random", async (c) => {
   return c.redirect(`/pictures/${pick.id}`);
 });
 
-app.get("/inloggen", async (c) => {
-  if (await getIsLoggedIn(c)) {
-    return c.redirect("/");
-  }
-  return page(c, loginHtml(), { title: "Inloggen" });
-});
-
-app.post("/inloggen", async (c) => {
-  const body = await c.req.parseBody();
-  const email = asString(body.email);
-  const password = asString(body.password);
-  const remember = asString(body.remember_me) === "1";
-  try {
-    if (await loginUser(c, email, password, remember)) {
-      return c.redirect("/");
-    }
-  } catch (err) {
-    const msg =
-      err instanceof Error ? err.message : "Inloggen mislukt (server misconfigured)";
-    return c.html(layout(loginHtml(msg), { isLoggedIn: false }), 500);
-  }
-  return c.html(
-    layout(loginHtml("Ongeldige inloggegevens"), { isLoggedIn: false }),
-    401,
-  );
-});
-
-app.get("/uitloggen", (c) => {
-  clearSession(c);
-  return c.redirect("/");
-});
-
-app.post("/uitloggen", (c) => {
-  clearSession(c);
-  return c.redirect("/");
-});
+app.get("/inloggen", (c) => loginRedirect(c));
+app.get("/auth/callback", (c) => handleAuthCallback(c));
+app.get("/uitloggen", (c) => logoutAndRedirect(c));
+app.post("/uitloggen", (c) => logoutAndRedirect(c));
 
 app.get("/tags", async (c) => {
   const isLoggedIn = await getIsLoggedIn(c);

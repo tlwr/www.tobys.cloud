@@ -2,48 +2,36 @@
 
 /** @jsx h */
 
-import { Hono, Context, Next } from 'hono'
+import {
+  authorizeUrl,
+  clearSession,
+  getIsLoggedIn as getIsLoggedInCentral,
+  handleCallback,
+  logoutUrl,
+  requireAuth as requireAuthCentral,
+} from '@tobys/auth-client'
+import { Hono, Context } from 'hono'
 import { cors } from 'hono/cors'
 import { logger } from 'hono/logger'
 import { csrf } from 'hono/csrf'
-import {
-  getSignedCookie,
-  setSignedCookie,
-  deleteCookie,
-  getCookie,
-} from 'hono/cookie'
+import { getCookie } from 'hono/cookie'
 import { marked } from 'marked'
 import render from 'preact-render-to-string'
 import { ComponentChildren } from 'preact'
-import bcrypt from 'bcryptjs'
-import { UserSchema } from './schemas/user'
 import { ProjectSchema } from './schemas/project'
 
 type Bindings = {
   PROJECTS: KVNamespace
-  USERS: KVNamespace
   ASSETS: R2Bucket
-  SESSION_SECRET: string
+  AUTH_JWT_SECRET?: string
+  AUTH_ISSUER?: string
   NODE_ENV: string
-}
-
-function getSessionSecret(c: Context<{ Bindings: Bindings }>): string {
-  const secret = c.env.SESSION_SECRET
-  if (!secret && c.env.NODE_ENV === 'production') {
-    throw new Error('SESSION_SECRET must be set in production')
-  }
-  return secret || 'dev-session-secret-12345'
 }
 
 async function getIsLoggedIn(
   c: Context<{ Bindings: Bindings }>,
 ): Promise<boolean> {
-  const sessionSecret = getSessionSecret(c)
-  const username = await getSignedCookie(c, sessionSecret, 'username')
-
-  // signed cookie is not valid
-  if (username === false) return false
-  return !!username
+  return getIsLoggedInCentral(c, 'utilityroom')
 }
 
 function getTheme(c: Context<{ Bindings: Bindings }>): 'light' | 'dark' {
@@ -51,61 +39,7 @@ function getTheme(c: Context<{ Bindings: Bindings }>): 'light' | 'dark' {
   return theme === 'dark' ? 'dark' : 'light'
 }
 
-// Helper to authenticate and set session cookie
-async function loginUser(
-  c: Context<{ Bindings: Bindings }>,
-  username: string,
-  password: string,
-): Promise<boolean> {
-  const userData = await c.env.USERS.get(username)
-  if (!userData) return false
-
-  const userParse = UserSchema.safeParse(JSON.parse(userData))
-  if (!userParse.success) {
-    console.error('Invalid user data in KV:', userParse.error)
-    return false
-  }
-
-  const { hashedPassword } = userParse.data
-  const result = await bcrypt.compare(password, hashedPassword)
-
-  if (!result) {
-    return false
-  }
-
-  const sessionSecret = getSessionSecret(c)
-  const options = {
-    httpOnly: true,
-    secure: false,
-    sameSite: 'strict' as const,
-    maxAge: 86400,
-  }
-
-  await Promise.all([
-    setSignedCookie(c, 'username', username, sessionSecret, options),
-    setSignedCookie(
-      c,
-      'loggedInAt',
-      Date.now().toString(),
-      sessionSecret,
-      options,
-    ),
-  ])
-
-  return true
-}
-
-const authMiddleware = async (
-  c: Context<{ Bindings: Bindings }>,
-  next: Next,
-) => {
-  const isLoggedIn = await getIsLoggedIn(c)
-  if (isLoggedIn) {
-    await next()
-  } else {
-    return c.redirect('/login')
-  }
-}
+const authMiddleware = requireAuthCentral('utilityroom')
 
 function Layout({
   title,
@@ -155,7 +89,6 @@ function Layout({
           .content li { margin: 5px 0; }
           .content img { max-width: 100%; height: auto; display: block; margin: 10px 0; }
           form { margin: 10px 0; padding: 10px; border: 1px solid var(--border-color); border-radius: 1px; background-color: var(--bg-color); }
-          .login-form { max-width: 300px; margin: 10px auto; }
           label { display: block; margin: 10px 0; font-weight: bold; color: var(--text-color); }
           input { width: 100%; padding: 5px; border: 1px solid var(--border-light); border-radius: 1px; box-sizing: border-box; background-color: var(--input-bg); color: var(--text-color); }
           button { width: 100%; padding: 10px; background: var(--button-bg); color: var(--button-text); border: none; border-radius: 1px; cursor: pointer; margin-top: 10px; }
@@ -449,54 +382,11 @@ app.get('/project/:slug', async (c) => {
   return c.html(html)
 })
 
-app.get('/login', async (c) => {
-  const isLoggedIn = await getIsLoggedIn(c)
-  const theme = getTheme(c)
-
-  if (isLoggedIn) {
-    return c.redirect('/admin')
-  }
-
-  const html = render(
-    <Layout
-      title="Login - utilityroom.club"
-      isLoggedIn={isLoggedIn}
-      theme={theme}
-    >
-      <form
-        id="login-form"
-        className="login-form"
-        method="post"
-        action="/login"
-      >
-        <label htmlFor="username">
-          Username: <input id="username" type="text" name="username" />
-        </label>
-        <label htmlFor="password">
-          Password: <input id="password" type="password" name="password" />
-        </label>
-        <button type="submit">Login</button>
-      </form>
-    </Layout>,
-  )
-  return c.html(`<!DOCTYPE html>${html}`)
-})
-
-app.post('/login', async (c) => {
-  const body = await c.req.parseBody()
-  const { username, password } = body
-  if (typeof username === 'string' && typeof password === 'string') {
-    if (await loginUser(c, username, password)) {
-      return c.redirect('/')
-    }
-  }
-  return c.text('Invalid credentials', 401)
-})
-
+app.get('/login', (c) => c.redirect(authorizeUrl(c, 'utilityroom', '/admin')))
+app.get('/auth/callback', (c) => handleCallback(c, 'utilityroom'))
 app.get('/logout', (c) => {
-  deleteCookie(c, 'username')
-  deleteCookie(c, 'loggedInAt')
-  return c.redirect('/')
+  clearSession(c)
+  return c.redirect(logoutUrl(c, '/'))
 })
 
 // Protected admin page

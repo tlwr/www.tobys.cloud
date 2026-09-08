@@ -7,9 +7,8 @@ directory = "./public"
 binding = "ASSETS"
 run_worker_first = true
 
-[[kv_namespaces]]
-binding = "USERS"
-id = "2578293a010645e89ddb89c57c8c4f2a"
+[vars]
+AUTH_ISSUER = "https://auth.tobys.cloud"
 
 [[kv_namespaces]]
 binding = "PICTURES"

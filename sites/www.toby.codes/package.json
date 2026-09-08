@@ -14,24 +14,20 @@
     "deploy": "wrangler deploy",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
-    "seed-local": "node tools/seed-local.mjs",
-    "seed-remote": "node tools/seed-remote.mjs",
     "check-remote": "node tools/check-remote.mjs",
-    "set-session-secret": "node tools/set-session-secret.mjs",
+    "set-auth-jwt-secret": "node tools/set-auth-jwt-secret.mjs",
     "ensure-dev-vars": "node tools/ensure-dev-vars.mjs",
     "push-posts": "node tools/push-posts.mjs",
     "pull-posts": "node tools/pull-posts.mjs"
   },
 
   "dependencies": {
-    "bcryptjs": "^2.4.3",
+    "@tobys/auth-client": "file:../../packages/auth-client",
     "hono": "^4.11.10",
-    "marked": "^17.0.3",
-    "zod": "^4.3.6"
+    "marked": "^17.0.3"
   },
   "devDependencies": {
     "@cloudflare/workers-types": "^5.20260801.1",
-    "@types/bcryptjs": "^2.4.3",
     "typescript": "^5.9.3",
     "vitest": "^4.0.18",
     "wrangler": "^4.66.0"

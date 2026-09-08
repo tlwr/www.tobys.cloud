@@ -1,0 +1,21 @@
+name = "auth-tobys-cloud"
+main = "src/index.ts"
+compatibility_date = "2025-04-02"
+
+[dev]
+port = 8788
+
+# Create with:
+#   npx wrangler kv namespace create auth-tobys-cloud-users --binding USERS --update-config
+[[kv_namespaces]]
+binding = "USERS"
+id = "9aa195d53abc46818a9ffa61bbc019af"
+
+[[routes]]
+pattern = "auth.tobys.cloud"
+zone_name = "tobys.cloud"
+custom_domain = true
+
+[[routes]]
+pattern = "auth.tobys.cloud/*"
+zone_name = "tobys.cloud"

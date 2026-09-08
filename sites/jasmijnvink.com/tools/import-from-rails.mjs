@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 /**
- * Import pictures, tags, users, and Active Storage blobs from a Rails dump.
+ * Import pictures, tags, and Active Storage blobs from a Rails dump.
+ * Users now live on auth.tobys.cloud — this script does not import them.
  *
  * Prerequisites: `sqlite3` CLI on PATH.
  *
@@ -42,7 +43,6 @@ if (remote) {
   if (toml.includes("000000000000000000000000000000")) {
     console.error(
       "wrangler.toml still has placeholder KV ids (0000…). Create real namespaces first:\n" +
-        "  npx wrangler kv namespace create jasmijnvink-com-users --binding USERS --update-config\n" +
         "  npx wrangler kv namespace create jasmijnvink-com-pictures --binding PICTURES --update-config\n" +
         "  npx wrangler kv namespace create jasmijnvink-com-tags --binding TAGS --update-config\n" +
         "  npx wrangler r2 bucket create jasmijnvink-com-images",
@@ -86,7 +86,6 @@ const pictures = sql(
 );
 const joins = sql("SELECT picture_id, tag_id FROM pictures_tags");
 const tags = sql("SELECT id FROM tags");
-const users = sql("SELECT email, encrypted_password FROM users");
 const attachments = sql(`
   SELECT a.record_id AS picture_id, b.key, b.content_type, b.filename, b.byte_size
   FROM active_storage_attachments a
@@ -121,16 +120,8 @@ for (const [picId, list] of tagsByPicture) {
 }
 
 console.log(
-  `Importing ${pictures.length} pictures, ${tagMembers.size} tags, ${users.length} users (${local ? "local" : "remote"})`,
+  `Importing ${pictures.length} pictures, ${tagMembers.size} tags (${local ? "local" : "remote"})`,
 );
-
-for (const u of users) {
-  const record = JSON.stringify({
-    username: u.email,
-    hashedPassword: u.encrypted_password,
-  });
-  wrangler(["kv", "key", "put", "--binding=USERS", u.email, record]);
-}
 
 for (const [tag, ids] of tagMembers) {
   wrangler([

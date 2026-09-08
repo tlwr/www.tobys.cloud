@@ -1,8 +1,8 @@
 import { describe, expect, it, beforeEach } from "vitest";
-import bcrypt from "bcryptjs";
 import { app } from "./index";
 import type { Env } from "./env";
 import type { Picture } from "./pictures";
+import { issuePayload, signAuthToken } from "@tobys/auth-client";
 
 class MemoryKV {
   private store = new Map<string, string>();
@@ -93,48 +93,40 @@ function pic(partial: Partial<Picture> & { id: string; title: string }): Picture
   };
 }
 
+const JWT = "test-jwt-secret-at-least-32-chars!!";
+
 function env(
-  users: MemoryKV,
+  _users: MemoryKV,
   pictures: MemoryKV,
   tags: MemoryKV,
   images?: MemoryR2,
 ): Env {
   return {
     ASSETS: assets404,
-    USERS: users as unknown as KVNamespace,
     PICTURES: pictures as unknown as KVNamespace,
     TAGS: tags as unknown as KVNamespace,
     IMAGES: (images ?? new MemoryR2()) as unknown as R2Bucket,
-    SESSION_SECRET: "test-session-secret",
+    AUTH_JWT_SECRET: JWT,
+    AUTH_ISSUER: "https://auth.tobys.cloud",
   };
 }
 
 async function loginCookie(
-  users: MemoryKV,
-  pictures: MemoryKV,
-  tags: MemoryKV,
+  _users: MemoryKV,
+  _pictures: MemoryKV,
+  _tags: MemoryKV,
 ): Promise<string> {
-  const body = new URLSearchParams({
-    email: "jasmijn@example.com",
-    password: "s3cret",
-  });
-  const loginRes = await app.request(
-    "/inloggen",
-    {
-      method: "POST",
-      body,
-      headers: { Origin: "http://localhost" },
-    },
-    env(users, pictures, tags),
+  const jwt = await signAuthToken(
+    JWT,
+    issuePayload(
+      "jasmijn@example.com",
+      "jvnl",
+      ["jvnl:admin"],
+      "session",
+      3600,
+    ),
   );
-  const rawCookies =
-    typeof loginRes.headers.getSetCookie === "function"
-      ? loginRes.headers.getSetCookie()
-      : [loginRes.headers.get("set-cookie") ?? ""];
-  return rawCookies
-    .filter(Boolean)
-    .map((c) => c.split(";")[0])
-    .join("; ");
+  return `auth_session=${jwt}`;
 }
 
 describe("jasmijnvink.com", () => {
@@ -145,14 +137,6 @@ describe("jasmijnvink.com", () => {
 
   beforeEach(async () => {
     users = new MemoryKV();
-    const hashedPassword = await bcrypt.hash("s3cret", 4);
-    await users.put(
-      "jasmijn@example.com",
-      JSON.stringify({
-        username: "jasmijn@example.com",
-        hashedPassword,
-      }),
-    );
     pictures = new MemoryKV({
       "1": JSON.stringify(
         pic({ id: "1", title: "Zichtbaar", visible: true, tags: ["portret"] }),
@@ -257,7 +241,7 @@ describe("jasmijnvink.com", () => {
       env(users, pictures, tags, images),
     );
     expect(res.status).toBe(302);
-    expect(res.headers.get("location")).toBe("/inloggen");
+    expect(res.headers.get("location")).toContain("/authorize");
   });
 
   it("logged-in user sees hidden pictures and can upload", async () => {

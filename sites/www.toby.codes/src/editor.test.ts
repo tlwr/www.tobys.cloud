@@ -1,7 +1,7 @@
 import { describe, expect, it, beforeEach } from "vitest";
-import bcrypt from "bcryptjs";
 import { app } from "./index";
 import type { Env } from "./env";
+import { issuePayload, signAuthToken } from "@tobys/auth-client";
 
 class MemoryKV {
   private store = new Map<string, string>();
@@ -37,38 +37,33 @@ const assets404 = {
   fetch: async () => new Response("not found", { status: 404 }),
 } as unknown as Fetcher;
 
-function env(users: MemoryKV, posts: MemoryKV, tags?: MemoryKV): Env {
+const JWT = "test-jwt-secret-at-least-32-chars!!";
+
+function env(_users: MemoryKV, posts: MemoryKV, tags?: MemoryKV): Env {
   return {
     ASSETS: assets404,
-    USERS: users as unknown as KVNamespace,
     POSTS: posts as unknown as KVNamespace,
     TAGS: (tags ?? new MemoryKV()) as unknown as KVNamespace,
-    SESSION_SECRET: "test-session-secret",
+    AUTH_JWT_SECRET: JWT,
+    AUTH_ISSUER: "https://auth.tobys.cloud",
   };
 }
 
-async function loginCookie(users: MemoryKV, posts: MemoryKV): Promise<string> {
-  const body = new URLSearchParams({
-    username: "toby",
-    password: "s3cret",
-  });
-  const loginRes = await app.request(
-    "/login",
-    {
-      method: "POST",
-      body,
-      headers: { Origin: "http://localhost" },
-    },
-    env(users, posts),
+async function loginCookie(
+  _users: MemoryKV,
+  _posts: MemoryKV,
+): Promise<string> {
+  const jwt = await signAuthToken(
+    JWT,
+    issuePayload(
+      "toby@toby.codes",
+      "toby-codes",
+      ["toby-codes:admin"],
+      "session",
+      3600,
+    ),
   );
-  const rawCookies =
-    typeof loginRes.headers.getSetCookie === "function"
-      ? loginRes.headers.getSetCookie()
-      : [loginRes.headers.get("set-cookie") ?? ""];
-  return rawCookies
-    .filter(Boolean)
-    .map((c) => c.split(";")[0])
-    .join("; ");
+  return `auth_session=${jwt}`;
 }
 
 describe("post editor", () => {
@@ -77,11 +72,6 @@ describe("post editor", () => {
 
   beforeEach(async () => {
     users = new MemoryKV();
-    const hashedPassword = await bcrypt.hash("s3cret", 4);
-    await users.put(
-      "toby",
-      JSON.stringify({ username: "toby", hashedPassword }),
-    );
     posts = new MemoryKV({
       Sample: "---\nvisible: true\n---\n# Hello\n\nWorld.\n",
     });
@@ -157,7 +147,7 @@ describe("post editor", () => {
       env(users, posts),
     );
     expect(res.status).toBe(302);
-    expect(res.headers.get("location")).toBe("/login");
+    expect(res.headers.get("location")).toContain("/authorize");
   });
 
   it("posts list links to new post", async () => {

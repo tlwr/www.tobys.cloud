@@ -8,6 +8,11 @@
     "strict": true,
     "module": "esnext",
     "moduleResolution": "bundler",
+    "baseUrl": ".",
+    "paths": {
+      "hono": ["./node_modules/hono"],
+      "hono/cookie": ["./node_modules/hono/dist/types/helper/cookie"]
+    },
     "allowImportingTsExtensions": false,
     "resolveJsonModule": true,
     "isolatedModules": true,
@@ -19,6 +24,6 @@
     "types": ["@cloudflare/workers-types"],
     "forceConsistentCasingInFileNames": true
   },
-  "include": ["src/**/*"],
+  "include": ["src/**/*", "../../packages/auth-client/**/*"],
   "exclude": ["node_modules"]
 }

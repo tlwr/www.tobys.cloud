@@ -14,7 +14,12 @@ A curated showcase of exceptional craftsmanship in building utility systems.
 
 ```bash
 npm install
+npm run ensure-dev-vars
 ```
+
+Auth is centralised at [auth.tobys.cloud](https://auth.tobys.cloud). `/login`
+redirects there; grant `utilityroom:admin` in the auth admin UI. `AUTH_JWT_SECRET`
+must match the auth Worker (`npm run set-auth-jwt-secret -- '<secret>'`).
 
 ### Commands
 
