@@ -42,7 +42,7 @@
       "name": "utilityroom.club",
       "path": "sites/utilityroom.club",
       "depends": ["auth-client"],
-      "node": "18",
+      "node": "20",
       "install": "npm ci --legacy-peer-deps --ignore-scripts",
       "ci": ["lint", "typecheck", "build", "test"]
     },

@@ -35,8 +35,16 @@ function fromB64url(s: string): ArrayBuffer {
   return out.buffer;
 }
 
+function webcrypto(): Crypto {
+  const c = globalThis.crypto;
+  if (!c?.subtle) {
+    throw new Error("Web Crypto API is not available");
+  }
+  return c;
+}
+
 async function hmacKey(secret: string): Promise<CryptoKey> {
-  return crypto.subtle.importKey(
+  return webcrypto().subtle.importKey(
     "raw",
     enc.encode(secret),
     { name: "HMAC", hash: "SHA-256" },
@@ -53,7 +61,7 @@ export async function signAuthToken(
   const body = b64urlJson(payload);
   const data = `${header}.${body}`;
   const key = await hmacKey(secret);
-  const sig = await crypto.subtle.sign("HMAC", key, enc.encode(data));
+  const sig = await webcrypto().subtle.sign("HMAC", key, enc.encode(data));
   return `${data}.${b64url(sig)}`;
 }
 
@@ -69,7 +77,7 @@ export async function verifyAuthToken(
   const [header, body, sig] = parts;
   const data = `${header}.${body}`;
   const key = await hmacKey(secret);
-  const ok = await crypto.subtle.verify(
+  const ok = await webcrypto().subtle.verify(
     "HMAC",
     key,
     fromB64url(sig),

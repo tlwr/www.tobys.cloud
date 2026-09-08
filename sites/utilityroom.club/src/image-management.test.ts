@@ -1,3 +1,4 @@
+import { File } from 'node:buffer'
 import { describe, it, expect, beforeAll, afterAll } from 'vitest'
 import { Miniflare } from 'miniflare'
 import {
