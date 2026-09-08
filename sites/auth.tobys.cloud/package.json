@@ -19,6 +19,7 @@
     "db:migrate": "wrangler d1 migrations apply auth-tobys-cloud-audit --remote"
   },
   "dependencies": {
+    "@simplewebauthn/server": "^14.0.1",
     "@tobys/auth-client": "file:../../packages/auth-client",
     "bcryptjs": "^2.4.3",
     "hono": "^4.11.10"

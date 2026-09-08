@@ -74,6 +74,9 @@ export function layout(
     .checks label { display: block; margin: 0.25rem 0; }
     .muted { opacity: 0.7; }
     form.inline { display: inline; }
+    .or { display: flex; align-items: center; gap: 0.75rem; margin: 1.25rem 0; opacity: 0.7; }
+    .or::before, .or::after { content: ""; flex: 1; border-bottom: 1px dotted var(--dark); }
+    .stack { display: flex; flex-direction: column; align-items: flex-start; gap: 0.75rem; }
   </style>
 </head>
 <body>
@@ -89,22 +92,82 @@ export function layout(
 
 export function loginHtml(opts: { next?: string; client?: string; redirect?: string; error?: string }): string {
   const err = opts.error ? `<p class="err">${escapeHtml(opts.error)}</p>` : "";
+  const next = escapeHtml(opts.next ?? "/me");
+  const client = escapeHtml(opts.client ?? "");
+  const redirect = escapeHtml(opts.redirect ?? "");
   return `<h2>Log in</h2>
   ${err}
+  <p id="passkey-error" class="err" hidden></p>
   <form method="post" action="/login">
-    <input type="hidden" name="next" value="${escapeHtml(opts.next ?? "/me")}">
-    <input type="hidden" name="client" value="${escapeHtml(opts.client ?? "")}">
-    <input type="hidden" name="redirect" value="${escapeHtml(opts.redirect ?? "")}">
+    <input type="hidden" name="next" value="${next}">
+    <input type="hidden" name="client" value="${client}">
+    <input type="hidden" name="redirect" value="${redirect}">
     <div class="row">
       <label for="email">Email</label>
-      <input id="email" type="email" name="email" autocomplete="username" required>
+      <input id="email" type="email" name="email" autocomplete="username webauthn" required>
     </div>
     <div class="row">
       <label for="password">Password</label>
       <input id="password" type="password" name="password" autocomplete="current-password" required>
     </div>
     <button type="submit">Log in</button>
-  </form>`;
+  </form>
+  <p class="or">or</p>
+  <button type="button" id="passkey-login"
+    data-next="${next}" data-client="${client}" data-redirect="${redirect}">
+    Log in with a passkey
+  </button>
+  <script>
+  (function () {
+    var btn = document.getElementById("passkey-login");
+    var err = document.getElementById("passkey-error");
+    if (!btn) return;
+    function show(msg) {
+      if (!err) return;
+      err.textContent = msg;
+      err.hidden = false;
+    }
+    btn.addEventListener("click", async function () {
+      if (!window.PublicKeyCredential || !PublicKeyCredential.parseRequestOptionsFromJSON) {
+        show("Passkeys are not supported in this browser.");
+        return;
+      }
+      btn.disabled = true;
+      try {
+        var optRes = await fetch("/login/passkey/options", {
+          method: "POST",
+          credentials: "same-origin",
+          headers: { Accept: "application/json" }
+        });
+        var optJson = await optRes.json();
+        if (!optRes.ok) throw new Error(optJson.error || "Could not start passkey login");
+        var cred = await navigator.credentials.get({
+          publicKey: PublicKeyCredential.parseRequestOptionsFromJSON(optJson.options)
+        });
+        if (!cred || typeof cred.toJSON !== "function") {
+          throw new Error("Passkey login was cancelled");
+        }
+        var fin = await fetch("/login/passkey", {
+          method: "POST",
+          credentials: "same-origin",
+          headers: { "content-type": "application/json", Accept: "application/json" },
+          body: JSON.stringify({
+            credential: cred.toJSON(),
+            next: btn.dataset.next || "/me",
+            client: btn.dataset.client || "",
+            redirect: btn.dataset.redirect || ""
+          })
+        });
+        var body = await fin.json();
+        if (!fin.ok || !body.ok) throw new Error(body.error || "Passkey login failed");
+        location.href = body.redirect;
+      } catch (e) {
+        show(e && e.message ? e.message : "Passkey login failed");
+        btn.disabled = false;
+      }
+    });
+  })();
+  </script>`;
 }
 
 function permChecks(selected: string[]): string {
@@ -181,16 +244,78 @@ export function userEditHtml(user: User, opts: { error?: string } = {}): string 
   </form>`;
 }
 
-export function meHtml(opts: { email: string; permissions: string[] }): string {
+export function meHtml(opts: {
+  email: string;
+  permissions: string[];
+  hasPasskey?: boolean;
+}): string {
   const perms =
     opts.permissions.length > 0
       ? opts.permissions.map(escapeHtml).join(", ")
       : "<span class=muted>none</span>";
+  const passkeyBlock = opts.hasPasskey
+    ? `<p>A passkey is registered on this account.</p>
+  <div class="stack">
+    <button type="button" id="passkey-register">Replace passkey</button>
+    <form method="post" action="/passkeys/delete" onsubmit="return confirm('Remove your passkey? You can still log in with your password.');">
+      <button type="submit">Remove passkey</button>
+    </form>
+  </div>`
+    : `<p class="muted">No passkey registered. A passkey lets you sign in on this site with this device instead of a password.</p>
+  <button type="button" id="passkey-register">Add passkey</button>`;
   return `<h2>Me</h2>
   <p><strong>Email</strong> ${escapeHtml(opts.email)}</p>
   <p><strong>Permissions</strong> ${perms}</p>
   <h3>Passkey</h3>
-  <p class="muted">No passkey registered. You’ll be able to add one here.</p>`;
+  <p id="passkey-status" hidden></p>
+  ${passkeyBlock}
+  <script>
+  (function () {
+    var btn = document.getElementById("passkey-register");
+    var status = document.getElementById("passkey-status");
+    if (!btn) return;
+    function show(msg, ok) {
+      if (!status) return;
+      status.textContent = msg;
+      status.className = ok ? "ok" : "err";
+      status.hidden = false;
+    }
+    btn.addEventListener("click", async function () {
+      if (!window.PublicKeyCredential || !PublicKeyCredential.parseCreationOptionsFromJSON) {
+        show("Passkeys are not supported in this browser.");
+        return;
+      }
+      btn.disabled = true;
+      try {
+        var optRes = await fetch("/passkeys/register/options", {
+          method: "POST",
+          credentials: "same-origin",
+          headers: { Accept: "application/json" }
+        });
+        var optJson = await optRes.json();
+        if (!optRes.ok) throw new Error(optJson.error || "Could not start passkey registration");
+        var cred = await navigator.credentials.create({
+          publicKey: PublicKeyCredential.parseCreationOptionsFromJSON(optJson.options)
+        });
+        if (!cred || typeof cred.toJSON !== "function") {
+          throw new Error("Passkey registration was cancelled");
+        }
+        var fin = await fetch("/passkeys/register", {
+          method: "POST",
+          credentials: "same-origin",
+          headers: { "content-type": "application/json", Accept: "application/json" },
+          body: JSON.stringify({ credential: cred.toJSON() })
+        });
+        var body = await fin.json();
+        if (!fin.ok || !body.ok) throw new Error(body.error || "Could not register passkey");
+        location.reload();
+      } catch (e) {
+        show(e && e.message ? e.message : "Could not register passkey");
+        btn.disabled = false;
+      }
+    });
+  })();
+  </script>`;
 }
 
 export function forbiddenHtml(): string {

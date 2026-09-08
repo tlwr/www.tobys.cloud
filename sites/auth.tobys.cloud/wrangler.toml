@@ -1,6 +1,7 @@
 name = "auth-tobys-cloud"
 main = "src/index.ts"
 compatibility_date = "2025-04-02"
+compatibility_flags = ["nodejs_compat"]
 
 [dev]
 port = 8788

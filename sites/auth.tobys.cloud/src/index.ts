@@ -2,6 +2,12 @@ import { Hono, type Context } from "hono";
 import { csrf } from "hono/csrf";
 import bcrypt from "bcryptjs";
 import {
+  generateAuthenticationOptions,
+  generateRegistrationOptions,
+  verifyAuthenticationResponse,
+  verifyRegistrationResponse,
+} from "@simplewebauthn/server";
+import {
   AUTH_CLIENTS,
   clearSession,
   getIdentity,
@@ -31,14 +37,26 @@ import {
   usersIndexHtml,
 } from "./html";
 import {
+  b64urlToBytes,
+  bytesToB64url,
+  clearChallengeCookie,
+  readChallengeCookie,
+  setChallengeCookie,
+  userHandle,
+  webAuthnRp,
+} from "./passkeys";
+import {
   countAuthAdmins,
   deleteUser,
+  getEmailByPasskeyId,
   getUser,
   isValidEmail,
   listUsers,
   normalizeEmail,
   putUser,
+  replaceUserPasskey,
   sanitizePermissions,
+  type User,
 } from "./users";
 
 export type { Env };
@@ -112,6 +130,28 @@ function parseRedirect(raw: string): URL | null {
   }
 }
 
+async function ticketDestination(
+  c: Context<{ Bindings: Bindings }>,
+  user: User,
+  client: AuthClientId,
+  redirect: URL,
+  next: string,
+): Promise<{ url: string } | { error: "forbidden" | "secret" }> {
+  const perm = AUTH_CLIENTS[client].permission;
+  if (!user.permissions.includes(perm)) {
+    return { error: "forbidden" };
+  }
+  const secret = getJwtSecret(c);
+  if (!secret) {
+    return { error: "secret" };
+  }
+  const ticket = await signTicket(secret, user.email, client, user.permissions);
+  const dest = new URL(redirect.toString());
+  dest.searchParams.set("ticket", ticket);
+  dest.searchParams.set("next", safeLocalPath(next));
+  return { url: dest.toString() };
+}
+
 async function finishAuthorize(
   c: Context<{ Bindings: Bindings }>,
   email: string,
@@ -124,19 +164,69 @@ async function finishAuthorize(
     clearSession(c);
     return c.html(layout(loginHtml({ error: "Unknown user" })), 401);
   }
-  const perm = AUTH_CLIENTS[client].permission;
-  if (!user.permissions.includes(perm)) {
+  const dest = await ticketDestination(c, user, client, redirect, next);
+  if ("error" in dest) {
+    if (dest.error === "secret") {
+      return c.text("AUTH_JWT_SECRET is not set", 500);
+    }
     return c.html(layout(forbiddenHtml(), { email: user.email }), 403);
   }
-  const secret = getJwtSecret(c);
-  if (!secret) {
-    return c.text("AUTH_JWT_SECRET is not set", 500);
+  return c.redirect(dest.url);
+}
+
+async function continueAfterAuth(
+  c: Context<{ Bindings: Bindings }>,
+  user: User,
+  opts: {
+    next: string;
+    client: string;
+    redirect: string;
+    json?: boolean;
+  },
+): Promise<Response> {
+  await setSessionCookie(c, {
+    sub: user.email,
+    aud: "auth",
+    perms: user.permissions,
+    typ: "session",
+    iat: 0,
+    exp: 0,
+  });
+  let dest = homePath(opts.next);
+  if (isAuthClientId(opts.client) && opts.client !== "auth" && opts.redirect) {
+    const url = parseRedirect(opts.redirect);
+    if (
+      url &&
+      originAllowed(opts.client, url.origin, new URL(c.req.url).origin)
+    ) {
+      const ticketed = await ticketDestination(
+        c,
+        user,
+        opts.client,
+        url,
+        opts.next,
+      );
+      if ("error" in ticketed) {
+        if (ticketed.error === "secret") {
+          return opts.json
+            ? c.json({ error: "Server misconfigured (AUTH_JWT_SECRET)" }, 500)
+            : c.text("AUTH_JWT_SECRET is not set", 500);
+        }
+        return opts.json
+          ? c.json({ error: "Forbidden" }, 403)
+          : c.html(layout(forbiddenHtml(), { email: user.email }), 403);
+      }
+      dest = ticketed.url;
+    }
   }
-  const ticket = await signTicket(secret, user.email, client, user.permissions);
-  const dest = new URL(redirect.toString());
-  dest.searchParams.set("ticket", ticket);
-  dest.searchParams.set("next", safeLocalPath(next));
-  return c.redirect(dest.toString());
+  if (opts.json) {
+    return c.json({ ok: true, redirect: dest });
+  }
+  return c.redirect(dest);
+}
+
+function jsonError(c: Context, error: string, status: 400 | 401 | 500 = 400) {
+  return c.json({ error }, status);
 }
 
 app.get("/health", (c) => c.text("healthy"));
@@ -151,9 +241,20 @@ app.get("/me", requireLocalSession(), async (c) => {
   if (!id) {
     return c.redirect("/login?next=%2Fme");
   }
-  return page(c, meHtml({ email: id.sub, permissions: id.perms }), {
-    title: "Me",
-  });
+  const user = await getUser(c.env.USERS, id.sub);
+  if (!user) {
+    clearSession(c);
+    return c.redirect("/login?next=%2Fme");
+  }
+  return page(
+    c,
+    meHtml({
+      email: user.email,
+      permissions: user.permissions,
+      hasPasskey: Boolean(user.passkey),
+    }),
+    { title: "Me" },
+  );
 });
 
 app.get("/audit", requireLocalAuth(), async (c) => {
@@ -233,24 +334,237 @@ app.post("/login", async (c) => {
     email: user.email,
     ...meta,
   });
-  await setSessionCookie(c, {
-    sub: user.email,
-    aud: "auth",
-    perms: user.permissions,
-    typ: "session",
-    iat: 0,
-    exp: 0,
-  });
-  if (isAuthClientId(client) && client !== "auth" && redirect) {
-    const dest = parseRedirect(redirect);
-    if (
-      dest &&
-      originAllowed(client, dest.origin, new URL(c.req.url).origin)
-    ) {
-      return finishAuthorize(c, user.email, client, dest, next);
-    }
+  return continueAfterAuth(c, user, { next, client, redirect });
+});
+
+app.post("/login/passkey/options", async (c) => {
+  const secret = getJwtSecret(c);
+  if (!secret) {
+    return jsonError(c, "Server misconfigured (AUTH_JWT_SECRET)", 500);
   }
-  return c.redirect(homePath(next));
+  const rp = webAuthnRp(c.req.url);
+  const options = await generateAuthenticationOptions({
+    rpID: rp.rpID,
+    userVerification: "required",
+  });
+  await setChallengeCookie(c, secret, {
+    purpose: "login",
+    challenge: options.challenge,
+  });
+  return c.json({ options });
+});
+
+app.post("/login/passkey", async (c) => {
+  const secret = getJwtSecret(c);
+  if (!secret) {
+    return jsonError(c, "Server misconfigured (AUTH_JWT_SECRET)", 500);
+  }
+  const meta = auditMeta(c);
+  const fail = async (email: string) => {
+    await writeAudit(c.env.AUDIT, {
+      type: "login.failure",
+      email,
+      detail: "passkey",
+      ...meta,
+    });
+    clearChallengeCookie(c);
+    return jsonError(c, "Passkey login failed", 401);
+  };
+
+  let body: {
+    credential?: { id?: string };
+    next?: string;
+    client?: string;
+    redirect?: string;
+  };
+  try {
+    body = (await c.req.json()) as typeof body;
+  } catch {
+    return jsonError(c, "Invalid JSON");
+  }
+
+  const challenge = await readChallengeCookie(c, secret);
+  if (!challenge || challenge.purpose !== "login") {
+    return fail("");
+  }
+
+  const credentialId =
+    typeof body.credential?.id === "string" ? body.credential.id : "";
+  const email = await getEmailByPasskeyId(c.env.USERS, credentialId);
+  if (!email) {
+    return fail("");
+  }
+  const user = await getUser(c.env.USERS, email);
+  if (!user?.passkey || user.passkey.id !== credentialId) {
+    return fail(email);
+  }
+
+  const rp = webAuthnRp(c.req.url);
+  try {
+    const verified = await verifyAuthenticationResponse({
+      response: body.credential as Parameters<
+        typeof verifyAuthenticationResponse
+      >[0]["response"],
+      expectedChallenge: challenge.challenge,
+      expectedOrigin: rp.origin,
+      expectedRPID: rp.rpID,
+      credential: {
+        id: user.passkey.id,
+        publicKey: b64urlToBytes(user.passkey.publicKey),
+        counter: user.passkey.counter,
+        transports: user.passkey.transports,
+      },
+      requireUserVerification: true,
+    });
+    if (!verified.verified) {
+      return fail(user.email);
+    }
+    await replaceUserPasskey(c.env.USERS, user, {
+      ...user.passkey,
+      counter: verified.authenticationInfo.newCounter,
+    });
+  } catch {
+    return fail(user.email);
+  }
+
+  clearChallengeCookie(c);
+  await writeAudit(c.env.AUDIT, {
+    type: "login.success",
+    email: user.email,
+    detail: "passkey",
+    ...meta,
+  });
+  const next = safeLocalPath(asString(body.next));
+  const client = asString(body.client);
+  const redirect = asString(body.redirect);
+  return continueAfterAuth(c, user, { next, client, redirect, json: true });
+});
+
+app.post("/passkeys/register/options", async (c) => {
+  const id = await getIdentity(c, "auth");
+  if (!id) {
+    return jsonError(c, "Not signed in", 401);
+  }
+  const secret = getJwtSecret(c);
+  if (!secret) {
+    return jsonError(c, "Server misconfigured (AUTH_JWT_SECRET)", 500);
+  }
+  const user = await getUser(c.env.USERS, id.sub);
+  if (!user) {
+    return jsonError(c, "Unknown user", 401);
+  }
+  const rp = webAuthnRp(c.req.url);
+  const options = await generateRegistrationOptions({
+    rpName: rp.rpName,
+    rpID: rp.rpID,
+    userName: user.email,
+    userDisplayName: user.email,
+    userID: await userHandle(user.email),
+    attestationType: "none",
+    authenticatorSelection: {
+      residentKey: "required",
+      userVerification: "required",
+    },
+    excludeCredentials: user.passkey
+      ? [{ id: user.passkey.id, transports: user.passkey.transports }]
+      : [],
+  });
+  await setChallengeCookie(c, secret, {
+    purpose: "register",
+    challenge: options.challenge,
+    sub: user.email,
+  });
+  return c.json({ options });
+});
+
+app.post("/passkeys/register", async (c) => {
+  const id = await getIdentity(c, "auth");
+  if (!id) {
+    return jsonError(c, "Not signed in", 401);
+  }
+  const secret = getJwtSecret(c);
+  if (!secret) {
+    return jsonError(c, "Server misconfigured (AUTH_JWT_SECRET)", 500);
+  }
+  let body: { credential?: unknown };
+  try {
+    body = (await c.req.json()) as typeof body;
+  } catch {
+    return jsonError(c, "Invalid JSON");
+  }
+  const challenge = await readChallengeCookie(c, secret);
+  if (
+    !challenge ||
+    challenge.purpose !== "register" ||
+    challenge.sub !== id.sub
+  ) {
+    clearChallengeCookie(c);
+    return jsonError(c, "Could not register passkey", 400);
+  }
+  const user = await getUser(c.env.USERS, id.sub);
+  if (!user) {
+    clearChallengeCookie(c);
+    return jsonError(c, "Unknown user", 401);
+  }
+  const rp = webAuthnRp(c.req.url);
+  try {
+    const verified = await verifyRegistrationResponse({
+      response: body.credential as Parameters<
+        typeof verifyRegistrationResponse
+      >[0]["response"],
+      expectedChallenge: challenge.challenge,
+      expectedOrigin: rp.origin,
+      expectedRPID: rp.rpID,
+      requireUserVerification: true,
+    });
+    if (!verified.verified || !verified.registrationInfo) {
+      clearChallengeCookie(c);
+      return jsonError(c, "Could not register passkey", 400);
+    }
+    const cred = verified.registrationInfo.credential;
+    await replaceUserPasskey(c.env.USERS, user, {
+      id: cred.id,
+      publicKey: bytesToB64url(cred.publicKey),
+      counter: cred.counter,
+      ...(cred.transports && cred.transports.length > 0
+        ? { transports: cred.transports }
+        : {}),
+    });
+  } catch {
+    clearChallengeCookie(c);
+    return jsonError(c, "Could not register passkey", 400);
+  }
+  clearChallengeCookie(c);
+  await writeAudit(c.env.AUDIT, {
+    type: "passkey.register",
+    email: user.email,
+    actor: user.email,
+    detail: user.passkey ? "replace" : "create",
+    ...auditMeta(c),
+  });
+  return c.json({ ok: true });
+});
+
+app.post("/passkeys/delete", async (c) => {
+  const id = await getIdentity(c, "auth");
+  if (!id) {
+    return c.redirect("/login?next=%2Fme");
+  }
+  const user = await getUser(c.env.USERS, id.sub);
+  if (!user) {
+    clearSession(c);
+    return c.redirect("/login?next=%2Fme");
+  }
+  if (user.passkey) {
+    await replaceUserPasskey(c.env.USERS, user, undefined);
+    await writeAudit(c.env.AUDIT, {
+      type: "passkey.delete",
+      email: user.email,
+      actor: user.email,
+      ...auditMeta(c),
+    });
+  }
+  return c.redirect("/me");
 });
 
 app.get("/auth/callback", (c) => handleCallback(c, "auth"));

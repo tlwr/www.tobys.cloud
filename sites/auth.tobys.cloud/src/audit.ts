@@ -7,7 +7,9 @@ export type AuditType =
   | "user.create"
   | "user.permissions"
   | "user.password"
-  | "user.delete";
+  | "user.delete"
+  | "passkey.register"
+  | "passkey.delete";
 
 export type AuditEvent = {
   id: string;

@@ -1,9 +1,23 @@
-import { describe, expect, it, beforeEach } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import bcrypt from "bcryptjs";
+import {
+  verifyAuthenticationResponse,
+  verifyRegistrationResponse,
+} from "@simplewebauthn/server";
 import { app } from "./index";
 import { AUDIT_PAGE_SIZE, writeAudit } from "./audit";
 import type { Env } from "./env";
 import { verifyAuthToken } from "@tobys/auth-client";
+import { listUsers, parseUser } from "./users";
+
+vi.mock("@simplewebauthn/server", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("@simplewebauthn/server")>();
+  return {
+    ...actual,
+    verifyRegistrationResponse: vi.fn(),
+    verifyAuthenticationResponse: vi.fn(),
+  };
+});
 
 class MemoryKV {
   private store = new Map<string, string>();
@@ -94,6 +108,33 @@ function env(
   };
 }
 
+function cookiesOf(res: Response): string {
+  const raw =
+    typeof res.headers.getSetCookie === "function"
+      ? res.headers.getSetCookie()
+      : [res.headers.get("set-cookie") ?? ""];
+  return raw
+    .filter(Boolean)
+    .map((c) => c.split(";")[0])
+    .join("; ");
+}
+
+function mergeCookies(...parts: string[]): string {
+  const map = new Map<string, string>();
+  for (const part of parts.join("; ").split(";")) {
+    const trimmed = part.trim();
+    if (!trimmed) {
+      continue;
+    }
+    const eq = trimmed.indexOf("=");
+    if (eq < 0) {
+      continue;
+    }
+    map.set(trimmed.slice(0, eq), trimmed.slice(eq + 1));
+  }
+  return [...map.entries()].map(([k, v]) => `${k}=${v}`).join("; ");
+}
+
 async function loginCookie(
   users: MemoryKV,
   audit?: MemoryD1,
@@ -110,20 +151,53 @@ async function loginCookie(
     },
     env(users, audit),
   );
-  const raw =
-    typeof res.headers.getSetCookie === "function"
-      ? res.headers.getSetCookie()
-      : [res.headers.get("set-cookie") ?? ""];
-  return raw
-    .filter(Boolean)
-    .map((c) => c.split(";")[0])
-    .join("; ");
+  return cookiesOf(res);
+}
+
+const dummyCredential = {
+  id: "cred-1",
+  rawId: "cred-1",
+  type: "public-key",
+  response: {
+    clientDataJSON: "e30",
+    attestationObject: "e30",
+    authenticatorData: "e30",
+    signature: "e30",
+  },
+  clientExtensionResults: {},
+};
+
+function mockRegisterVerified(id = "cred-1") {
+  vi.mocked(verifyRegistrationResponse).mockResolvedValue({
+    verified: true,
+    registrationInfo: {
+      credential: {
+        id,
+        publicKey: new Uint8Array([1, 2, 3]),
+        counter: 0,
+        transports: ["internal"],
+      },
+    },
+  } as Awaited<ReturnType<typeof verifyRegistrationResponse>>);
+}
+
+function mockAuthVerified(id = "cred-1", newCounter = 1) {
+  vi.mocked(verifyAuthenticationResponse).mockResolvedValue({
+    verified: true,
+    authenticationInfo: {
+      credentialID: id,
+      newCounter,
+      userVerified: true,
+    },
+  } as Awaited<ReturnType<typeof verifyAuthenticationResponse>>);
 }
 
 describe("auth.tobys.cloud", () => {
   let users: MemoryKV;
 
   beforeEach(async () => {
+    vi.mocked(verifyRegistrationResponse).mockReset();
+    vi.mocked(verifyAuthenticationResponse).mockReset();
     users = new MemoryKV();
     await users.put(
       "toby@toby.codes",
@@ -532,5 +606,320 @@ describe("auth.tobys.cloud", () => {
     );
     const secondHtml = await second.text();
     expect(secondHtml).toContain("user0@toby.codes");
+  });
+
+  it("skips passkey index keys when listing users", async () => {
+    await users.put("passkey:cred-1", "toby@toby.codes");
+    const listed = await listUsers(users as unknown as KVNamespace);
+    expect(listed.map((u) => u.email)).toEqual(["toby@toby.codes"]);
+  });
+
+  it("shows add-passkey on /me and register controls after one is stored", async () => {
+    const cookie = await loginCookie(users);
+    const empty = await app.request(
+      "/me",
+      { headers: { Cookie: cookie, Origin: "http://localhost:8788" } },
+      env(users),
+    );
+    const emptyHtml = await empty.text();
+    expect(emptyHtml).toContain("Add passkey");
+    expect(emptyHtml).toContain("No passkey registered");
+
+    const raw = await users.get("toby@toby.codes");
+    const user = parseUser(raw);
+    await users.put(
+      "toby@toby.codes",
+      JSON.stringify({
+        ...user,
+        passkey: { id: "cred-1", publicKey: "AQID", counter: 0 },
+      }),
+    );
+    const full = await app.request(
+      "/me",
+      { headers: { Cookie: cookie, Origin: "http://localhost:8788" } },
+      env(users),
+    );
+    const html = await full.text();
+    expect(html).toContain("A passkey is registered");
+    expect(html).toContain("Replace passkey");
+    expect(html).toContain("Remove passkey");
+  });
+
+  it("rejects passkey registration when not signed in", async () => {
+    const res = await app.request(
+      "/passkeys/register/options",
+      {
+        method: "POST",
+        headers: { Origin: "http://localhost:8788" },
+      },
+      env(users),
+    );
+    expect(res.status).toBe(401);
+    expect(await res.json()).toEqual({ error: "Not signed in" });
+  });
+
+  it("registers a passkey and indexes it", async () => {
+    const audit = new MemoryD1();
+    const session = await loginCookie(users, audit);
+    const e = env(users, audit);
+    const options = await app.request(
+      "/passkeys/register/options",
+      {
+        method: "POST",
+        headers: { Cookie: session, Origin: "http://localhost:8788" },
+      },
+      e,
+    );
+    expect(options.status).toBe(200);
+    const optJson = (await options.json()) as { options: { challenge: string } };
+    expect(optJson.options.challenge).toBeTruthy();
+    mockRegisterVerified("cred-1");
+    const cookie = mergeCookies(session, cookiesOf(options));
+    const reg = await app.request(
+      "/passkeys/register",
+      {
+        method: "POST",
+        headers: {
+          Cookie: cookie,
+          Origin: "http://localhost:8788",
+          "content-type": "application/json",
+        },
+        body: JSON.stringify({ credential: dummyCredential }),
+      },
+      e,
+    );
+    expect(reg.status).toBe(200);
+    expect(await reg.json()).toEqual({ ok: true });
+    expect(await users.get("passkey:cred-1")).toBe("toby@toby.codes");
+    const stored = parseUser(await users.get("toby@toby.codes"));
+    expect(stored?.passkey?.id).toBe("cred-1");
+    expect(stored?.passkey?.publicKey).toBe("AQID");
+    expect(audit.events.some((ev) => ev.type === "passkey.register")).toBe(true);
+    expect(audit.events.find((ev) => ev.type === "passkey.register")?.detail).toBe(
+      "create",
+    );
+  });
+
+  it("replaces an existing passkey and drops the old index", async () => {
+    const session = await loginCookie(users);
+    const raw = parseUser(await users.get("toby@toby.codes"));
+    await users.put(
+      "toby@toby.codes",
+      JSON.stringify({
+        ...raw,
+        passkey: { id: "cred-old", publicKey: "AQID", counter: 0 },
+      }),
+    );
+    await users.put("passkey:cred-old", "toby@toby.codes");
+    const options = await app.request(
+      "/passkeys/register/options",
+      {
+        method: "POST",
+        headers: { Cookie: session, Origin: "http://localhost:8788" },
+      },
+      env(users),
+    );
+    mockRegisterVerified("cred-new");
+    const reg = await app.request(
+      "/passkeys/register",
+      {
+        method: "POST",
+        headers: {
+          Cookie: mergeCookies(session, cookiesOf(options)),
+          Origin: "http://localhost:8788",
+          "content-type": "application/json",
+        },
+        body: JSON.stringify({
+          credential: { ...dummyCredential, id: "cred-new" },
+        }),
+      },
+      env(users),
+    );
+    expect(reg.status).toBe(200);
+    expect(await users.get("passkey:cred-old")).toBeNull();
+    expect(await users.get("passkey:cred-new")).toBe("toby@toby.codes");
+    expect(parseUser(await users.get("toby@toby.codes"))?.passkey?.id).toBe(
+      "cred-new",
+    );
+  });
+
+  it("removes a passkey from /me", async () => {
+    const audit = new MemoryD1();
+    const session = await loginCookie(users, audit);
+    const raw = parseUser(await users.get("toby@toby.codes"));
+    await users.put(
+      "toby@toby.codes",
+      JSON.stringify({
+        ...raw,
+        passkey: { id: "cred-1", publicKey: "AQID", counter: 0 },
+      }),
+    );
+    await users.put("passkey:cred-1", "toby@toby.codes");
+    const res = await app.request(
+      "/passkeys/delete",
+      {
+        method: "POST",
+        headers: { Cookie: session, Origin: "http://localhost:8788" },
+      },
+      env(users, audit),
+    );
+    expect(res.status).toBe(302);
+    expect(res.headers.get("location")).toBe("/me");
+    expect(parseUser(await users.get("toby@toby.codes"))?.passkey).toBeUndefined();
+    expect(await users.get("passkey:cred-1")).toBeNull();
+    expect(audit.events.some((ev) => ev.type === "passkey.delete")).toBe(true);
+  });
+
+  it("logs in with a passkey and lands on /me", async () => {
+    const audit = new MemoryD1();
+    const raw = parseUser(await users.get("toby@toby.codes"));
+    await users.put(
+      "toby@toby.codes",
+      JSON.stringify({
+        ...raw,
+        passkey: { id: "cred-1", publicKey: "AQID", counter: 0 },
+      }),
+    );
+    await users.put("passkey:cred-1", "toby@toby.codes");
+    const e = env(users, audit);
+    const options = await app.request(
+      "/login/passkey/options",
+      {
+        method: "POST",
+        headers: { Origin: "http://localhost:8788" },
+      },
+      e,
+    );
+    expect(options.status).toBe(200);
+    mockAuthVerified("cred-1", 4);
+    const login = await app.request(
+      "/login/passkey",
+      {
+        method: "POST",
+        headers: {
+          Cookie: cookiesOf(options),
+          Origin: "http://localhost:8788",
+          "content-type": "application/json",
+        },
+        body: JSON.stringify({ credential: dummyCredential }),
+      },
+      e,
+    );
+    expect(login.status).toBe(200);
+    expect(await login.json()).toEqual({ ok: true, redirect: "/me" });
+    expect(cookiesOf(login)).toContain("auth_session=");
+    expect(parseUser(await users.get("toby@toby.codes"))?.passkey?.counter).toBe(
+      4,
+    );
+    expect(
+      audit.events.find((ev) => ev.type === "login.success" && ev.detail === "passkey")
+        ?.email,
+    ).toBe("toby@toby.codes");
+  });
+
+  it("issues a ticket after passkey login for an app client", async () => {
+    const raw = parseUser(await users.get("toby@toby.codes"));
+    await users.put(
+      "toby@toby.codes",
+      JSON.stringify({
+        ...raw,
+        passkey: { id: "cred-1", publicKey: "AQID", counter: 0 },
+      }),
+    );
+    await users.put("passkey:cred-1", "toby@toby.codes");
+    const options = await app.request(
+      "https://auth.tobys.cloud/login/passkey/options",
+      {
+        method: "POST",
+        headers: { Origin: "https://auth.tobys.cloud" },
+      },
+      env(users),
+    );
+    mockAuthVerified();
+    const login = await app.request(
+      "https://auth.tobys.cloud/login/passkey",
+      {
+        method: "POST",
+        headers: {
+          Cookie: cookiesOf(options),
+          Origin: "https://auth.tobys.cloud",
+          "content-type": "application/json",
+        },
+        body: JSON.stringify({
+          credential: dummyCredential,
+          client: "toby-codes",
+          redirect: "https://www.toby.codes/auth/callback",
+          next: "/admin",
+        }),
+      },
+      env(users),
+    );
+    expect(login.status).toBe(200);
+    const body = (await login.json()) as { ok: boolean; redirect: string };
+    expect(body.ok).toBe(true);
+    const loc = new URL(body.redirect);
+    expect(loc.origin).toBe("https://www.toby.codes");
+    const ticket = loc.searchParams.get("ticket") ?? "";
+    const payload = await verifyAuthToken(SECRET, ticket, {
+      aud: "toby-codes",
+      typ: "ticket",
+    });
+    expect(payload?.sub).toBe("toby@toby.codes");
+  });
+
+  it("records passkey login failure without a credential", async () => {
+    const audit = new MemoryD1();
+    const options = await app.request(
+      "/login/passkey/options",
+      {
+        method: "POST",
+        headers: { Origin: "http://localhost:8788" },
+      },
+      env(users, audit),
+    );
+    mockAuthVerified();
+    const login = await app.request(
+      "/login/passkey",
+      {
+        method: "POST",
+        headers: {
+          Cookie: cookiesOf(options),
+          Origin: "http://localhost:8788",
+          "content-type": "application/json",
+        },
+        body: JSON.stringify({ credential: dummyCredential }),
+      },
+      env(users, audit),
+    );
+    expect(login.status).toBe(401);
+    expect(
+      audit.events.some(
+        (ev) => ev.type === "login.failure" && ev.detail === "passkey",
+      ),
+    ).toBe(true);
+  });
+
+  it("drops the passkey index when deleting a user", async () => {
+    await users.put(
+      "guest@toby.codes",
+      JSON.stringify({
+        email: "guest@toby.codes",
+        hashedPassword: await bcrypt.hash("s3cret", 4),
+        permissions: ["toby-codes:admin"],
+        passkey: { id: "cred-g", publicKey: "AQID", counter: 0 },
+      }),
+    );
+    await users.put("passkey:cred-g", "guest@toby.codes");
+    const cookie = await loginCookie(users);
+    await app.request(
+      "/users/guest@toby.codes/delete",
+      {
+        method: "POST",
+        headers: { Cookie: cookie, Origin: "http://localhost:8788" },
+      },
+      env(users),
+    );
+    expect(await users.get("guest@toby.codes")).toBeNull();
+    expect(await users.get("passkey:cred-g")).toBeNull();
   });
 });
