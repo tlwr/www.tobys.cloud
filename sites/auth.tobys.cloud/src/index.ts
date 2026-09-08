@@ -5,13 +5,14 @@ import {
   AUTH_CLIENTS,
   clearSession,
   getIdentity,
-  getIsLoggedIn,
   getJwtSecret,
   handleCallback,
+  hasPermission,
   isAuthClientId,
   originAllowed,
   redirectOriginAllowed,
   requireLocalAuth,
+  requireLocalSession,
   setSessionCookie,
   signTicket,
   type AuthClientId,
@@ -24,6 +25,7 @@ import {
   forbiddenHtml,
   layout,
   loginHtml,
+  meHtml,
   userEditHtml,
   userNewHtml,
   usersIndexHtml,
@@ -73,16 +75,29 @@ async function page(
   extra: { title?: string; notice?: string; alert?: string } = {},
 ) {
   const id = await getIdentity(c, "auth");
-  return c.html(layout(body, { email: id?.sub, ...extra }));
+  return c.html(
+    layout(body, {
+      email: id?.sub,
+      isAdmin: hasPermission(id, "auth:admin"),
+      ...extra,
+    }),
+  );
 }
 
-/** Relative path on this host, or `/` if missing/empty/unsafe. */
+function homePath(next: string): string {
+  if (next === "/" || next === "") {
+    return "/me";
+  }
+  return next;
+}
+
+/** Relative path on this host, or `/me` if missing/empty/unsafe. */
 function safeLocalPath(raw: string | undefined | null): string {
   const n = (raw ?? "").trim();
-  if (n.startsWith("/") && !n.startsWith("//") && !n.includes("\\")) {
+  if (n.startsWith("/") && !n.startsWith("//") && !n.includes("\\") && n !== "/") {
     return n;
   }
-  return "/";
+  return "/me";
 }
 
 function parseRedirect(raw: string): URL | null {
@@ -131,6 +146,16 @@ app.get("/", requireLocalAuth(), async (c) => {
   return page(c, usersIndexHtml(users));
 });
 
+app.get("/me", requireLocalSession(), async (c) => {
+  const id = await getIdentity(c, "auth");
+  if (!id) {
+    return c.redirect("/login?next=%2Fme");
+  }
+  return page(c, meHtml({ email: id.sub, permissions: id.perms }), {
+    title: "Me",
+  });
+});
+
 app.get("/audit", requireLocalAuth(), async (c) => {
   try {
     const { events, nextCursor } = await listAudit(c.env.AUDIT, {
@@ -150,13 +175,14 @@ app.get("/login", async (c) => {
   const next = safeLocalPath(c.req.query("next"));
   const client = c.req.query("client") ?? "";
   const redirect = c.req.query("redirect") ?? "";
-  if (await getIsLoggedIn(c, "auth")) {
+  const id = await getIdentity(c, "auth");
+  if (id) {
     if (isAuthClientId(client) && client !== "auth" && redirect) {
       return c.redirect(
         `/authorize?client=${encodeURIComponent(client)}&redirect=${encodeURIComponent(redirect)}&next=${encodeURIComponent(next)}`,
       );
     }
-    return c.redirect(next);
+    return c.redirect(homePath(next));
   }
   return c.html(
     layout(
@@ -224,7 +250,7 @@ app.post("/login", async (c) => {
       return finishAuthorize(c, user.email, client, dest, next);
     }
   }
-  return c.redirect(next);
+  return c.redirect(homePath(next));
 });
 
 app.get("/auth/callback", (c) => handleCallback(c, "auth"));
@@ -242,8 +268,9 @@ app.get("/authorize", async (c) => {
     dest !== null &&
     dest.pathname === "/auth/callback";
   if (!isAppAuthorize) {
-    if (await getIsLoggedIn(c, "auth")) {
-      return c.redirect(next);
+    const id = await getIdentity(c, "auth");
+    if (id) {
+      return c.redirect(homePath(next));
     }
     return c.redirect(`/login?next=${encodeURIComponent(next)}`);
   }

@@ -12,13 +12,23 @@ export function escapeHtml(s: string): string {
 
 export function layout(
   body: string,
-  opts: { email?: string | null; title?: string; notice?: string; alert?: string } = {},
+  opts: {
+    email?: string | null;
+    isAdmin?: boolean;
+    title?: string;
+    notice?: string;
+    alert?: string;
+  } = {},
 ): string {
+  const adminNav = opts.isAdmin
+    ? `<a href="/">Users</a>
+        <a href="/audit">Audit</a>
+        <a href="/users/new">New user</a>`
+    : "";
   const nav = opts.email
     ? `<nav>
-        <a href="/">Users</a>
-        <a href="/audit">Audit</a>
-        <a href="/users/new">New user</a>
+        ${adminNav}
+        <a href="/me">Me</a>
         <form method="post" action="/logout" style="display:inline">
           <button type="submit">Log out</button>
         </form>
@@ -82,7 +92,7 @@ export function loginHtml(opts: { next?: string; client?: string; redirect?: str
   return `<h2>Log in</h2>
   ${err}
   <form method="post" action="/login">
-    <input type="hidden" name="next" value="${escapeHtml(opts.next ?? "/")}">
+    <input type="hidden" name="next" value="${escapeHtml(opts.next ?? "/me")}">
     <input type="hidden" name="client" value="${escapeHtml(opts.client ?? "")}">
     <input type="hidden" name="redirect" value="${escapeHtml(opts.redirect ?? "")}">
     <div class="row">
@@ -169,6 +179,18 @@ export function userEditHtml(user: User, opts: { error?: string } = {}): string 
   <form method="post" action="${action}/delete" onsubmit="return confirm('Delete ${escapeHtml(user.email)}?');">
     <button type="submit">Delete user</button>
   </form>`;
+}
+
+export function meHtml(opts: { email: string; permissions: string[] }): string {
+  const perms =
+    opts.permissions.length > 0
+      ? opts.permissions.map(escapeHtml).join(", ")
+      : "<span class=muted>none</span>";
+  return `<h2>Me</h2>
+  <p><strong>Email</strong> ${escapeHtml(opts.email)}</p>
+  <p><strong>Permissions</strong> ${perms}</p>
+  <h3>Passkey</h3>
+  <p class="muted">No passkey registered. You’ll be able to add one here.</p>`;
 }
 
 export function forbiddenHtml(): string {

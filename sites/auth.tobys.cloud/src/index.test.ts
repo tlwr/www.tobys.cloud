@@ -141,6 +141,77 @@ describe("auth.tobys.cloud", () => {
     expect(res.headers.get("location")).toContain("/login");
   });
 
+  it("rejects unauthenticated /me", async () => {
+    const res = await app.request("/me", {}, env(users));
+    expect(res.status).toBe(302);
+    expect(res.headers.get("location")).toContain("/login");
+    expect(res.headers.get("location")).toContain("next=");
+  });
+
+  it("lets a signed-in user without auth:admin view /me", async () => {
+    await users.put(
+      "guest@toby.codes",
+      JSON.stringify({
+        email: "guest@toby.codes",
+        hashedPassword: await bcrypt.hash("s3cret", 4),
+        permissions: ["toby-codes:admin"],
+      }),
+    );
+    const login = await app.request(
+      "/login",
+      {
+        method: "POST",
+        body: new URLSearchParams({
+          email: "guest@toby.codes",
+          password: "s3cret",
+        }),
+        headers: { Origin: "http://localhost:8788" },
+      },
+      env(users),
+    );
+    expect(login.status).toBe(302);
+    expect(login.headers.get("location")).toBe("/me");
+    const cookie = (typeof login.headers.getSetCookie === "function"
+      ? login.headers.getSetCookie()
+      : [login.headers.get("set-cookie") ?? ""]
+    )
+      .filter(Boolean)
+      .map((c) => c.split(";")[0])
+      .join("; ");
+    const me = await app.request(
+      "/me",
+      { headers: { Cookie: cookie, Origin: "http://localhost:8788" } },
+      env(users),
+    );
+    expect(me.status).toBe(200);
+    const html = await me.text();
+    expect(html).toContain("guest@toby.codes");
+    expect(html).toContain("toby-codes:admin");
+    expect(html).toContain("href=\"/me\"");
+    expect(html).not.toContain("href=\"/audit\"");
+    const usersPage = await app.request(
+      "/",
+      { headers: { Cookie: cookie, Origin: "http://localhost:8788" } },
+      env(users),
+    );
+    expect(usersPage.status).toBe(302);
+    expect(usersPage.headers.get("location")).toBe("/me");
+  });
+
+  it("shows /me for an admin", async () => {
+    const cookie = await loginCookie(users);
+    const res = await app.request(
+      "/me",
+      { headers: { Cookie: cookie, Origin: "http://localhost:8788" } },
+      env(users),
+    );
+    expect(res.status).toBe(200);
+    const html = await res.text();
+    expect(html).toContain("toby@toby.codes");
+    expect(html).toContain("auth:admin");
+    expect(html).toContain("href=\"/\"");
+  });
+
   it("logs in and lists users", async () => {
     const cookie = await loginCookie(users);
     const res = await app.request(
@@ -258,13 +329,13 @@ describe("auth.tobys.cloud", () => {
       env(users),
     );
     expect(res.status).toBe(302);
-    expect(res.headers.get("location")).toBe("/");
+    expect(res.headers.get("location")).toBe("/me");
   });
 
   it("treats /authorize without a client as a local login", async () => {
     const unauth = await app.request("/authorize", {}, env(users));
     expect(unauth.status).toBe(302);
-    expect(unauth.headers.get("location")).toBe("/login?next=%2F");
+    expect(unauth.headers.get("location")).toBe("/login?next=%2Fme");
 
     const cookie = await loginCookie(users);
     const authed = await app.request(
@@ -273,7 +344,7 @@ describe("auth.tobys.cloud", () => {
       env(users),
     );
     expect(authed.status).toBe(302);
-    expect(authed.headers.get("location")).toBe("/");
+    expect(authed.headers.get("location")).toBe("/me");
   });
 
   it("cannot delete the last auth admin", async () => {

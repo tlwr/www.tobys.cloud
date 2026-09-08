@@ -30,6 +30,7 @@ export {
   logoutUrl,
   requireAuth,
   requireLocalAuth,
+  requireLocalSession,
   setSessionCookie,
   signTicket,
   type AuthEnv,

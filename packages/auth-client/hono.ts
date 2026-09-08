@@ -149,6 +149,19 @@ export async function setSessionCookie(
   writeCookie(c, SESSION_COOKIE, jwt, SESSION_TTL_SEC);
 }
 
+/** Any signed-in session on the auth Worker (no permission check). */
+export function requireLocalSession() {
+  return async (c: Context, next: Next): Promise<Response | void> => {
+    const id = await getIdentity(c, "auth");
+    if (id) {
+      await next();
+      return;
+    }
+    const nextPath = new URL(c.req.url).pathname + new URL(c.req.url).search;
+    return c.redirect(`/login?next=${encodeURIComponent(nextPath)}`);
+  };
+}
+
 /** For the auth Worker itself — login is local, not a cross-origin authorize. */
 export function requireLocalAuth(permission = "auth:admin") {
   return async (c: Context, next: Next): Promise<Response | void> => {
@@ -158,7 +171,7 @@ export function requireLocalAuth(permission = "auth:admin") {
       return;
     }
     if (id && !hasPermission(id, permission)) {
-      return c.text("Forbidden", 403);
+      return c.redirect("/me");
     }
     const nextPath = new URL(c.req.url).pathname + new URL(c.req.url).search;
     return c.redirect(`/login?next=${encodeURIComponent(nextPath)}`);
