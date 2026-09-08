@@ -320,6 +320,13 @@ app.post("/users/new", requireLocalAuth(), async (c) => {
     hashedPassword: await bcrypt.hash(password, 10),
     permissions,
   });
+  const actor = (await getIdentity(c, "auth"))?.sub ?? "";
+  await writeAudit(c.env.AUDIT, {
+    type: "user.create",
+    email,
+    actor,
+    ...auditMeta(c),
+  });
   return c.redirect("/");
 });
 

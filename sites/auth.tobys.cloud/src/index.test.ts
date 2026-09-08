@@ -31,6 +31,7 @@ class MemoryD1 {
     ts: number;
     type: string;
     email: string;
+    actor: string | null;
     ip: string | null;
     ua: string | null;
   }[] = [];
@@ -51,8 +52,9 @@ class MemoryD1 {
               ts: Number(args[1]),
               type: String(args[2]),
               email: String(args[3]),
-              ip: args[4] == null ? null : String(args[4]),
-              ua: args[5] == null ? null : String(args[5]),
+              actor: args[4] == null ? null : String(args[4]),
+              ip: args[5] == null ? null : String(args[5]),
+              ua: args[6] == null ? null : String(args[6]),
             });
             return { success: true };
           },
@@ -348,6 +350,36 @@ describe("auth.tobys.cloud", () => {
     const html = await res.text();
     expect(html).toContain("logout");
     expect(html).toContain("toby@toby.codes");
+  });
+
+  it("records who created a user and the new email", async () => {
+    const audit = new MemoryD1();
+    const cookie = await loginCookie(users, audit);
+    const create = await app.request(
+      "/users/new",
+      {
+        method: "POST",
+        body: new URLSearchParams({
+          email: "new@toby.codes",
+          password: "longenough",
+          permissions: "toby-codes:admin",
+        }),
+        headers: { Cookie: cookie, Origin: "http://localhost:8788" },
+      },
+      env(users, audit),
+    );
+    expect(create.status).toBe(302);
+    const again = await loginCookie(users, audit);
+    const res = await app.request(
+      "/audit",
+      { headers: { Cookie: again, Origin: "http://localhost:8788" } },
+      env(users, audit),
+    );
+    const html = await res.text();
+    expect(html).toContain("user.create");
+    expect(html).toContain("new@toby.codes");
+    expect(html).toContain("toby@toby.codes");
+    expect(await users.get("new@toby.codes")).not.toBeNull();
   });
 
   it("paginates audit events newest first", async () => {

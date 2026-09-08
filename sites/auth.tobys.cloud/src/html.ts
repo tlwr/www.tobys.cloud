@@ -44,7 +44,7 @@ export function layout(
       :root { --dark: #f2f0ec; --light: #111; }
     }
     body { font-family: ui-monospace, "Berkeley Mono", monospace; background: var(--light); color: var(--dark); margin: 0; line-height: 1.5; }
-    .wrap { max-width: 48rem; margin: 0 auto; padding: 2rem 1rem; }
+    .wrap { max-width: min(88rem, 96vw); margin: 0 auto; padding: 2rem 1rem; overflow-x: auto; }
     h1 { font-style: italic; text-transform: uppercase; }
     nav { display: flex; gap: 1rem; align-items: center; flex-wrap: wrap; margin-bottom: 1.5rem; }
     nav a, a { color: var(--dark); }
@@ -60,7 +60,7 @@ export function layout(
     .ok { background: #dcfce7; color: #166534; padding: 0.75rem; }
     .err { background: #fee2e2; color: #991b1b; padding: 0.75rem; }
     table { width: 100%; border-collapse: collapse; }
-    th, td { text-align: left; padding: 0.4rem 0.5rem; border-bottom: 1px dotted var(--dark); vertical-align: top; }
+    th, td { text-align: left; padding: 0.4rem 0.5rem; border-bottom: 1px dotted var(--dark); vertical-align: top; white-space: nowrap; }
     .checks label { display: block; margin: 0.25rem 0; }
     .muted { opacity: 0.7; }
     form.inline { display: inline; }
@@ -181,7 +181,7 @@ export function auditHtml(
 ): string {
   const rows =
     events.length === 0
-      ? `<tr><td colspan="4"><em>No events</em></td></tr>`
+      ? `<tr><td colspan="5"><em>No events</em></td></tr>`
       : events
           .map((e) => {
             const when = new Date(e.ts).toISOString().replace("T", " ").replace("Z", " UTC");
@@ -189,6 +189,7 @@ export function auditHtml(
       <td>${escapeHtml(when)}</td>
       <td>${escapeHtml(e.type)}</td>
       <td>${escapeHtml(e.email || "—")}</td>
+      <td>${escapeHtml(e.actor || "—")}</td>
       <td class="muted">${escapeHtml(e.ip ?? "—")}</td>
     </tr>`;
           })
@@ -198,7 +199,7 @@ export function auditHtml(
     : "";
   return `<h2>Audit log</h2>
   <table>
-    <thead><tr><th>When</th><th>Event</th><th>Email</th><th>IP</th></tr></thead>
+    <thead><tr><th>When</th><th>Event</th><th>Email</th><th>Actor</th><th>IP</th></tr></thead>
     <tbody>${rows}</tbody>
   </table>
   ${more}`;

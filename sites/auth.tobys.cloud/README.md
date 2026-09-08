@@ -3,9 +3,9 @@
 Central login + primitive RBAC for Worker sites. Email + bcrypt in **USERS** KV.
 Apps redirect here, receive a short-lived HMAC JWT ticket, then set a first-party session cookie.
 
-Login success and failure (with email, IP, user-agent) go to a **D1** audit log
-(`/audit`, newest first). D1 is the right store here — KV list is not time-ordered
-and pagination is clumsy; Analytics Engine is for metrics, not an admin table.
+Audit events (login success/failure, logout, user create) go to a **D1** log
+(`/audit`, newest first). `email` is the subject; `actor` is who did it (user
+create). D1 is the right store here — KV list is not time-ordered.
 
 ## Permissions
 

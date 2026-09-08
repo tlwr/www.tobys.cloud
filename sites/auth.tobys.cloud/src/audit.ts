@@ -1,12 +1,17 @@
 export const AUDIT_PAGE_SIZE = 50;
 
-export type AuditType = "login.success" | "login.failure" | "logout";
+export type AuditType =
+  | "login.success"
+  | "login.failure"
+  | "logout"
+  | "user.create";
 
 export type AuditEvent = {
   id: string;
   ts: number;
   type: AuditType;
   email: string;
+  actor: string | null;
   ip: string | null;
   ua: string | null;
 };
@@ -64,6 +69,7 @@ async function ensureAuditSchema(db: D1Database): Promise<void> {
       ts INTEGER NOT NULL,
       type TEXT NOT NULL,
       email TEXT NOT NULL,
+      actor TEXT,
       ip TEXT,
       ua TEXT
     )`),
@@ -71,6 +77,11 @@ async function ensureAuditSchema(db: D1Database): Promise<void> {
       "CREATE INDEX IF NOT EXISTS audit_events_ts_id ON audit_events (ts, id)",
     ),
   ]);
+  try {
+    await db.prepare("ALTER TABLE audit_events ADD COLUMN actor TEXT").run();
+  } catch {
+    // column already exists
+  }
 }
 
 export async function writeAudit(
@@ -78,6 +89,7 @@ export async function writeAudit(
   event: {
     type: AuditType;
     email: string;
+    actor?: string | null;
     ip?: string | null;
     ua?: string | null;
     ts?: number;
@@ -90,13 +102,14 @@ export async function writeAudit(
     await ensureAuditSchema(db);
     await db
       .prepare(
-        "INSERT INTO audit_events (id, ts, type, email, ip, ua) VALUES (?, ?, ?, ?, ?, ?)",
+        "INSERT INTO audit_events (id, ts, type, email, actor, ip, ua) VALUES (?, ?, ?, ?, ?, ?, ?)",
       )
       .bind(
         crypto.randomUUID(),
         event.ts ?? Date.now(),
         event.type,
         event.email,
+        event.actor ?? null,
         event.ip ?? null,
         event.ua ?? null,
       )
@@ -123,7 +136,7 @@ export async function listAudit(
   const result = cursor
     ? await db
         .prepare(
-          `SELECT id, ts, type, email, ip, ua FROM audit_events
+          `SELECT id, ts, type, email, actor, ip, ua FROM audit_events
            WHERE ts < ? OR (ts = ? AND id < ?)
            ORDER BY ts DESC, id DESC
            LIMIT ?`,
@@ -132,7 +145,7 @@ export async function listAudit(
         .all<AuditEvent>()
     : await db
         .prepare(
-          `SELECT id, ts, type, email, ip, ua FROM audit_events
+          `SELECT id, ts, type, email, actor, ip, ua FROM audit_events
            ORDER BY ts DESC, id DESC
            LIMIT ?`,
         )
