@@ -181,7 +181,7 @@ export function auditHtml(
 ): string {
   const rows =
     events.length === 0
-      ? `<tr><td colspan="5"><em>No events</em></td></tr>`
+      ? `<tr><td colspan="6"><em>No events</em></td></tr>`
       : events
           .map((e) => {
             const when = new Date(e.ts).toISOString().replace("T", " ").replace("Z", " UTC");
@@ -190,6 +190,7 @@ export function auditHtml(
       <td>${escapeHtml(e.type)}</td>
       <td>${escapeHtml(e.email || "—")}</td>
       <td>${escapeHtml(e.actor || "—")}</td>
+      <td>${escapeHtml(e.detail || "—")}</td>
       <td class="muted">${escapeHtml(e.ip ?? "—")}</td>
     </tr>`;
           })
@@ -199,7 +200,7 @@ export function auditHtml(
     : "";
   return `<h2>Audit log</h2>
   <table>
-    <thead><tr><th>When</th><th>Event</th><th>Email</th><th>Actor</th><th>IP</th></tr></thead>
+    <thead><tr><th>When</th><th>Event</th><th>Email</th><th>Actor</th><th>Detail</th><th>IP</th></tr></thead>
     <tbody>${rows}</tbody>
   </table>
   ${more}`;

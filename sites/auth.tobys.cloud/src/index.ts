@@ -359,6 +359,15 @@ app.post("/users/:email/permissions", requireLocalAuth(), async (c) => {
     );
   }
   await putUser(c.env.USERS, { ...user, permissions });
+  if (user.permissions.join(",") !== permissions.join(",")) {
+    await writeAudit(c.env.AUDIT, {
+      type: "user.permissions",
+      email: user.email,
+      actor: (await getIdentity(c, "auth"))?.sub ?? "",
+      detail: `${user.permissions.join(", ") || "—"} → ${permissions.join(", ") || "—"}`,
+      ...auditMeta(c),
+    });
+  }
   return c.redirect(`/users/${encodeURIComponent(user.email)}`);
 });
 
@@ -378,6 +387,12 @@ app.post("/users/:email/password", requireLocalAuth(), async (c) => {
   await putUser(c.env.USERS, {
     ...user,
     hashedPassword: await bcrypt.hash(password, 10),
+  });
+  await writeAudit(c.env.AUDIT, {
+    type: "user.password",
+    email: user.email,
+    actor: (await getIdentity(c, "auth"))?.sub ?? "",
+    ...auditMeta(c),
   });
   return c.redirect(`/users/${encodeURIComponent(user.email)}`);
 });
@@ -399,6 +414,12 @@ app.post("/users/:email/delete", requireLocalAuth(), async (c) => {
     );
   }
   await deleteUser(c.env.USERS, email);
+  await writeAudit(c.env.AUDIT, {
+    type: "user.delete",
+    email: user.email,
+    actor: (await getIdentity(c, "auth"))?.sub ?? "",
+    ...auditMeta(c),
+  });
   return c.redirect("/");
 });
 

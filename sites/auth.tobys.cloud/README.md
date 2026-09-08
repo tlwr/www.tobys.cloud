@@ -3,9 +3,9 @@
 Central login + primitive RBAC for Worker sites. Email + bcrypt in **USERS** KV.
 Apps redirect here, receive a short-lived HMAC JWT ticket, then set a first-party session cookie.
 
-Audit events (login success/failure, logout, user create) go to a **D1** log
-(`/audit`, newest first). `email` is the subject; `actor` is who did it (user
-create). D1 is the right store here — KV list is not time-ordered.
+Audit events go to a **D1** log (`/audit`, newest first). `email` is the subject;
+`actor` is who did it; `detail` holds extras (permission diffs). D1 is the right
+store here — KV list is not time-ordered.
 
 ## Permissions
 

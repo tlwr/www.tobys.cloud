@@ -34,6 +34,7 @@ class MemoryD1 {
     actor: string | null;
     ip: string | null;
     ua: string | null;
+    detail: string | null;
   }[] = [];
 
   async batch(_statements: unknown[]) {
@@ -55,6 +56,7 @@ class MemoryD1 {
               actor: args[4] == null ? null : String(args[4]),
               ip: args[5] == null ? null : String(args[5]),
               ua: args[6] == null ? null : String(args[6]),
+              detail: args[7] == null ? null : String(args[7]),
             });
             return { success: true };
           },
@@ -380,6 +382,53 @@ describe("auth.tobys.cloud", () => {
     expect(html).toContain("new@toby.codes");
     expect(html).toContain("toby@toby.codes");
     expect(await users.get("new@toby.codes")).not.toBeNull();
+  });
+
+  it("records permission, password, and delete changes", async () => {
+    const audit = new MemoryD1();
+    await users.put(
+      "guest@toby.codes",
+      JSON.stringify({
+        email: "guest@toby.codes",
+        hashedPassword: await bcrypt.hash("s3cret", 4),
+        permissions: ["toby-codes:admin"],
+      }),
+    );
+    const cookie = await loginCookie(users, audit);
+    const headers = { Cookie: cookie, Origin: "http://localhost:8788" };
+    const e = env(users, audit);
+    await app.request(
+      "/users/guest@toby.codes/permissions",
+      {
+        method: "POST",
+        body: new URLSearchParams({ permissions: "jvnl:admin" }),
+        headers,
+      },
+      e,
+    );
+    await app.request(
+      "/users/guest@toby.codes/password",
+      {
+        method: "POST",
+        body: new URLSearchParams({ password: "newsecret1" }),
+        headers,
+      },
+      e,
+    );
+    await app.request(
+      "/users/guest@toby.codes/delete",
+      { method: "POST", headers },
+      e,
+    );
+    const again = await loginCookie(users, audit);
+    const res = await app.request("/audit", { headers: { Cookie: again, Origin: "http://localhost:8788" } }, e);
+    const html = await res.text();
+    expect(html).toContain("user.permissions");
+    expect(html).toContain("toby-codes:admin → jvnl:admin");
+    expect(html).toContain("user.password");
+    expect(html).toContain("user.delete");
+    expect(html).toContain("guest@toby.codes");
+    expect(await users.get("guest@toby.codes")).toBeNull();
   });
 
   it("paginates audit events newest first", async () => {

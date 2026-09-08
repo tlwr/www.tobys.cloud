@@ -4,7 +4,10 @@ export type AuditType =
   | "login.success"
   | "login.failure"
   | "logout"
-  | "user.create";
+  | "user.create"
+  | "user.permissions"
+  | "user.password"
+  | "user.delete";
 
 export type AuditEvent = {
   id: string;
@@ -14,6 +17,7 @@ export type AuditEvent = {
   actor: string | null;
   ip: string | null;
   ua: string | null;
+  detail: string | null;
 };
 
 export function encodeAuditCursor(event: AuditEvent): string {
@@ -71,16 +75,19 @@ async function ensureAuditSchema(db: D1Database): Promise<void> {
       email TEXT NOT NULL,
       actor TEXT,
       ip TEXT,
-      ua TEXT
+      ua TEXT,
+      detail TEXT
     )`),
     db.prepare(
       "CREATE INDEX IF NOT EXISTS audit_events_ts_id ON audit_events (ts, id)",
     ),
   ]);
-  try {
-    await db.prepare("ALTER TABLE audit_events ADD COLUMN actor TEXT").run();
-  } catch {
-    // column already exists
+  for (const col of ["actor", "detail"]) {
+    try {
+      await db.prepare(`ALTER TABLE audit_events ADD COLUMN ${col} TEXT`).run();
+    } catch {
+      // column already exists
+    }
   }
 }
 
@@ -92,6 +99,7 @@ export async function writeAudit(
     actor?: string | null;
     ip?: string | null;
     ua?: string | null;
+    detail?: string | null;
     ts?: number;
   },
 ): Promise<void> {
@@ -102,7 +110,7 @@ export async function writeAudit(
     await ensureAuditSchema(db);
     await db
       .prepare(
-        "INSERT INTO audit_events (id, ts, type, email, actor, ip, ua) VALUES (?, ?, ?, ?, ?, ?, ?)",
+        "INSERT INTO audit_events (id, ts, type, email, actor, ip, ua, detail) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
       )
       .bind(
         crypto.randomUUID(),
@@ -112,6 +120,7 @@ export async function writeAudit(
         event.actor ?? null,
         event.ip ?? null,
         event.ua ?? null,
+        event.detail ?? null,
       )
       .run();
   } catch (err) {
@@ -136,7 +145,7 @@ export async function listAudit(
   const result = cursor
     ? await db
         .prepare(
-          `SELECT id, ts, type, email, actor, ip, ua FROM audit_events
+          `SELECT id, ts, type, email, actor, ip, ua, detail FROM audit_events
            WHERE ts < ? OR (ts = ? AND id < ?)
            ORDER BY ts DESC, id DESC
            LIMIT ?`,
@@ -145,7 +154,7 @@ export async function listAudit(
         .all<AuditEvent>()
     : await db
         .prepare(
-          `SELECT id, ts, type, email, actor, ip, ua FROM audit_events
+          `SELECT id, ts, type, email, actor, ip, ua, detail FROM audit_events
            ORDER BY ts DESC, id DESC
            LIMIT ?`,
         )
