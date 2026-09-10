@@ -9,6 +9,50 @@ export function escapeHtml(s: string): string {
     .replace(/"/g, "&quot;");
 }
 
+export const HTMX_SCRIPT = `\n    <script src="https://cdnjs.cloudflare.com/ajax/libs/htmx/1.9.12/htmx.min.js" integrity="sha512-JvpjarJlOl4sW26MnEb3IdSAcGdeTeOaAlu2gUZtfFrRgnChdzELOZKl0mN6ZvI0X+xiX5UMvxjK2Rx2z/fliw==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>`;
+
+export function sessionNavHtml(): string {
+  return `<div class="site-nav-admin">
+          <a href="/pictures/new" class="underline">uploaden</a>
+          <span class="sep">|</span>
+          <a href="/tags/new" class="underline">tag aanmaken</a>
+          <span class="sep">|</span>
+          <form method="post" action="/uitloggen">
+            <button type="submit" class="linkish">uitloggen</button>
+          </form>
+        </div>`;
+}
+
+export function flashHtml(opts: { notice?: string; alert?: string }): string {
+  const parts = [
+    opts.notice ? `<p class="flash-ok">${escapeHtml(opts.notice)}</p>` : "",
+    opts.alert ? `<p class="flash-err">${escapeHtml(opts.alert)}</p>` : "",
+  ].filter(Boolean);
+  return parts.length > 0 ? `<section>${parts.join("\n")}</section>` : "";
+}
+
+export function pictureEditLinkHtml(id: string): string {
+  return `<div class="edit-actions"><a href="/pictures/${escapeHtml(id)}/edit" class="underline">Bewerken</a></div>`;
+}
+
+export function tagDeleteFormsHtml(
+  tags: { tag: string }[],
+): string {
+  if (tags.length === 0) {
+    return "";
+  }
+  const items = tags
+    .map(
+      (t) => `<li>
+        <form method="post" action="/tags/${escapeHtml(t.tag)}/delete" onsubmit="return confirm('Are you sure?');">
+          <button type="submit" class="danger-sm">Delete ${escapeHtml(t.tag)}</button>
+        </form>
+      </li>`,
+    )
+    .join("\n");
+  return `<ul class="tag-admin">${items}</ul>`;
+}
+
 export function layout(
   body: string,
   options: {
@@ -19,27 +63,17 @@ export function layout(
   } = {},
 ): string {
   const title = escapeHtml(options.title ?? "Jasmijn Vink");
-  const authNav = options.isLoggedIn
-    ? `          <span class="sep">|</span>
-          <a href="/pictures/new" class="underline">uploaden</a>
-          <span class="sep">|</span>
-          <a href="/tags/new" class="underline">tag aanmaken</a>
-          <span class="sep">|</span>
-          <form method="post" action="/uitloggen">
-            <button type="submit" class="linkish">uitloggen</button>
-          </form>`
-    : "";
-  const flash = [
-    options.notice
-      ? `<p class="flash-ok">${escapeHtml(options.notice)}</p>`
-      : "",
-    options.alert
-      ? `<p class="flash-err">${escapeHtml(options.alert)}</p>`
-      : "",
-  ]
-    .filter(Boolean)
-    .join("\n");
-  const flashSection = flash ? `<section>${flash}</section>` : "";
+  const adminChrome = options.isLoggedIn === true;
+  const authNav = adminChrome
+    ? sessionNavHtml()
+    : `<div id="session-nav" hx-get="/session-nav" hx-trigger="load" hx-swap="innerHTML"></div>`;
+  const flashSection = adminChrome
+    ? flashHtml({ notice: options.notice, alert: options.alert })
+    : `<div id="session-flash"></div>`;
+  const pageSlot = adminChrome
+    ? ""
+    : `<div id="session-page" hx-get="/session-page" hx-trigger="load" hx-vals="js:{path: location.pathname}" hx-swap="innerHTML"></div>`;
+  const htmxScript = adminChrome ? "" : HTMX_SCRIPT;
 
   return `<!DOCTYPE html>
 <html lang="nl">
@@ -50,67 +84,63 @@ export function layout(
     <link rel="stylesheet" href="/styles.css">
     <link rel="icon" href="/favicon.png">
     <link rel="apple-touch-icon" href="/icon.png">
+    ${htmxScript}
   </head>
   <body>
     <div class="container">
       <header class="site-title">Jasmijn Vink</header>
       <nav class="site-nav">
-        <a href="/">home</a>
+        <div class="site-nav-primary">
+          <a href="/">home</a>
           <span class="sep">|</span>
-        <a href="/pictures">alle beelden</a>
+          <a href="/pictures">alle beelden</a>
           <span class="sep">|</span>
-        <a href="/tags">tags</a>
+          <a href="/tags">tags</a>
           <span class="sep">|</span>
-        <a href="/random">random</a>
-${authNav}
+          <a href="/random">random</a>
+        </div>
+        ${authNav}
       </nav>
       ${flashSection}
       <main>
         ${body}
+        ${pageSlot}
       </main>
     </div>
   </body>
 </html>`;
 }
 
-function pictureCard(p: Picture, isLoggedIn: boolean): string {
-  const hidden =
-    isLoggedIn && !p.visible
-      ? `<p class="hidden-label">Onzichtbaar</p>`
-      : "";
+function pictureCard(p: Picture): string {
   return `<div class="card item">
   <a href="/pictures/${escapeHtml(p.id)}">
     <img src="/pictures/${escapeHtml(p.id)}/image" alt="${escapeHtml(p.title)}">
   </a>
   <h3>${escapeHtml(p.title)}</h3>
-  ${hidden}
 </div>`;
 }
 
-export function homeHtml(pictures: Picture[], isLoggedIn: boolean): string {
+export function homeHtml(pictures: Picture[]): string {
   if (pictures.length === 0) {
     return `<p class="muted">Er zijn geen beelden</p>`;
   }
   return `<div class="grid-home">
-${pictures.map((p) => pictureCard(p, isLoggedIn)).join("\n")}
+${pictures.map((p) => pictureCard(p)).join("\n")}
 </div>`;
 }
 
-export function picturesIndexHtml(
-  pictures: Picture[],
-  isLoggedIn: boolean,
-): string {
+export function picturesIndexHtml(pictures: Picture[]): string {
   const list =
     pictures.length === 0
       ? `<p class="muted">Er zijn geen beelden</p>`
       : `<div class="picture-list">
-${pictures.map((p) => pictureCard(p, isLoggedIn)).join("\n")}
+${pictures.map((p) => pictureCard(p)).join("\n")}
 </div>`;
   return `<h1>Alle beelden</h1>
 ${list}`;
 }
 
-export function pictureShowHtml(p: Picture, isLoggedIn: boolean): string {
+export function pictureShowHtml(p: Picture): string {
   const tags =
     p.tags.length > 0
       ? `<p class="tags-inline muted">${p.tags
@@ -120,9 +150,6 @@ export function pictureShowHtml(p: Picture, isLoggedIn: boolean): string {
           )
           .join("\n      ")}</p>`
       : "";
-  const edit = isLoggedIn
-    ? `<div class="edit-actions"><a href="/pictures/${escapeHtml(p.id)}/edit" class="underline">Bewerken</a></div>`
-    : "";
   const desc = p.description
     ? `<p class="muted">${escapeHtml(p.description)}</p>`
     : "";
@@ -131,8 +158,7 @@ export function pictureShowHtml(p: Picture, isLoggedIn: boolean): string {
 </div>
 <h1>${escapeHtml(p.title)}</h1>
 ${desc}
-${tags}
-${edit}`;
+${tags}`;
 }
 
 function tagCheckboxes(allTags: string[], selected: string[]): string {
@@ -213,7 +239,7 @@ export function pictureEditHtml(
   <h2>Afbeelding bewerken</h2>
   ${errorsBox(errors)}
   <div class="edit-preview">
-    <img src="/pictures/${escapeHtml(p.id)}/image" alt="${escapeHtml(p.title)}">
+    <img src="/pictures/${escapeHtml(p.id)}/preview" alt="${escapeHtml(p.title)}">
   </div>
   <form method="post" action="/pictures/${escapeHtml(p.id)}">
     <div class="row">
@@ -246,20 +272,14 @@ export function pictureEditHtml(
 </div>`;
 }
 
-export function tagsIndexHtml(tags: TagRow[], isLoggedIn: boolean): string {
+export function tagsIndexHtml(tags: TagRow[]): string {
   if (tags.length === 0) {
     return `<h1>Tags</h1><p class="muted">Er zijn geen tags</p>`;
   }
   const items = tags
     .map((t) => {
-      const del = isLoggedIn
-        ? `<form method="post" action="/tags/${escapeHtml(t.tag)}/delete" onsubmit="return confirm('Are you sure?');">
-            <button type="submit" class="danger-sm">Delete</button>
-          </form>`
-        : "";
       return `<li>
         <a href="/tags/${escapeHtml(t.tag)}">${escapeHtml(t.tag)} (${t.pictureIds.length})</a>
-        ${del}
       </li>`;
     })
     .join("\n");
@@ -269,16 +289,12 @@ ${items}
 </ul>`;
 }
 
-export function tagShowHtml(
-  tag: string,
-  pictures: Picture[],
-  isLoggedIn: boolean,
-): string {
+export function tagShowHtml(tag: string, pictures: Picture[]): string {
   const list =
     pictures.length === 0
       ? `<p class="muted">Er zijn geen beelden voor deze tag</p>`
       : `<div class="picture-list">
-${pictures.map((p) => pictureCard(p, isLoggedIn)).join("\n")}
+${pictures.map((p) => pictureCard(p)).join("\n")}
 </div>`;
   return `<h1>${escapeHtml(tag)}</h1>
 ${list}`;

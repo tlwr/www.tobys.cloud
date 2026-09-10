@@ -1,3 +1,4 @@
+import { WorkerEntrypoint } from "cloudflare:workers";
 import { originAllowed } from "@tobys/auth-client";
 import { Hono, type Context } from "hono";
 import { csrf } from "hono/csrf";
@@ -9,16 +10,29 @@ import {
   logoutAndRedirect,
   requireAuth,
 } from "./auth";
+import {
+  IMAGE_CACHE_CONTROL,
+  PRIVATE_NO_STORE,
+  isPublicCacheablePath,
+  pictureCacheTags,
+  purgePublic,
+  setPublicCache,
+  uniqueTags,
+  type GatewayExecutionCtx,
+} from "./cache";
 import type { Env } from "./env";
 import {
+  flashHtml,
   homeHtml,
   layout,
-
   notFoundHtml,
   pictureEditHtml,
+  pictureEditLinkHtml,
   pictureNewHtml,
   pictureShowHtml,
   picturesIndexHtml,
+  sessionNavHtml,
+  tagDeleteFormsHtml,
   tagNewHtml,
   tagShowHtml,
   tagsIndexHtml,
@@ -50,6 +64,7 @@ app.use("*", async (c, next) => {
   const url = new URL(c.req.url);
   if (url.hostname === "www.jasmijnvink.com") {
     url.hostname = "jasmijnvink.com";
+    setPublicCache(c, ["canonical"]);
     return c.redirect(url.toString(), 301);
   }
   await next();
@@ -81,10 +96,10 @@ function takeFlash(c: AppContext): {
   alert?: string;
 } {
   const raw = getCookie(c, "flash");
-  deleteCookie(c, "flash", { path: "/" });
   if (!raw) {
     return {};
   }
+  deleteCookie(c, "flash", { path: "/" });
   try {
     const parsed = JSON.parse(raw) as { notice?: string; alert?: string };
     return {
@@ -121,20 +136,63 @@ async function page(
   body: string,
   extra: { title?: string } = {},
 ): Promise<Response> {
-  const isLoggedIn = await getIsLoggedIn(c);
   const flash = takeFlash(c);
-  return c.html(layout(body, { isLoggedIn, ...flash, ...extra }));
+  return c.html(layout(body, { isLoggedIn: true, ...flash, ...extra }));
+}
+
+function publicPage(
+  c: AppContext,
+  body: string,
+  extra: { title?: string; tags?: string[]; notfound?: boolean } = {},
+): Response {
+  setPublicCache(
+    c,
+    extra.tags ?? ["pictures"],
+    extra.notfound ? "notfound" : "ok",
+  );
+  return c.html(layout(body, { title: extra.title }), extra.notfound ? 404 : 200);
 }
 
 app.get("/health", (c) => c.text("healthy"));
 
-app.get("/", async (c) => {
+app.get("/session-nav", async (c) => {
+  c.header("Cache-Control", PRIVATE_NO_STORE);
+  const flash = flashHtml(takeFlash(c));
+  const oob = flash
+    ? `<div id="session-flash" hx-swap-oob="true">${flash}</div>`
+    : "";
   const isLoggedIn = await getIsLoggedIn(c);
-  const all = await listPictures(c.env.PICTURES, { includeHidden: isLoggedIn });
-  return page(c, homeHtml(all.slice(0, 3), isLoggedIn));
+  return c.html(`${oob}${isLoggedIn ? sessionNavHtml() : ""}`);
+});
+
+app.get("/session-page", async (c) => {
+  c.header("Cache-Control", PRIVATE_NO_STORE);
+  if (!(await getIsLoggedIn(c))) {
+    return c.html("");
+  }
+  const path = c.req.query("path") ?? "";
+  const pictureMatch = /^\/pictures\/(\d+)$/.exec(path);
+  if (pictureMatch) {
+    const picture = await getPicture(c.env.PICTURES, pictureMatch[1]);
+    if (!picture) {
+      return c.html("");
+    }
+    return c.html(pictureEditLinkHtml(picture.id));
+  }
+  if (path === "/tags") {
+    const tags = await listTags(c.env.TAGS);
+    return c.html(tagDeleteFormsHtml(tags));
+  }
+  return c.html("");
+});
+
+app.get("/", async (c) => {
+  const all = await listPictures(c.env.PICTURES, { includeHidden: false });
+  return publicPage(c, homeHtml(all.slice(0, 3)), { tags: ["pictures"] });
 });
 
 app.get("/random", async (c) => {
+  c.header("Cache-Control", PRIVATE_NO_STORE);
   const visible = await listPictures(c.env.PICTURES, { includeHidden: false });
   if (visible.length === 0) {
     setFlash(c, { notice: "Geen beelden beschikbaar" });
@@ -150,9 +208,8 @@ app.get("/uitloggen", (c) => logoutAndRedirect(c));
 app.post("/uitloggen", (c) => logoutAndRedirect(c));
 
 app.get("/tags", async (c) => {
-  const isLoggedIn = await getIsLoggedIn(c);
   const tags = await listTags(c.env.TAGS);
-  return page(c, tagsIndexHtml(tags, isLoggedIn));
+  return publicPage(c, tagsIndexHtml(tags), { tags: ["pictures", "tags"] });
 });
 
 app.get("/tags/new", requireAuth, async (c) => {
@@ -170,6 +227,7 @@ app.post("/tags", requireAuth, async (c) => {
         : ["Tag naam must be kebab-case"];
     return page(c, tagNewHtml({ id, errors }), { title: "Tag aanmaken" });
   }
+  await purgePublic(c, ["pictures", "tags", `tag-${id}`]);
   return c.redirect("/tags");
 });
 
@@ -177,43 +235,40 @@ app.post("/tags/:tag/delete", requireAuth, async (c) => {
   const tag = (c.req.param("tag") ?? "").toLowerCase();
   const result = await deleteTag(c.env.PICTURES, c.env.TAGS, tag);
   if (!result.ok) {
-    const isLoggedIn = await getIsLoggedIn(c);
-    return c.html(layout(notFoundHtml(), { isLoggedIn }), 404);
+    return c.html(layout(notFoundHtml(), { isLoggedIn: true }), 404);
   }
+  await purgePublic(c, ["pictures", "tags", `tag-${tag}`]);
   return c.redirect("/tags");
 });
 
 app.get("/tags/:tag", async (c) => {
-  const isLoggedIn = await getIsLoggedIn(c);
   const tag = (c.req.param("tag") ?? "").toLowerCase();
   const ids = await getTagPictureIds(c.env.TAGS, tag);
   if (ids === null) {
-    return c.html(
-      layout(notFoundHtml(), { isLoggedIn }),
-      404,
-    );
+    return publicPage(c, notFoundHtml(), {
+      tags: [`tag-${tag}`],
+      notfound: true,
+    });
   }
   const pictures: Picture[] = [];
   for (const id of ids) {
     const p = await getPicture(c.env.PICTURES, id);
-    if (!p) {
-      continue;
-    }
-    if (!p.visible && !isLoggedIn) {
+    if (!p || !p.visible) {
       continue;
     }
     pictures.push(p);
   }
   pictures.sort((a, b) => Number(b.id) - Number(a.id));
-  return page(c, tagShowHtml(tag, pictures, isLoggedIn));
+  return publicPage(c, tagShowHtml(tag, pictures), {
+    tags: ["pictures", `tag-${tag}`],
+  });
 });
 
 app.get("/pictures", async (c) => {
-  const isLoggedIn = await getIsLoggedIn(c);
   const pictures = await listPictures(c.env.PICTURES, {
-    includeHidden: isLoggedIn,
+    includeHidden: false,
   });
-  return page(c, picturesIndexHtml(pictures, isLoggedIn));
+  return publicPage(c, picturesIndexHtml(pictures), { tags: ["pictures"] });
 });
 
 app.get("/pictures/new", requireAuth, async (c) => {
@@ -276,6 +331,7 @@ app.post("/pictures", requireAuth, async (c) => {
   };
   await putPicture(c.env.PICTURES, picture);
   await syncPictureTags(c.env.TAGS, id, tagIds, []);
+  await purgePublic(c, pictureCacheTags(id, tagIds));
   setFlash(c, { notice: "Afbeelding geüpload" });
   return c.redirect(`/pictures/${id}`);
 });
@@ -290,11 +346,10 @@ app.get("/pictures/:id/edit", requireAuth, async (c) => {
   return page(c, pictureEditHtml(picture, tags), { title: "Bewerken" });
 });
 
-app.get("/pictures/:id/image", async (c) => {
+app.get("/pictures/:id/preview", requireAuth, async (c) => {
   const id = c.req.param("id") ?? "";
   const picture = await getPicture(c.env.PICTURES, id);
-  const isLoggedIn = await getIsLoggedIn(c);
-  if (!picture || (!picture.visible && !isLoggedIn)) {
+  if (!picture) {
     return c.notFound();
   }
   const object = await c.env.IMAGES.get(picture.r2Key);
@@ -304,9 +359,29 @@ app.get("/pictures/:id/image", async (c) => {
   const headers = new Headers();
   object.writeHttpMetadata(headers);
   headers.set("Content-Type", picture.contentType);
+  headers.set("Cache-Control", PRIVATE_NO_STORE);
+  return c.body(object.body, { headers });
+});
+
+app.get("/pictures/:id/image", async (c) => {
+  const id = c.req.param("id") ?? "";
+  const picture = await getPicture(c.env.PICTURES, id);
+  if (!picture || !picture.visible) {
+    setPublicCache(c, id ? [`image-${id}`] : ["pictures"], "notfound");
+    return c.notFound();
+  }
+  const object = await c.env.IMAGES.get(picture.r2Key);
+  if (!object) {
+    setPublicCache(c, [`image-${id}`], "notfound");
+    return c.notFound();
+  }
+  const headers = new Headers();
+  object.writeHttpMetadata(headers);
+  headers.set("Content-Type", picture.contentType);
+  headers.set("Cache-Control", IMAGE_CACHE_CONTROL);
   headers.set(
-    "Cache-Control",
-    picture.visible ? "public, max-age=86400" : "private, no-store",
+    "Cache-Tag",
+    uniqueTags(["pages", "pictures", `image-${id}`, `picture-${id}`]).join(","),
   );
   return c.body(object.body, { headers });
 });
@@ -314,12 +389,15 @@ app.get("/pictures/:id/image", async (c) => {
 app.get("/pictures/:id", async (c) => {
   const id = c.req.param("id") ?? "";
   const picture = await getPicture(c.env.PICTURES, id);
-  const isLoggedIn = await getIsLoggedIn(c);
-  if (!picture || (!picture.visible && !isLoggedIn)) {
-    return c.html(layout(notFoundHtml(), { isLoggedIn }), 404);
+  if (!picture || !picture.visible) {
+    return publicPage(c, notFoundHtml(), {
+      tags: id ? [`picture-${id}`] : ["pictures"],
+      notfound: true,
+    });
   }
-  return page(c, pictureShowHtml(picture, isLoggedIn), {
+  return publicPage(c, pictureShowHtml(picture), {
     title: picture.title,
+    tags: pictureCacheTags(picture.id, picture.tags),
   });
 });
 
@@ -355,6 +433,10 @@ app.post("/pictures/:id", requireAuth, async (c) => {
   };
   await putPicture(c.env.PICTURES, next);
   await syncPictureTags(c.env.TAGS, id, tagIds, existing.tags);
+  await purgePublic(c, [
+    ...pictureCacheTags(id, tagIds),
+    ...existing.tags.map((t) => `tag-${t}`),
+  ]);
   setFlash(c, { notice: "Afbeelding bijgewerkt" });
   return c.redirect(`/pictures/${id}`);
 });
@@ -368,6 +450,7 @@ app.post("/pictures/:id/delete", requireAuth, async (c) => {
   await deletePicture(c.env.PICTURES, id);
   await c.env.IMAGES.delete(existing.r2Key);
   await syncPictureTags(c.env.TAGS, id, [], existing.tags);
+  await purgePublic(c, pictureCacheTags(id, existing.tags));
   setFlash(c, { notice: "Afbeelding verwijderd" });
   return c.redirect("/pictures");
 });
@@ -377,23 +460,47 @@ app.notFound(async (c) => {
   if (asset.status !== 404) {
     return asset;
   }
-  const isLoggedIn = await getIsLoggedIn(c);
-  return c.html(layout(notFoundHtml(), { isLoggedIn }), 404);
+  return c.html(layout(notFoundHtml()), 404);
 });
 
 app.onError(async (_err, c) => {
-  const isLoggedIn = await getIsLoggedIn(c).catch(() => false);
-  return c.html(layout("<h1>500 SERVER ERROR</h1>", { isLoggedIn }), 500);
+  return c.html(layout("<h1>500 SERVER ERROR</h1>"), 500);
 });
 
 export { app };
+
+export class Public extends WorkerEntrypoint<Env> {
+  async fetch(request: Request): Promise<Response> {
+    return app.fetch(request, this.env, this.ctx);
+  }
+
+  async invalidate(args: { tags: string[] }): Promise<void> {
+    const cache = (this.ctx as ExecutionContext & {
+      cache?: { purge: (opts: { tags: string[] }) => Promise<unknown> };
+    }).cache;
+    if (cache) {
+      await cache.purge({ tags: args.tags });
+    }
+  }
+}
 
 export default {
   async fetch(
     request: Request,
     env: Env,
-    ctx: ExecutionContext,
+    ctx: GatewayExecutionCtx,
   ): Promise<Response> {
+    const url = new URL(request.url);
+    if (
+      (request.method === "GET" || request.method === "HEAD") &&
+      isPublicCacheablePath(url.pathname) &&
+      ctx.exports?.Public
+    ) {
+      const headers = new Headers(request.headers);
+      headers.delete("Cookie");
+      headers.delete("Authorization");
+      return ctx.exports.Public.fetch(new Request(request, { headers }));
+    }
     return app.fetch(request, env, ctx);
   },
 };

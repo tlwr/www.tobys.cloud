@@ -172,6 +172,12 @@ describe("jasmijnvink.com", () => {
     expect(html).not.toContain("Verborgen");
     expect(html).not.toContain("inloggen");
     expect(html).not.toContain("href=\"/inloggen\"");
+    expect(html).toContain('hx-get="/session-nav"');
+    expect(html).toContain("site-nav-primary");
+    expect(html).not.toContain("uploaden");
+    expect(html).not.toContain("uitloggen");
+    expect(res.headers.get("cache-control")).toContain("public");
+    expect(res.headers.get("set-cookie")).toBeNull();
   });
 
   it("pictures index hides drafts for anonymous users", async () => {
@@ -209,6 +215,8 @@ describe("jasmijnvink.com", () => {
     );
     expect(res.status).toBe(200);
     expect(res.headers.get("content-type")).toContain("svg");
+    expect(res.headers.get("cache-control")).toContain("public");
+    expect(res.headers.get("cache-tag")).toContain("image-1");
   });
 
   it("random redirects to a visible picture", async () => {
@@ -220,6 +228,7 @@ describe("jasmijnvink.com", () => {
     expect(res.status).toBe(302);
     const loc = res.headers.get("location") ?? "";
     expect(loc).toMatch(/^\/pictures\/(1|3)$/);
+    expect(res.headers.get("cache-control")).toContain("private");
   });
 
   it("tag show lists only visible pictures for anonymous", async () => {
@@ -244,7 +253,7 @@ describe("jasmijnvink.com", () => {
     expect(res.headers.get("location")).toContain("/authorize");
   });
 
-  it("logged-in user sees hidden pictures and can upload", async () => {
+  it("session fragments show admin chrome; public HTML stays anonymous", async () => {
     const cookie = await loginCookie(users, pictures, tags);
     const e = env(users, pictures, tags, images);
 
@@ -254,9 +263,47 @@ describe("jasmijnvink.com", () => {
       e,
     );
     const homeHtml = await home.text();
-    expect(homeHtml).toContain("uitloggen");
-    expect(homeHtml).toContain("Onzichtbaar");
-    expect(homeHtml).toContain("uploaden");
+    expect(homeHtml).toContain('hx-get="/session-nav"');
+    expect(homeHtml).not.toContain("uitloggen");
+    expect(homeHtml).not.toContain("Onzichtbaar");
+    expect(homeHtml).not.toContain("uploaden");
+
+    const nav = await app.request(
+      "/session-nav",
+      { headers: { Cookie: cookie, Origin: "http://localhost" } },
+      e,
+    );
+    expect(nav.headers.get("cache-control")).toContain("no-store");
+    const navHtml = await nav.text();
+    expect(navHtml).toContain("uitloggen");
+    expect(navHtml).toContain("uploaden");
+    expect(navHtml).toContain("site-nav-admin");
+
+    const actions = await app.request(
+      "/session-page?path=/pictures/1",
+      { headers: { Cookie: cookie, Origin: "http://localhost" } },
+      e,
+    );
+    expect(await actions.text()).toContain("Bewerken");
+
+    const hidden = await app.request(
+      "/pictures/2",
+      { headers: { Cookie: cookie, Origin: "http://localhost" } },
+      e,
+    );
+    expect(hidden.status).toBe(404);
+    const editHidden = await app.request(
+      "/pictures/2/edit",
+      { headers: { Cookie: cookie, Origin: "http://localhost" } },
+      e,
+    );
+    expect(editHidden.status).toBe(200);
+    expect(await editHidden.text()).toContain("Verborgen");
+  });
+
+  it("logged-in user can upload", async () => {
+    const cookie = await loginCookie(users, pictures, tags);
+    const e = env(users, pictures, tags, images);
 
     const svg = new File(
       ["<svg xmlns='http://www.w3.org/2000/svg'/>"],

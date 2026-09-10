@@ -46,6 +46,12 @@ describe("post routes", () => {
     // Layout nav present on HTML version
     expect(html).toContain("Toby Lorne");
     expect(html).toContain('href="/posts"');
+    expect(html).toContain('hx-get="/session-nav"');
+    expect(html).toContain("htmx.min.js");
+    expect(html).not.toContain('href="/admin"');
+    expect(html).not.toContain("Log out");
+    expect(res.headers.get("cache-control")).toContain("public");
+    expect(res.headers.get("cache-tag")).toContain("post-2020-02-FOSDEM-2020");
   });
 
   it("serves raw markdown without layout or frontmatter for .md suffix", async () => {
@@ -79,6 +85,39 @@ describe("post routes", () => {
     expect(body).not.toContain("---");
     expect(body).not.toContain("<nav>");
     expect(body).not.toContain("Toby Lorne");
+  });
+
+  it("404s hidden posts on the public URL even when signed in", async () => {
+    const posts = {
+      get: async () => "---\nvisible: false\n---\n# Draft\n",
+      put: async () => {},
+      delete: async () => {},
+      list: async () => ({
+        keys: [{ name: "Draft" }],
+        list_complete: true,
+        cacheStatus: null,
+      }),
+    } as unknown as KVNamespace;
+
+    const { issuePayload, signAuthToken } = await import("@tobys/auth-client");
+    const jwt = await signAuthToken(
+      "test-jwt-secret-at-least-32-chars!!",
+      issuePayload(
+        "toby@toby.codes",
+        "toby-codes",
+        ["toby-codes:admin"],
+        "session",
+        3600,
+      ),
+    );
+
+    const html = await app.request(
+      "/posts/Draft",
+      { headers: { Cookie: `auth_session=${jwt}` } },
+      { ...env(), POSTS: posts },
+    );
+    expect(html.status).toBe(404);
+    expect(html.headers.get("cache-control")).toContain("public");
   });
 
   it("404s hidden posts for anonymous users", async () => {

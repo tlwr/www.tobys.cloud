@@ -57,7 +57,30 @@ describe("auth", () => {
     expect(loc).toContain("client=toby-codes");
 
     const home = await request("/");
-    expect(await home.text()).not.toContain('href="/login"');
+    const homeHtml = await home.text();
+    expect(homeHtml).not.toContain('href="/login"');
+    expect(homeHtml).toContain('hx-get="/session-nav"');
+    expect(homeHtml).not.toContain('href="/admin"');
+    expect(home.headers.get("cache-control")).toContain("public");
+    expect(home.headers.get("cache-tag")).toContain("home");
+  });
+
+  it("GET /session-nav is empty unless signed in", async () => {
+    const anon = await request("/session-nav");
+    expect(anon.status).toBe(200);
+    expect(await anon.text()).toBe("");
+    expect(anon.headers.get("cache-control")).toContain("private");
+    expect(anon.headers.get("cache-control")).toContain("no-store");
+
+    const cookie = await sessionCookie();
+    const authed = await request("/session-nav", {
+      headers: { Cookie: cookie },
+    });
+    expect(authed.status).toBe(200);
+    const html = await authed.text();
+    expect(html).toContain('href="/admin"');
+    expect(html).toContain("Log out");
+    expect(html).not.toContain("<html");
   });
 
   it("protects /admin then allows a valid session JWT", async () => {

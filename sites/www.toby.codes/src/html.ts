@@ -1,3 +1,12 @@
+export const HTMX_SCRIPT = `\n    <script src="https://cdnjs.cloudflare.com/ajax/libs/htmx/1.9.12/htmx.min.js" integrity="sha512-JvpjarJlOl4sW26MnEb3IdSAcGdeTeOaAlu2gUZtfFrRgnChdzELOZKl0mN6ZvI0X+xiX5UMvxjK2Rx2z/fliw==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>`;
+
+export function sessionNavHtml(): string {
+  return `<div class="site-nav-admin">
+          <a href="/admin">Admin</a>
+          <a href="/logout">Log out</a>
+        </div>`;
+}
+
 export function layout(
   body: string,
   options?: {
@@ -8,21 +17,19 @@ export function layout(
   },
 ): string {
   const robots = options?.robots ?? "index, follow";
-  // Admin tools sit on the right of the nav (action-bar style), separate from public links.
+  // Admin pages inline the session nav (uncached). Public pages load it via HTMX
+  // so the HTML is identical for everyone and cacheable.
   const authNav = options?.isLoggedIn
     ? `
-        <div class="site-nav-admin">
-          <a href="/admin">Admin</a>
-          <a href="/logout">Log out</a>
-        </div>`
-    : "";
+        ${sessionNavHtml()}`
+    : `
+        <div id="session-nav" hx-get="/session-nav" hx-trigger="load" hx-swap="innerHTML"></div>`;
   // Public pages keep the shared 52em container; admin/editor use a wider shell.
   const containerAttr = options?.wide
     ? 'class="container" style="max-width: min(96rem, 96vw);"'
     : 'class="container"';
-  const htmxScript = options?.htmx
-    ? `\n    <script src="https://cdnjs.cloudflare.com/ajax/libs/htmx/1.9.12/htmx.min.js" integrity="sha512-JvpjarJlOl4sW26MnEb3IdSAcGdeTeOaAlu2gUZtfFrRgnChdzELOZKl0mN6ZvI0X+xiX5UMvxjK2Rx2z/fliw==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>`
-    : "";
+  const htmxScript =
+    options?.htmx || !options?.isLoggedIn ? HTMX_SCRIPT : "";
   return `<!DOCTYPE html>
 <html lang="en-GB">
   <head>

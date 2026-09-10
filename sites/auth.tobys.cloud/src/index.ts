@@ -102,20 +102,31 @@ async function page(
   );
 }
 
-function homePath(next: string): string {
-  if (next === "/" || next === "") {
-    return "/me";
-  }
-  return next;
-}
-
-/** Relative path on this host, or `/me` if missing/empty/unsafe. */
-function safeLocalPath(raw: string | undefined | null): string {
+/** Relative path: leading slash, not protocol-relative, no backslash. Allows `/`. */
+function safeRelativePath(raw: string | undefined | null): string | null {
   const n = (raw ?? "").trim();
-  if (n.startsWith("/") && !n.startsWith("//") && !n.includes("\\") && n !== "/") {
+  if (n.startsWith("/") && !n.startsWith("//") && !n.includes("\\")) {
     return n;
   }
-  return "/me";
+  return null;
+}
+
+/** Where to send the user on auth.tobys.cloud. `/` and missing → `/me`. */
+function authLanding(raw: string | undefined | null): string {
+  const n = safeRelativePath(raw);
+  if (!n || n === "/") {
+    return "/me";
+  }
+  return n;
+}
+
+/** `next` on an app callback. `/` and missing stay `/`, never auth's `/me`. */
+function appLanding(raw: string | undefined | null): string {
+  const n = safeRelativePath(raw);
+  if (!n || n === "/") {
+    return "/";
+  }
+  return n;
 }
 
 function parseRedirect(raw: string): URL | null {
@@ -148,7 +159,7 @@ async function ticketDestination(
   const ticket = await signTicket(secret, user.email, client, user.permissions);
   const dest = new URL(redirect.toString());
   dest.searchParams.set("ticket", ticket);
-  dest.searchParams.set("next", safeLocalPath(next));
+  dest.searchParams.set("next", appLanding(next));
   return { url: dest.toString() };
 }
 
@@ -192,7 +203,7 @@ async function continueAfterAuth(
     iat: 0,
     exp: 0,
   });
-  let dest = homePath(opts.next);
+  let dest = authLanding(opts.next);
   if (isAuthClientId(opts.client) && opts.client !== "auth" && opts.redirect) {
     const url = parseRedirect(opts.redirect);
     if (
@@ -273,17 +284,21 @@ app.get("/audit", requireLocalAuth(), async (c) => {
 });
 
 app.get("/login", async (c) => {
-  const next = safeLocalPath(c.req.query("next"));
   const client = c.req.query("client") ?? "";
   const redirect = c.req.query("redirect") ?? "";
+  const isApp =
+    isAuthClientId(client) && client !== "auth" && Boolean(redirect);
+  const next = isApp
+    ? appLanding(c.req.query("next"))
+    : authLanding(c.req.query("next"));
   const id = await getIdentity(c, "auth");
   if (id) {
-    if (isAuthClientId(client) && client !== "auth" && redirect) {
+    if (isApp) {
       return c.redirect(
         `/authorize?client=${encodeURIComponent(client)}&redirect=${encodeURIComponent(redirect)}&next=${encodeURIComponent(next)}`,
       );
     }
-    return c.redirect(homePath(next));
+    return c.redirect(next);
   }
   return c.html(
     layout(
@@ -300,9 +315,13 @@ app.post("/login", async (c) => {
   const body = await c.req.parseBody({ all: true });
   const email = normalizeEmail(asString(body.email));
   const password = asString(body.password);
-  const next = safeLocalPath(asString(body.next));
   const client = asString(body.client);
   const redirect = asString(body.redirect);
+  const isApp =
+    isAuthClientId(client) && client !== "auth" && Boolean(redirect);
+  const next = isApp
+    ? appLanding(asString(body.next))
+    : authLanding(asString(body.next));
   const show = (error: string, status: 401 | 500 = 401) =>
     c.html(layout(loginHtml({ next, client, redirect, error })), status);
 
@@ -434,9 +453,13 @@ app.post("/login/passkey", async (c) => {
     detail: "passkey",
     ...meta,
   });
-  const next = safeLocalPath(asString(body.next));
   const client = asString(body.client);
   const redirect = asString(body.redirect);
+  const isApp =
+    isAuthClientId(client) && client !== "auth" && Boolean(redirect);
+  const next = isApp
+    ? appLanding(asString(body.next))
+    : authLanding(asString(body.next));
   return continueAfterAuth(c, user, { next, client, redirect, json: true });
 });
 
@@ -572,7 +595,6 @@ app.get("/auth/callback", (c) => handleCallback(c, "auth"));
 app.get("/authorize", async (c) => {
   const clientRaw = c.req.query("client") ?? "";
   const redirectRaw = c.req.query("redirect") ?? "";
-  const next = safeLocalPath(c.req.query("next"));
 
   // No app client (or client=auth without a callback) → log into this admin UI.
   const dest = parseRedirect(redirectRaw);
@@ -582,12 +604,14 @@ app.get("/authorize", async (c) => {
     dest !== null &&
     dest.pathname === "/auth/callback";
   if (!isAppAuthorize) {
+    const next = authLanding(c.req.query("next"));
     const id = await getIdentity(c, "auth");
     if (id) {
-      return c.redirect(homePath(next));
+      return c.redirect(next);
     }
     return c.redirect(`/login?next=${encodeURIComponent(next)}`);
   }
+  const next = appLanding(c.req.query("next"));
   if (!originAllowed(clientRaw, dest.origin, new URL(c.req.url).origin)) {
     return c.text("Redirect origin not allowed", 400);
   }

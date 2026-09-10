@@ -1,3 +1,4 @@
+import { WorkerEntrypoint } from "cloudflare:workers";
 import { originAllowed } from "@tobys/auth-client";
 import { Hono } from "hono";
 import { csrf } from "hono/csrf";
@@ -9,8 +10,29 @@ import {
   logoutAndRedirect,
   requireAuth,
 } from "./auth";
+import {
+  isPublicCacheablePath,
+  PRIVATE_NO_STORE,
+  purgePublic,
+  setPublicCache,
+  type GatewayExecutionCtx,
+} from "./cache";
 import type { Env } from "./env";
 import { isValidTag, parsePost } from "./frontmatter";
+import {
+  INDEX_HTML,
+  WORK_HTML,
+  adminIndexHtml,
+  adminPostEditHtml,
+  adminPostNewHtml,
+  adminPostsHtml,
+  adminTagsHtml,
+  layout,
+  postHtml,
+  postsByTagHtml,
+  postsListHtml,
+  sessionNavHtml,
+} from "./html";
 import {
   deletePost,
   getPost,
@@ -27,20 +49,6 @@ import {
   syncPostTags,
   unindexPost,
 } from "./tags";
-import {
-  INDEX_HTML,
-  WORK_HTML,
-  adminIndexHtml,
-  adminPostEditHtml,
-  adminPostNewHtml,
-  adminPostsHtml,
-  adminTagsHtml,
-  layout,
-
-  postHtml,
-  postsByTagHtml,
-  postsListHtml,
-} from "./html";
 
 export type { Env };
 
@@ -57,51 +65,54 @@ app.use(
 
 app.get("/health", (c) => c.text("healthy"));
 
-app.get("/robots.txt", (c) =>
-  c.text("User-agent: *\nAllow: /\n", 200, {
-    "Content-Type": "text/plain; charset=utf-8",
-  }),
-);
-
-app.get("/", async (c) => {
+app.get("/session-nav", async (c) => {
+  c.header("Cache-Control", PRIVATE_NO_STORE);
   const isLoggedIn = await getIsLoggedIn(c);
-  return c.html(layout(INDEX_HTML, { isLoggedIn }));
+  return c.html(isLoggedIn ? sessionNavHtml() : "");
 });
 
-app.get("/work", async (c) => {
-  const isLoggedIn = await getIsLoggedIn(c);
-  return c.html(layout(WORK_HTML, { isLoggedIn }));
+app.get("/robots.txt", (c) => {
+  setPublicCache(c, ["robots"]);
+  c.header("Content-Type", "text/plain; charset=utf-8");
+  return c.body("User-agent: *\nAllow: /\n");
+});
+
+app.get("/", (c) => {
+  setPublicCache(c, ["home"]);
+  return c.html(layout(INDEX_HTML));
+});
+
+app.get("/work", (c) => {
+  setPublicCache(c, ["work"]);
+  return c.html(layout(WORK_HTML));
 });
 
 app.get("/posts", async (c) => {
-  const isLoggedIn = await getIsLoggedIn(c);
   // Drafts only on /admin/posts — public list is always visible posts.
   const [{ ongoing, dated }, tags] = await Promise.all([
     listPosts(c.env.POSTS),
     listTagNames(c.env.TAGS),
   ]);
-  return c.html(layout(postsListHtml(ongoing, dated, tags), { isLoggedIn }));
+  setPublicCache(c, ["posts"]);
+  return c.html(layout(postsListHtml(ongoing, dated, tags)));
 });
 
 app.get("/posts-by-tag/:tag", async (c) => {
-  const isLoggedIn = await getIsLoggedIn(c);
   const tag = (c.req.param("tag") ?? "").toLowerCase();
   if (!isValidTag(tag)) {
-    return c.html(layout("<h2>404 NOT FOUND</h2>", { isLoggedIn }), 404);
+    setPublicCache(c, ["posts"], "notfound");
+    return c.html(layout("<h2>404 NOT FOUND</h2>"), 404);
   }
   const listed = await listPostsByTag(c.env.POSTS, c.env.TAGS, tag);
   if (listed === null) {
-    return c.html(layout("<h2>404 NOT FOUND</h2>", { isLoggedIn }), 404);
+    setPublicCache(c, [`tag-${tag}`], "notfound");
+    return c.html(layout("<h2>404 NOT FOUND</h2>"), 404);
   }
-  return c.html(
-    layout(postsByTagHtml(listed.tag, listed.ongoing, listed.dated), {
-      isLoggedIn,
-    }),
-  );
+  setPublicCache(c, ["posts", `tag-${listed.tag}`]);
+  return c.html(layout(postsByTagHtml(listed.tag, listed.ongoing, listed.dated)));
 });
 
 app.get("/posts/:slug", async (c) => {
-  const isLoggedIn = await getIsLoggedIn(c);
   let slug = c.req.param("slug") ?? "";
   const asMarkdown = slug.endsWith(".md");
   if (asMarkdown) {
@@ -109,26 +120,26 @@ app.get("/posts/:slug", async (c) => {
   }
 
   const post = await getPost(c.env.POSTS, slug);
-  if (post === null || (!post.frontmatter.visible && !isLoggedIn)) {
+  if (post === null || !post.frontmatter.visible) {
+    setPublicCache(c, slug ? [`post-${slug}`] : ["posts"], "notfound");
     if (asMarkdown) {
-      return c.text("404 NOT FOUND", 404, {
-        "Content-Type": "text/plain; charset=utf-8",
-      });
+      c.header("Content-Type", "text/plain; charset=utf-8");
+      return c.body("404 NOT FOUND", 404);
     }
-    return c.html(layout("<h2>404 NOT FOUND</h2>", { isLoggedIn }), 404);
+    return c.html(layout("<h2>404 NOT FOUND</h2>"), 404);
   }
+
+  const tags = [`post-${slug}`, ...post.frontmatter.tags.map((t) => `tag-${t}`)];
+  setPublicCache(c, tags);
 
   // Raw markdown: body only (frontmatter stripped), no layout/nav.
   if (asMarkdown) {
-    return c.body(post.body, 200, {
-      "Content-Type": "text/markdown; charset=utf-8",
-    });
+    c.header("Content-Type", "text/markdown; charset=utf-8");
+    return c.body(post.body);
   }
 
   const body = await marked.parse(post.body);
-  return c.html(
-    layout(postHtml(slug, body, post.frontmatter.tags), { isLoggedIn }),
-  );
+  return c.html(layout(postHtml(slug, body, post.frontmatter.tags)));
 });
 
 app.get("/login", (c) => loginRedirect(c));
@@ -183,6 +194,7 @@ app.post("/admin/tags/:tag/delete", requireAuth, async (c) => {
       404,
     );
   }
+  await purgePublic(c, ["posts", `tag-${tag}`]);
   return c.redirect("/admin/tags");
 });
 
@@ -229,6 +241,11 @@ app.post("/admin/posts", requireAuth, async (c) => {
   await putPost(c.env.POSTS, slug, markdown);
   const { frontmatter } = parsePost(markdown);
   await syncPostTags(c.env.TAGS, slug, frontmatter.tags, []);
+  await purgePublic(c, [
+    "posts",
+    `post-${slug}`,
+    ...frontmatter.tags.map((t) => `tag-${t}`),
+  ]);
   c.header("HX-Redirect", `/admin/posts/${slug}/edit`);
   return c.html("<span>Created</span>");
 });
@@ -277,6 +294,12 @@ app.post("/admin/posts/:slug", requireAuth, async (c) => {
     frontmatter.tags,
     existing.frontmatter.tags,
   );
+  await purgePublic(c, [
+    "posts",
+    `post-${slug}`,
+    ...frontmatter.tags.map((t) => `tag-${t}`),
+    ...existing.frontmatter.tags.map((t) => `tag-${t}`),
+  ]);
   return c.html("<span>Saved</span>");
 });
 
@@ -305,6 +328,11 @@ app.post("/admin/posts/:slug/delete", requireAuth, async (c) => {
   }
   if (existing) {
     await unindexPost(c.env.TAGS, slug, existing.frontmatter.tags);
+    await purgePublic(c, [
+      "posts",
+      `post-${slug}`,
+      ...existing.frontmatter.tags.map((t) => `tag-${t}`),
+    ]);
   }
   return c.redirect("/admin/posts");
 });
@@ -314,23 +342,47 @@ app.notFound(async (c) => {
   if (asset.status !== 404) {
     return asset;
   }
-  const isLoggedIn = await getIsLoggedIn(c);
-  return c.html(layout("<h2>404 NOT FOUND</h2>", { isLoggedIn }), 404);
+  return c.html(layout("<h2>404 NOT FOUND</h2>"), 404);
 });
 
 app.onError(async (_err, c) => {
-  const isLoggedIn = await getIsLoggedIn(c).catch(() => false);
-  return c.html(layout("<h2>500 SERVER ERROR</h2>", { isLoggedIn }), 500);
+  return c.html(layout("<h2>500 SERVER ERROR</h2>"), 500);
 });
 
 export { app };
+
+export class Public extends WorkerEntrypoint<Env> {
+  async fetch(request: Request): Promise<Response> {
+    return app.fetch(request, this.env, this.ctx);
+  }
+
+  async invalidate(args: { tags: string[] }): Promise<void> {
+    const cache = (this.ctx as ExecutionContext & {
+      cache?: { purge: (opts: { tags: string[] }) => Promise<unknown> };
+    }).cache;
+    if (cache) {
+      await cache.purge({ tags: args.tags });
+    }
+  }
+}
 
 export default {
   async fetch(
     request: Request,
     env: Env,
-    ctx: ExecutionContext,
+    ctx: GatewayExecutionCtx,
   ): Promise<Response> {
+    const url = new URL(request.url);
+    if (
+      (request.method === "GET" || request.method === "HEAD") &&
+      isPublicCacheablePath(url.pathname) &&
+      ctx.exports?.Public
+    ) {
+      const headers = new Headers(request.headers);
+      headers.delete("Cookie");
+      headers.delete("Authorization");
+      return ctx.exports.Public.fetch(new Request(request, { headers }));
+    }
     return app.fetch(request, env, ctx);
   },
 };

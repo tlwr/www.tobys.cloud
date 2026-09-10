@@ -316,6 +316,47 @@ describe("auth.tobys.cloud", () => {
     });
     expect(payload?.sub).toBe("toby@toby.codes");
     expect(payload?.perms).toContain("toby-codes:admin");
+    expect(loc.searchParams.get("next")).toBe("/admin");
+  });
+
+  it("sends apps home to / rather than auth /me", async () => {
+    const cookie = await loginCookie(users);
+    const redirect = "https://www.toby.codes/auth/callback";
+    for (const next of ["", "/"]) {
+      const q = next
+        ? `&next=${encodeURIComponent(next)}`
+        : "";
+      const res = await app.request(
+        `https://auth.tobys.cloud/authorize?client=toby-codes&redirect=${encodeURIComponent(redirect)}${q}`,
+        { headers: { Cookie: cookie } },
+        env(users),
+      );
+      expect(res.status).toBe(302);
+      const loc = new URL(res.headers.get("location") ?? "");
+      expect(loc.origin).toBe("https://www.toby.codes");
+      expect(loc.pathname).toBe("/auth/callback");
+      expect(loc.searchParams.get("next")).toBe("/");
+    }
+
+    const login = await app.request(
+      "https://auth.tobys.cloud/login",
+      {
+        method: "POST",
+        body: new URLSearchParams({
+          email: "toby@toby.codes",
+          password: "s3cret",
+          client: "toby-codes",
+          redirect: "https://www.toby.codes/auth/callback",
+          next: "/",
+        }),
+        headers: { Origin: "https://auth.tobys.cloud" },
+      },
+      env(users),
+    );
+    expect(login.status).toBe(302);
+    const loginLoc = new URL(login.headers.get("location") ?? "");
+    expect(loginLoc.origin).toBe("https://www.toby.codes");
+    expect(loginLoc.searchParams.get("next")).toBe("/");
   });
 
   it("rejects a localhost redirect when the issuer is production", async () => {

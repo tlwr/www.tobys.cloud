@@ -86,7 +86,23 @@ header.site-title {
 }
 
 nav.site-nav {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem 1rem;
   margin-bottom: 2rem;
+}
+nav.site-nav .site-nav-primary,
+nav.site-nav .site-nav-admin,
+nav.site-nav #session-nav {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+}
+nav.site-nav .site-nav-admin,
+nav.site-nav #session-nav {
+  margin-left: auto;
 }
 nav.site-nav .sep { margin: 0 0.5rem; }
 nav.site-nav form { display: inline-block; }

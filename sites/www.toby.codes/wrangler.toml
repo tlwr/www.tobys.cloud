@@ -2,6 +2,21 @@ name = "www-toby-codes"
 main = "src/index.ts"
 compatibility_date = "2025-04-02"
 
+[cache]
+enabled = true
+
+[exports.default]
+type = "worker"
+
+[exports.default.cache]
+enabled = false
+
+[exports.Public]
+type = "worker"
+
+[exports.Public.cache]
+enabled = true
+
 [assets]
 directory = "./public"
 binding = "ASSETS"
