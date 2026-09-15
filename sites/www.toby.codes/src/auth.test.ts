@@ -94,6 +94,7 @@ describe("auth", () => {
     const html = await admin.text();
     expect(html).toContain('href="/admin/posts"');
     expect(html).toContain("Log out");
+    expect(admin.headers.get("cache-control")).toContain("no-store");
   });
 
   it("logout redirects to the issuer", async () => {

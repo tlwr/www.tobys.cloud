@@ -1,4 +1,3 @@
-import { WorkerEntrypoint } from "cloudflare:workers";
 import { originAllowed } from "@tobys/auth-client";
 import { Hono, type Context } from "hono";
 import { csrf } from "hono/csrf";
@@ -11,14 +10,13 @@ import {
   requireAuth,
 } from "./auth";
 import {
+  defaultPrivateCache,
   IMAGE_CACHE_CONTROL,
   PRIVATE_NO_STORE,
-  isPublicCacheablePath,
   pictureCacheTags,
   purgePublic,
   setPublicCache,
   uniqueTags,
-  type GatewayExecutionCtx,
 } from "./cache";
 import type { Env } from "./env";
 import {
@@ -77,6 +75,7 @@ app.use(
       originAllowed("jvnl", origin, new URL(c.req.url).origin),
   }),
 );
+app.use("*", defaultPrivateCache);
 
 type AppContext = Context<{ Bindings: Env }>;
 
@@ -469,38 +468,12 @@ app.onError(async (_err, c) => {
 
 export { app };
 
-export class Public extends WorkerEntrypoint<Env> {
-  async fetch(request: Request): Promise<Response> {
-    return app.fetch(request, this.env, this.ctx);
-  }
-
-  async invalidate(args: { tags: string[] }): Promise<void> {
-    const cache = (this.ctx as ExecutionContext & {
-      cache?: { purge: (opts: { tags: string[] }) => Promise<unknown> };
-    }).cache;
-    if (cache) {
-      await cache.purge({ tags: args.tags });
-    }
-  }
-}
-
 export default {
   async fetch(
     request: Request,
     env: Env,
-    ctx: GatewayExecutionCtx,
+    ctx: ExecutionContext,
   ): Promise<Response> {
-    const url = new URL(request.url);
-    if (
-      (request.method === "GET" || request.method === "HEAD") &&
-      isPublicCacheablePath(url.pathname) &&
-      ctx.exports?.Public
-    ) {
-      const headers = new Headers(request.headers);
-      headers.delete("Cookie");
-      headers.delete("Authorization");
-      return ctx.exports.Public.fetch(new Request(request, { headers }));
-    }
     return app.fetch(request, env, ctx);
   },
 };
