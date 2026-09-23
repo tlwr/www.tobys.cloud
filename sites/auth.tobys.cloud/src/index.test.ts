@@ -8,6 +8,7 @@ import { app } from "./index";
 import { AUDIT_PAGE_SIZE, writeAudit } from "./audit";
 import type { Env } from "./env";
 import { verifyAuthToken } from "@tobys/auth-client";
+import { LOGIN_MAX_ATTEMPTS } from "./ratelimit";
 import { listUsers, parseUser } from "./users";
 
 vi.mock("@simplewebauthn/server", async (importOriginal) => {
@@ -938,6 +939,65 @@ describe("auth.tobys.cloud", () => {
         (ev) => ev.type === "login.failure" && ev.detail === "passkey",
       ),
     ).toBe(true);
+  });
+
+  it("locks password login after repeated failures", async () => {
+    const audit = new MemoryD1();
+    const headers = {
+      Origin: "http://localhost:8788",
+      "CF-Connecting-IP": "203.0.113.8",
+    };
+    for (let i = 0; i < LOGIN_MAX_ATTEMPTS; i++) {
+      const res = await app.request(
+        "/login",
+        {
+          method: "POST",
+          body: new URLSearchParams({
+            email: "toby@toby.codes",
+            password: "nope",
+          }),
+          headers,
+        },
+        env(users, audit),
+      );
+      expect(res.status).toBe(401);
+    }
+    const blocked = await app.request(
+      "/login",
+      {
+        method: "POST",
+        body: new URLSearchParams({
+          email: "toby@toby.codes",
+          password: "s3cret",
+        }),
+        headers,
+      },
+      env(users, audit),
+    );
+    expect(blocked.status).toBe(429);
+    expect(await blocked.text()).toContain("Too many attempts");
+    expect(blocked.headers.get("content-security-policy")).toContain(
+      "frame-ancestors 'none'",
+    );
+    expect(
+      audit.events.some(
+        (ev) => ev.type === "login.failure" && ev.detail === "rate-limit",
+      ),
+    ).toBe(true);
+
+    const otherIp = await app.request(
+      "/login",
+      {
+        method: "POST",
+        body: new URLSearchParams({
+          email: "someone-else@toby.codes",
+          password: "nope",
+        }),
+        headers: { ...headers, "CF-Connecting-IP": "203.0.113.9" },
+      },
+      env(users, audit),
+    );
+    expect(otherIp.status).toBe(401);
   });
 
   it("drops the passkey index when deleting a user", async () => {

@@ -1,4 +1,5 @@
 import { ALL_PERMISSIONS } from "@tobys/auth-client";
+import { RATELIMIT_PREFIX } from "./ratelimit";
 
 export const PASSKEY_KEY_PREFIX = "passkey:";
 
@@ -170,7 +171,10 @@ export async function listUsers(kv: KVNamespace): Promise<User[]> {
   for (;;) {
     const page = await kv.list(cursor ? { cursor } : undefined);
     for (const key of page.keys) {
-      if (key.name.startsWith(PASSKEY_KEY_PREFIX)) {
+      if (
+        key.name.startsWith(PASSKEY_KEY_PREFIX) ||
+        key.name.startsWith(RATELIMIT_PREFIX)
+      ) {
         continue;
       }
       const u = await getUser(kv, key.name);

@@ -113,6 +113,25 @@ describe("posts", () => {
     });
   });
 
+  it("serves later lists from posts:index", async () => {
+    const kv = new MemoryKV({
+      Public: "---\nvisible: true\n---\n# Public\n",
+      Draft: "---\nvisible: false\n---\n# Draft\n",
+    });
+    await listPosts(kv as unknown as KVNamespace);
+    let gets = 0;
+    const orig = kv.get.bind(kv);
+    kv.get = async (key: string) => {
+      gets += 1;
+      return orig(key);
+    };
+    const listed = await listPosts(kv as unknown as KVNamespace, {
+      includeHidden: true,
+    });
+    expect(gets).toBe(1);
+    expect(listed.ongoing.map((p) => p.slug).sort()).toEqual(["Draft", "Public"]);
+  });
+
   it("putPost writes for create then delete removes", async () => {
     const kv = new MemoryKV() as unknown as KVNamespace;
     await putPost(kv, "Temp-draft", NEW_POST_TEMPLATE);

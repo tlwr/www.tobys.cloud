@@ -62,6 +62,9 @@ describe("auth", () => {
     expect(homeHtml).toContain('hx-get="/session-nav"');
     expect(homeHtml).not.toContain('href="/admin"');
     expect(home.headers.get("cache-control")).toContain("public");
+    expect(home.headers.get("content-security-policy")).toContain("frame-ancestors 'none'");
+    expect(home.headers.get("x-frame-options")).toBe("DENY");
+    expect(home.headers.get("referrer-policy")).toBe("strict-origin-when-cross-origin");
     expect(home.headers.get("cache-tag")).toContain("home");
   });
 

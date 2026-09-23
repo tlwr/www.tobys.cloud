@@ -25,6 +25,12 @@ import {
   type AuthEnv,
 } from "@tobys/auth-client";
 import { auditMeta, listAudit, writeAudit } from "./audit";
+import { securityHeaders } from "./headers";
+import {
+  loginLimited,
+  noteLoginFailure,
+  noteLoginSuccess,
+} from "./ratelimit";
 import type { Env } from "./env";
 import {
   auditHtml,
@@ -62,8 +68,12 @@ import {
 export type { Env };
 
 type Bindings = Env & AuthEnv;
+type AuthContext = Context<{
+  Bindings: Bindings;
+  Variables: { cspNonce: string };
+}>;
 
-const app = new Hono<{ Bindings: Bindings }>();
+const app = new Hono<{ Bindings: Bindings; Variables: { cspNonce: string } }>();
 
 app.use(
   "*",
@@ -72,6 +82,14 @@ app.use(
       originAllowed("auth", origin, new URL(c.req.url).origin),
   }),
 );
+app.use("*", async (c, next) => {
+  const nonce = crypto.randomUUID().replace(/-/g, "");
+  c.set("cspNonce", nonce);
+  await next();
+  for (const [name, value] of Object.entries(securityHeaders(nonce))) {
+    c.res.headers.set(name, value);
+  }
+});
 
 function asString(v: unknown): string {
   return typeof v === "string" ? v : "";
@@ -88,7 +106,7 @@ function asStringArray(v: unknown): string[] {
 }
 
 async function page(
-  c: Context<{ Bindings: Bindings }>,
+  c: AuthContext,
   body: string,
   extra: { title?: string; notice?: string; alert?: string } = {},
 ) {
@@ -142,7 +160,7 @@ function parseRedirect(raw: string): URL | null {
 }
 
 async function ticketDestination(
-  c: Context<{ Bindings: Bindings }>,
+  c: AuthContext,
   user: User,
   client: AuthClientId,
   redirect: URL,
@@ -164,7 +182,7 @@ async function ticketDestination(
 }
 
 async function finishAuthorize(
-  c: Context<{ Bindings: Bindings }>,
+  c: AuthContext,
   email: string,
   client: AuthClientId,
   redirect: URL,
@@ -173,7 +191,10 @@ async function finishAuthorize(
   const user = await getUser(c.env.USERS, email);
   if (!user) {
     clearSession(c);
-    return c.html(layout(loginHtml({ error: "Unknown user" })), 401);
+    return c.html(
+      layout(loginHtml({ error: "Unknown user", nonce: cspNonce(c) })),
+      401,
+    );
   }
   const dest = await ticketDestination(c, user, client, redirect, next);
   if ("error" in dest) {
@@ -186,7 +207,7 @@ async function finishAuthorize(
 }
 
 async function continueAfterAuth(
-  c: Context<{ Bindings: Bindings }>,
+  c: AuthContext,
   user: User,
   opts: {
     next: string;
@@ -236,8 +257,16 @@ async function continueAfterAuth(
   return c.redirect(dest);
 }
 
-function jsonError(c: Context, error: string, status: 400 | 401 | 500 = 400) {
+function jsonError(
+  c: AuthContext,
+  error: string,
+  status: 400 | 401 | 429 | 500 = 400,
+) {
   return c.json({ error }, status);
+}
+
+function cspNonce(c: AuthContext): string {
+  return c.get("cspNonce") ?? "";
 }
 
 app.get("/health", (c) => c.text("healthy"));
@@ -263,6 +292,7 @@ app.get("/me", requireLocalSession(), async (c) => {
       email: user.email,
       permissions: user.permissions,
       hasPasskey: Boolean(user.passkey),
+      nonce: cspNonce(c),
     }),
     { title: "Me" },
   );
@@ -306,6 +336,7 @@ app.get("/login", async (c) => {
         next,
         client,
         redirect,
+        nonce: cspNonce(c),
       }),
     ),
   );
@@ -322,16 +353,29 @@ app.post("/login", async (c) => {
   const next = isApp
     ? appLanding(asString(body.next))
     : authLanding(asString(body.next));
-  const show = (error: string, status: 401 | 500 = 401) =>
-    c.html(layout(loginHtml({ next, client, redirect, error })), status);
+  const show = (error: string, status: 401 | 429 | 500 = 401) =>
+    c.html(
+      layout(loginHtml({ next, client, redirect, error, nonce: cspNonce(c) })),
+      status,
+    );
 
   const secret = getJwtSecret(c);
   if (!secret) {
     return show("Server misconfigured (AUTH_JWT_SECRET)", 500);
   }
   const meta = auditMeta(c);
+  if (await loginLimited(c.env.USERS, meta.ip, email)) {
+    await writeAudit(c.env.AUDIT, {
+      type: "login.failure",
+      email,
+      detail: "rate-limit",
+      ...meta,
+    });
+    return show("Too many attempts. Try again in a few minutes.", 429);
+  }
   const user = await getUser(c.env.USERS, email);
   if (!user || !password) {
+    await noteLoginFailure(c.env.USERS, meta.ip, email);
     await writeAudit(c.env.AUDIT, {
       type: "login.failure",
       email,
@@ -341,6 +385,7 @@ app.post("/login", async (c) => {
   }
   const ok = await bcrypt.compare(password, user.hashedPassword);
   if (!ok) {
+    await noteLoginFailure(c.env.USERS, meta.ip, email);
     await writeAudit(c.env.AUDIT, {
       type: "login.failure",
       email,
@@ -348,6 +393,7 @@ app.post("/login", async (c) => {
     });
     return show("Invalid credentials");
   }
+  await noteLoginSuccess(c.env.USERS, meta.ip, user.email);
   await writeAudit(c.env.AUDIT, {
     type: "login.success",
     email: user.email,
@@ -379,7 +425,21 @@ app.post("/login/passkey", async (c) => {
     return jsonError(c, "Server misconfigured (AUTH_JWT_SECRET)", 500);
   }
   const meta = auditMeta(c);
+  const limited = async (email: string) => {
+    await writeAudit(c.env.AUDIT, {
+      type: "login.failure",
+      email,
+      detail: "rate-limit",
+      ...meta,
+    });
+    clearChallengeCookie(c);
+    return jsonError(c, "Too many attempts. Try again in a few minutes.", 429);
+  };
+  if (await loginLimited(c.env.USERS, meta.ip, "")) {
+    return limited("");
+  }
   const fail = async (email: string) => {
+    await noteLoginFailure(c.env.USERS, meta.ip, email);
     await writeAudit(c.env.AUDIT, {
       type: "login.failure",
       email,
@@ -417,6 +477,9 @@ app.post("/login/passkey", async (c) => {
   if (!user?.passkey || user.passkey.id !== credentialId) {
     return fail(email);
   }
+  if (await loginLimited(c.env.USERS, meta.ip, user.email)) {
+    return limited(user.email);
+  }
 
   const rp = webAuthnRp(c.req.url);
   try {
@@ -447,6 +510,7 @@ app.post("/login/passkey", async (c) => {
   }
 
   clearChallengeCookie(c);
+  await noteLoginSuccess(c.env.USERS, meta.ip, user.email);
   await writeAudit(c.env.AUDIT, {
     type: "login.success",
     email: user.email,

@@ -20,6 +20,34 @@ export const ALLOWED_TYPES = new Set([
 export const MAX_BYTES = 10 * 1024 * 1024;
 
 const ID_RX = /^\d+$/;
+const INDEX_KEY = "pictures:index";
+
+type PictureSummary = {
+  id: string;
+  title: string;
+  description: string;
+  visible: boolean;
+  tags: string[];
+};
+
+function summaryOf(picture: Picture): PictureSummary {
+  return {
+    id: picture.id,
+    title: picture.title,
+    description: picture.description,
+    visible: picture.visible,
+    tags: picture.tags,
+  };
+}
+
+function pictureFromSummary(summary: PictureSummary): Picture {
+  return {
+    ...summary,
+    r2Key: r2KeyFor(summary.id),
+    contentType: "application/octet-stream",
+    createdAt: "",
+  };
+}
 
 export function isValidPictureId(id: string): boolean {
   return ID_RX.test(id);
@@ -85,6 +113,43 @@ export async function getPicture(
   return parsePicture(await kv.get(id));
 }
 
+async function readIndex(kv: KVNamespace): Promise<PictureSummary[] | null> {
+  const raw = await kv.get(INDEX_KEY);
+  if (raw === null) {
+    return null;
+  }
+  try {
+    const parsed = JSON.parse(raw) as { pictures?: PictureSummary[] };
+    if (!parsed || !Array.isArray(parsed.pictures)) {
+      return null;
+    }
+    return parsed.pictures.filter((p) => p && ID_RX.test(p.id));
+  } catch {
+    return null;
+  }
+}
+
+async function writeIndex(kv: KVNamespace, pictures: PictureSummary[]): Promise<void> {
+  await kv.put(INDEX_KEY, JSON.stringify({ pictures }));
+}
+
+async function rebuildIndex(kv: KVNamespace): Promise<PictureSummary[]> {
+  const ids = await listAllIds(kv);
+  const pictures: PictureSummary[] = [];
+  for (const id of ids) {
+    const picture = await getPicture(kv, id);
+    if (picture) {
+      pictures.push(summaryOf(picture));
+    }
+  }
+  await writeIndex(kv, pictures);
+  return pictures;
+}
+
+async function loadIndex(kv: KVNamespace): Promise<PictureSummary[]> {
+  return (await readIndex(kv)) ?? (await rebuildIndex(kv));
+}
+
 export async function putPicture(
   kv: KVNamespace,
   picture: Picture,
@@ -93,6 +158,10 @@ export async function putPicture(
     throw new Error("invalid picture id");
   }
   await kv.put(picture.id, JSON.stringify(picture));
+  const current = await loadIndex(kv);
+  const next = current.filter((p) => p.id !== picture.id);
+  next.push(summaryOf(picture));
+  await writeIndex(kv, next);
 }
 
 export async function deletePicture(
@@ -100,35 +169,35 @@ export async function deletePicture(
   id: string,
 ): Promise<void> {
   await kv.delete(id);
+  const current = await readIndex(kv);
+  if (!current) {
+    return;
+  }
+  await writeIndex(
+    kv,
+    current.filter((p) => p.id !== id),
+  );
 }
 
-/** Newest id first (Rails order(id: :desc)). */
+/** Newest id first (Rails order(id: :desc)). One KV read via `pictures:index`. */
 export async function listPictures(
   kv: KVNamespace,
   options: { includeHidden?: boolean } = {},
 ): Promise<Picture[]> {
   const includeHidden = options.includeHidden === true;
-  const ids = await listAllIds(kv);
-  const out: Picture[] = [];
-  for (const id of ids) {
-    const p = await getPicture(kv, id);
-    if (!p) {
-      continue;
-    }
-    if (!includeHidden && !p.visible) {
-      continue;
-    }
-    out.push(p);
-  }
+  const summaries = await loadIndex(kv);
+  const out = summaries
+    .filter((p) => includeHidden || p.visible)
+    .map(pictureFromSummary);
   out.sort((a, b) => Number(b.id) - Number(a.id));
   return out;
 }
 
 export async function nextPictureId(kv: KVNamespace): Promise<string> {
-  const ids = await listAllIds(kv);
+  const summaries = await loadIndex(kv);
   let max = 0;
-  for (const id of ids) {
-    const n = Number(id);
+  for (const picture of summaries) {
+    const n = Number(picture.id);
     if (n > max) {
       max = n;
     }

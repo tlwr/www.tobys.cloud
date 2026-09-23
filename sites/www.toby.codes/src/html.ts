@@ -572,7 +572,7 @@ function deletePostForm(slug: string, label = "Delete"): string {
 export function adminPostEditHtml(
   slug: string,
   raw: string,
-  options?: { canDelete?: boolean },
+  options?: { canDelete?: boolean; nonce?: string },
 ): string {
   const safeSlug = escapeHtml(slug);
   const safeRaw = escapeHtml(raw);
@@ -619,14 +619,14 @@ export function adminPostEditHtml(
     </div>
   </form>
 
-  ${editorClientScript()}
+  ${editorClientScript({ nonce: options?.nonce })}
 </main>`;
 }
 
 /** New post: slug field + editor, prefilled draft frontmatter. */
 export function adminPostNewHtml(
   raw: string,
-  options?: { slug?: string; error?: string },
+  options?: { slug?: string; error?: string; nonce?: string },
 ): string {
   const safeRaw = escapeHtml(raw);
   const safeSlug = escapeHtml(options?.slug ?? "");
@@ -687,15 +687,16 @@ export function adminPostNewHtml(
     </div>
   </form>
 
-  ${editorClientScript({ slugInput: true })}
+  ${editorClientScript({ slugInput: true, nonce: options?.nonce })}
 </main>`;
 }
 
 function editorClientScript(
-  options: { slugInput?: boolean } = {},
+  options: { slugInput?: boolean; nonce?: string } = {},
 ): string {
   const slugInput = options.slugInput === true;
-  return `<script>
+  const nonceAttr = options.nonce ? ` nonce="${escapeHtml(options.nonce)}"` : "";
+  return `<script${nonceAttr}>
     (function () {
       var ta = document.getElementById("markdown");
       var form = document.getElementById("editor-form");

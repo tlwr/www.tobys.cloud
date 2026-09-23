@@ -90,7 +90,13 @@ export function layout(
 </html>`;
 }
 
-export function loginHtml(opts: { next?: string; client?: string; redirect?: string; error?: string }): string {
+export function loginHtml(opts: {
+  next?: string;
+  client?: string;
+  redirect?: string;
+  error?: string;
+  nonce?: string;
+}): string {
   const err = opts.error ? `<p class="err">${escapeHtml(opts.error)}</p>` : "";
   const next = escapeHtml(opts.next ?? "/me");
   const client = escapeHtml(opts.client ?? "");
@@ -117,7 +123,7 @@ export function loginHtml(opts: { next?: string; client?: string; redirect?: str
     data-next="${next}" data-client="${client}" data-redirect="${redirect}">
     Log in with a passkey
   </button>
-  <script>
+  <script${opts.nonce ? ` nonce="${escapeHtml(opts.nonce)}"` : ""}>
   (function () {
     var btn = document.getElementById("passkey-login");
     var err = document.getElementById("passkey-error");
@@ -248,6 +254,7 @@ export function meHtml(opts: {
   email: string;
   permissions: string[];
   hasPasskey?: boolean;
+  nonce?: string;
 }): string {
   const perms =
     opts.permissions.length > 0
@@ -269,7 +276,7 @@ export function meHtml(opts: {
   <h3>Passkey</h3>
   <p id="passkey-status" hidden></p>
   ${passkeyBlock}
-  <script>
+  <script${opts.nonce ? ` nonce="${escapeHtml(opts.nonce)}"` : ""}>
   (function () {
     var btn = document.getElementById("passkey-register");
     var status = document.getElementById("passkey-status");

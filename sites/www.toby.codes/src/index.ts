@@ -15,6 +15,7 @@ import {
   purgePublic,
   setPublicCache,
 } from "./cache";
+import { applySecurityHeaders } from "./headers";
 import type { Env } from "./env";
 import { isValidTag, parsePost } from "./frontmatter";
 import {
@@ -50,7 +51,7 @@ import {
 
 export type { Env };
 
-const app = new Hono<{ Bindings: Env }>();
+const app = new Hono<{ Bindings: Env; Variables: { cspNonce: string } }>();
 
 // Localhost CSRF origins are accepted only when this Worker is loopback.
 app.use(
@@ -61,6 +62,12 @@ app.use(
   }),
 );
 app.use("*", defaultPrivateCache);
+app.use("*", async (c, next) => {
+  const nonce = crypto.randomUUID().replace(/-/g, "");
+  c.set("cspNonce", nonce);
+  await next();
+  applySecurityHeaders(c, nonce);
+});
 
 app.get("/health", (c) => c.text("healthy"));
 
@@ -209,7 +216,7 @@ app.post("/admin/posts/preview", requireAuth, async (c) => {
 // Static paths before :slug so "new" is not captured as a slug.
 app.get("/admin/posts/new", requireAuth, async (c) => {
   return c.html(
-    layout(adminPostNewHtml(NEW_POST_TEMPLATE), {
+    layout(adminPostNewHtml(NEW_POST_TEMPLATE, { nonce: c.get("cspNonce") }), {
       robots: "noindex",
       isLoggedIn: true,
       wide: true,
@@ -266,6 +273,7 @@ app.get("/admin/posts/:slug/edit", requireAuth, async (c) => {
     layout(
       adminPostEditHtml(slug, post.raw, {
         canDelete: !post.frontmatter.visible,
+        nonce: c.get("cspNonce"),
       }),
       {
         robots: "noindex",
@@ -336,15 +344,39 @@ app.post("/admin/posts/:slug/delete", requireAuth, async (c) => {
   return c.redirect("/admin/posts");
 });
 
+/** Drop validators so a cached error that shares the file ETag cannot stick. */
+function replaceAsset(asset: Response): Response {
+  if (asset.status === 304 || asset.status === 204) {
+    return new Response(null, {
+      status: asset.status,
+      headers: { "cache-control": "no-store" },
+    });
+  }
+  const headers = new Headers(asset.headers);
+  headers.delete("etag");
+  headers.delete("last-modified");
+  headers.set("cache-control", "public, max-age=3600");
+  return new Response(asset.body, {
+    status: asset.status,
+    statusText: asset.statusText,
+    headers,
+  });
+}
+
 app.notFound(async (c) => {
-  const asset = await c.env.ASSETS.fetch(c.req.raw);
+  // Fetch by URL only. Cloning the incoming request keeps If-None-Match in
+  // workerd, so a cached error revalidates with 304 and is served forever.
+  const assetUrl = new URL(c.req.url);
+  assetUrl.search = "";
+  const asset = await c.env.ASSETS.fetch(assetUrl.toString());
   if (asset.status !== 404) {
-    return asset;
+    return replaceAsset(asset);
   }
   return c.html(layout("<h2>404 NOT FOUND</h2>"), 404);
 });
 
 app.onError(async (_err, c) => {
+  c.header("Cache-Control", "no-store");
   return c.html(layout("<h2>500 SERVER ERROR</h2>"), 500);
 });
 

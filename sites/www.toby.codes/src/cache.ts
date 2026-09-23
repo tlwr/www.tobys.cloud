@@ -30,9 +30,20 @@ export function setPublicCache(
 /** Private/admin/session responses must not be stored when default-entrypoint cache is on. */
 export async function defaultPrivateCache(c: Context, next: () => Promise<void>) {
   await next();
-  if (!c.res.headers.has("Cache-Control")) {
-    c.res.headers.set("Cache-Control", PRIVATE_NO_STORE);
+  if (
+    c.res.headers.has("Cache-Control") ||
+    c.res.status === 204 ||
+    c.res.status === 304
+  ) {
+    return;
   }
+  const headers = new Headers(c.res.headers);
+  headers.set("Cache-Control", PRIVATE_NO_STORE);
+  c.res = new Response(c.res.body, {
+    status: c.res.status,
+    statusText: c.res.statusText,
+    headers,
+  });
 }
 
 export async function purgePublic(c: Context, tags: string[]): Promise<void> {

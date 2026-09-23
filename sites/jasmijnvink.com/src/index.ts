@@ -18,6 +18,7 @@ import {
   setPublicCache,
   uniqueTags,
 } from "./cache";
+import { applySecurityHeaders } from "./headers";
 import type { Env } from "./env";
 import {
   flashHtml,
@@ -56,7 +57,7 @@ import {
 
 export type { Env };
 
-const app = new Hono<{ Bindings: Env }>();
+const app = new Hono<{ Bindings: Env; Variables: { cspNonce: string } }>();
 
 app.use("*", async (c, next) => {
   const url = new URL(c.req.url);
@@ -76,8 +77,17 @@ app.use(
   }),
 );
 app.use("*", defaultPrivateCache);
+app.use("*", async (c, next) => {
+  const nonce = crypto.randomUUID().replace(/-/g, "");
+  c.set("cspNonce", nonce);
+  await next();
+  applySecurityHeaders(c, nonce);
+});
 
-type AppContext = Context<{ Bindings: Env }>;
+type AppContext = Context<{
+  Bindings: Env;
+  Variables: { cspNonce: string };
+}>;
 
 function setFlash(
   c: AppContext,
@@ -169,7 +179,15 @@ app.get("/session-page", async (c) => {
   if (!(await getIsLoggedIn(c))) {
     return c.html("");
   }
-  const path = c.req.query("path") ?? "";
+  const headerUrl = c.req.header("HX-Current-URL");
+  let path = c.req.query("path") ?? "";
+  if (!path && headerUrl) {
+    try {
+      path = new URL(headerUrl).pathname;
+    } catch {
+      path = "";
+    }
+  }
   const pictureMatch = /^\/pictures\/(\d+)$/.exec(path);
   if (pictureMatch) {
     const picture = await getPicture(c.env.PICTURES, pictureMatch[1]);
@@ -249,9 +267,11 @@ app.get("/tags/:tag", async (c) => {
       notfound: true,
     });
   }
+  const known = await listPictures(c.env.PICTURES, { includeHidden: true });
+  const byId = new Map(known.map((p) => [p.id, p]));
   const pictures: Picture[] = [];
   for (const id of ids) {
-    const p = await getPicture(c.env.PICTURES, id);
+    const p = byId.get(id);
     if (!p || !p.visible) {
       continue;
     }
@@ -454,15 +474,39 @@ app.post("/pictures/:id/delete", requireAuth, async (c) => {
   return c.redirect("/pictures");
 });
 
+/** Drop validators so a cached error that shares the file ETag cannot stick. */
+function replaceAsset(asset: Response): Response {
+  if (asset.status === 304 || asset.status === 204) {
+    return new Response(null, {
+      status: asset.status,
+      headers: { "cache-control": "no-store" },
+    });
+  }
+  const headers = new Headers(asset.headers);
+  headers.delete("etag");
+  headers.delete("last-modified");
+  headers.set("cache-control", "public, max-age=3600");
+  return new Response(asset.body, {
+    status: asset.status,
+    statusText: asset.statusText,
+    headers,
+  });
+}
+
 app.notFound(async (c) => {
-  const asset = await c.env.ASSETS.fetch(c.req.raw);
+  // Fetch by URL only. Cloning the incoming request keeps If-None-Match in
+  // workerd, so a cached 500 revalidates with 304 and is served forever.
+  const assetUrl = new URL(c.req.url);
+  assetUrl.search = "";
+  const asset = await c.env.ASSETS.fetch(assetUrl.toString());
   if (asset.status !== 404) {
-    return asset;
+    return replaceAsset(asset);
   }
   return c.html(layout(notFoundHtml()), 404);
 });
 
 app.onError(async (_err, c) => {
+  c.header("Cache-Control", "no-store");
   return c.html(layout("<h1>500 SERVER ERROR</h1>"), 500);
 });
 

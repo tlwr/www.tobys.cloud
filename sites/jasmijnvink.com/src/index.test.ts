@@ -162,6 +162,67 @@ describe("jasmijnvink.com", () => {
     });
   });
 
+  it("serves styles.css from assets even when those headers are immutable", async () => {
+    const css = "body{color:red}";
+    const asset = new Response(css, {
+      status: 200,
+      headers: {
+        "content-type": "text/css; charset=utf-8",
+        "cache-control": "public, max-age=0, must-revalidate",
+        etag: '"css-etag"',
+      },
+    });
+    Object.defineProperty(asset.headers, "set", {
+      value() {
+        throw new TypeError("Can't modify immutable headers");
+      },
+    });
+    let sawConditional = false;
+    const res = await app.request(
+      "/styles.css",
+      { headers: { "If-None-Match": '"stale-error"' } },
+      {
+        ...env(users, pictures, tags, images),
+        ASSETS: {
+          fetch: async (request: Request) => {
+            const forwarded = new Request(request);
+            sawConditional =
+              forwarded.headers.has("If-None-Match") ||
+              forwarded.headers.has("If-Modified-Since");
+            return asset;
+          },
+        } as unknown as Fetcher,
+      },
+    );
+    expect(sawConditional).toBe(false);
+    expect(res.status).toBe(200);
+    expect(res.headers.get("content-type")).toContain("text/css");
+    expect(res.headers.get("cache-control")).toContain("max-age=3600");
+    expect(res.headers.get("etag")).toBeNull();
+    expect(res.headers.get("content-security-policy")).toBeNull();
+    expect(await res.text()).toBe(css);
+  });
+
+  it("passes an asset 304 through instead of turning it into a 500", async () => {
+    const asset = new Response(null, {
+      status: 304,
+      headers: {
+        "cache-control": "public, max-age=0, must-revalidate",
+        etag: '"abc"',
+      },
+    });
+    const res = await app.request(
+      "/styles.css",
+      {},
+      {
+        ...env(users, pictures, tags, images),
+        ASSETS: { fetch: async () => asset } as unknown as Fetcher,
+      },
+    );
+    expect(res.status).toBe(304);
+    expect(await res.text()).toBe("");
+  });
+
   it("homepage shows latest visible pictures and no login link", async () => {
     const res = await app.request("/", {}, env(users, pictures, tags, images));
     expect(res.status).toBe(200);
@@ -178,6 +239,9 @@ describe("jasmijnvink.com", () => {
     expect(html).not.toContain("uitloggen");
     expect(res.headers.get("cache-control")).toContain("public");
     expect(res.headers.get("set-cookie")).toBeNull();
+    expect(res.headers.get("content-security-policy")).toContain("frame-ancestors 'none'");
+    expect(res.headers.get("x-frame-options")).toBe("DENY");
+    expect(html).not.toContain("hx-vals");
   });
 
   it("pictures index hides drafts for anonymous users", async () => {
@@ -280,8 +344,14 @@ describe("jasmijnvink.com", () => {
     expect(navHtml).toContain("site-nav-admin");
 
     const actions = await app.request(
-      "/session-page?path=/pictures/1",
-      { headers: { Cookie: cookie, Origin: "http://localhost" } },
+      "/session-page",
+      {
+        headers: {
+          Cookie: cookie,
+          Origin: "http://localhost",
+          "HX-Current-URL": "http://localhost/pictures/1",
+        },
+      },
       e,
     );
     expect(await actions.text()).toContain("Bewerken");

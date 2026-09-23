@@ -72,7 +72,7 @@ export function layout(
     : `<div id="session-flash"></div>`;
   const pageSlot = adminChrome
     ? ""
-    : `<div id="session-page" hx-get="/session-page" hx-trigger="load" hx-vals="js:{path: location.pathname}" hx-swap="innerHTML"></div>`;
+    : `<div id="session-page" hx-get="/session-page" hx-trigger="load" hx-swap="innerHTML"></div>`;
   const htmxScript = adminChrome ? "" : HTMX_SCRIPT;
 
   return `<!DOCTYPE html>

@@ -10,6 +10,9 @@ export type PostMeta = {
 
 const DATE_RX = /^(2[0-9]{3}-[0-1][0-9])-(.*)$/;
 export const SLUG_RX = /^[-_a-zA-Z0-9]+$/;
+const INDEX_KEY = "posts:index";
+
+type PostIndex = { posts: { slug: string; visible: boolean }[] };
 
 /** Default body for new posts (draft until frontmatter is changed). */
 export const NEW_POST_TEMPLATE = `---
@@ -114,6 +117,67 @@ export async function getPostBody(
   return post?.body ?? null;
 }
 
+async function readIndex(postsKv: KVNamespace): Promise<PostMeta[] | null> {
+  const raw = await postsKv.get(INDEX_KEY);
+  if (raw === null) {
+    return null;
+  }
+  try {
+    const parsed = JSON.parse(raw) as PostIndex;
+    if (!parsed || !Array.isArray(parsed.posts)) {
+      return null;
+    }
+    return parsed.posts
+      .filter((p) => p && SLUG_RX.test(p.slug))
+      .map((p) => metaFromSlug(p.slug, p.visible !== false));
+  } catch {
+    return null;
+  }
+}
+
+async function writeIndex(postsKv: KVNamespace, metas: PostMeta[]): Promise<void> {
+  const posts = metas.map((m) => ({ slug: m.slug, visible: m.visible }));
+  await postsKv.put(INDEX_KEY, JSON.stringify({ posts }));
+}
+
+/** One-time scan when `posts:index` is missing. Later lists are a single read. */
+async function rebuildIndex(postsKv: KVNamespace): Promise<PostMeta[]> {
+  const slugs = await listAllKvKeys(postsKv);
+  const metas: PostMeta[] = [];
+  for (const slug of slugs) {
+    const raw = await postsKv.get(slug);
+    if (raw === null) {
+      continue;
+    }
+    const { frontmatter } = parsePost(raw);
+    metas.push(metaFromSlug(slug, frontmatter.visible));
+  }
+  await writeIndex(postsKv, metas);
+  return metas;
+}
+
+async function upsertIndex(
+  postsKv: KVNamespace,
+  slug: string,
+  visible: boolean,
+): Promise<void> {
+  const current = (await readIndex(postsKv)) ?? (await rebuildIndex(postsKv));
+  const next = current.filter((m) => m.slug !== slug);
+  next.push(metaFromSlug(slug, visible));
+  await writeIndex(postsKv, next);
+}
+
+async function removeFromIndex(postsKv: KVNamespace, slug: string): Promise<void> {
+  const current = await readIndex(postsKv);
+  if (!current) {
+    return;
+  }
+  await writeIndex(
+    postsKv,
+    current.filter((m) => m.slug !== slug),
+  );
+}
+
 /** Write full raw markdown (including frontmatter) for an existing or new slug. */
 export async function putPost(
   postsKv: KVNamespace,
@@ -124,6 +188,8 @@ export async function putPost(
     throw new Error("invalid slug");
   }
   await postsKv.put(slug, raw);
+  const { frontmatter } = parsePost(raw);
+  await upsertIndex(postsKv, slug, frontmatter.visible);
 }
 
 export type DeletePostResult =
@@ -148,33 +214,34 @@ export async function deletePost(
     return { ok: false, reason: "visible" };
   }
   await postsKv.delete(slug);
+  await removeFromIndex(postsKv, slug);
   return { ok: true };
 }
 
 /**
  * List posts. When `includeHidden` is false (public), drafts are omitted.
- * Requires reading each document to resolve frontmatter `visible`.
+ * Uses `posts:index` (one read). Missing index is rebuilt once from the documents.
+ * An empty KV with no index falls back to the bundled generate-posts snapshot.
  */
 export async function listPosts(
   postsKv: KVNamespace,
   options: { includeHidden?: boolean } = {},
 ): Promise<{ ongoing: PostMeta[]; dated: PostMeta[] }> {
   const includeHidden = options.includeHidden === true;
-  const kvSlugs = await listAllKvKeys(postsKv);
-  const slugs =
-    kvSlugs.length > 0 ? kvSlugs : Object.keys(BUNDLED_POSTS);
-
-  const metas: PostMeta[] = [];
-  for (const slug of slugs) {
-    const raw = await loadRaw(postsKv, slug);
-    if (raw === null) {
-      continue;
+  let metas = await readIndex(postsKv);
+  if (!metas) {
+    const kvSlugs = await listAllKvKeys(postsKv);
+    if (kvSlugs.length === 0) {
+      metas = Object.keys(BUNDLED_POSTS).map((slug) => {
+        const { frontmatter } = parsePost(BUNDLED_POSTS[slug]);
+        return metaFromSlug(slug, frontmatter.visible);
+      });
+    } else {
+      metas = await rebuildIndex(postsKv);
     }
-    const { frontmatter } = parsePost(raw);
-    if (!includeHidden && !frontmatter.visible) {
-      continue;
-    }
-    metas.push(metaFromSlug(slug, frontmatter.visible));
+  }
+  if (!includeHidden) {
+    metas = metas.filter((m) => m.visible);
   }
 
   return partition(metas);
