@@ -27,6 +27,8 @@ job "acceptance-tests" {
         work_dir   = "/acceptance"
         command    = "bundle"
         args       = ["exec", "rspec", "--format=documentation"]
+
+        network_mode = "host"
       }
 
       # Optional. Spec helper posts a Discord summary ~1/48 runs when set.
