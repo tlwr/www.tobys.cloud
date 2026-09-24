@@ -354,8 +354,9 @@ describe("jasmijnvink.com", () => {
     const helpHtml = await help.text();
     expect(helpHtml).toContain("https://jasmijnvink.com/mcp");
     expect(helpHtml).toContain("AI-assistent");
-    expect(helpHtml).toContain("https://grok.com/connectors-oauth-exchange-code/");
-    expect(helpHtml).toContain("oc_jasmijnvink");
+    expect(helpHtml).toContain("Kies toestaan");
+    expect(helpHtml).not.toContain("Als de assistent om OAuth-gegevens vraagt");
+    expect(helpHtml).not.toContain("oc_jasmijnvink");
     expect(help.headers.get("cache-control")).toContain("no-store");
 
     const actions = await app.request(
