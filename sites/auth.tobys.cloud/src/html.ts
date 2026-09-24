@@ -22,6 +22,7 @@ export function layout(
 ): string {
   const adminNav = opts.isAdmin
     ? `<a href="/">Users</a>
+        <a href="/oauth/apps">Apps</a>
         <a href="/audit">Audit</a>
         <a href="/users/new">New user</a>`
     : "";

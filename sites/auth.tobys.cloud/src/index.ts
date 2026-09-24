@@ -27,6 +27,17 @@ import {
 import { auditMeta, listAudit, writeAudit } from "./audit";
 import { securityHeaders } from "./headers";
 import {
+  oauthAppsDelete,
+  oauthAppsGet,
+  oauthAppsPost,
+  oauthAuthorizeGet,
+  oauthAuthorizePost,
+  oauthDiscovery,
+  oauthJwks,
+  oauthToken,
+  oauthUserinfo,
+} from "./oauth";
+import {
   loginLimited,
   noteLoginFailure,
   noteLoginSuccess,
@@ -75,13 +86,16 @@ type AuthContext = Context<{
 
 const app = new Hono<{ Bindings: Bindings; Variables: { cspNonce: string } }>();
 
-app.use(
-  "*",
-  csrf({
+app.use("*", async (c, next) => {
+  // Token requests come from the third-party server, not this site's origin.
+  if (new URL(c.req.url).pathname === "/oauth/token") {
+    return next();
+  }
+  return csrf({
     origin: (origin, c) =>
       originAllowed("auth", origin, new URL(c.req.url).origin),
-  }),
-);
+  })(c, next);
+});
 app.use("*", async (c, next) => {
   const nonce = crypto.randomUUID().replace(/-/g, "");
   c.set("cspNonce", nonce);
@@ -214,6 +228,7 @@ async function continueAfterAuth(
     client: string;
     redirect: string;
     json?: boolean;
+    passkey?: boolean;
   },
 ): Promise<Response> {
   await setSessionCookie(c, {
@@ -223,6 +238,7 @@ async function continueAfterAuth(
     typ: "session",
     iat: 0,
     exp: 0,
+    ...(opts.passkey ? { amr: ["passkey"] } : {}),
   });
   let dest = authLanding(opts.next);
   if (isAuthClientId(opts.client) && opts.client !== "auth" && opts.redirect) {
@@ -270,6 +286,16 @@ function cspNonce(c: AuthContext): string {
 }
 
 app.get("/health", (c) => c.text("healthy"));
+
+app.get("/.well-known/openid-configuration", oauthDiscovery);
+app.get("/oauth/jwks", oauthJwks);
+app.get("/oauth/authorize", oauthAuthorizeGet);
+app.post("/oauth/authorize", oauthAuthorizePost);
+app.post("/oauth/token", oauthToken);
+app.get("/oauth/userinfo", oauthUserinfo);
+app.get("/oauth/apps", requireLocalAuth(), oauthAppsGet);
+app.post("/oauth/apps", requireLocalAuth(), oauthAppsPost);
+app.post("/oauth/apps/:id/delete", requireLocalAuth(), oauthAppsDelete);
 
 app.get("/", requireLocalAuth(), async (c) => {
   const users = await listUsers(c.env.USERS);
@@ -524,7 +550,13 @@ app.post("/login/passkey", async (c) => {
   const next = isApp
     ? appLanding(asString(body.next))
     : authLanding(asString(body.next));
-  return continueAfterAuth(c, user, { next, client, redirect, json: true });
+  return continueAfterAuth(c, user, {
+    next,
+    client,
+    redirect,
+    json: true,
+    passkey: true,
+  });
 });
 
 app.post("/passkeys/register/options", async (c) => {

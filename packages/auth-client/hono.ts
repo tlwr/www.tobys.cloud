@@ -144,6 +144,7 @@ export async function setSessionCookie(
     payload.perms,
     "session",
     SESSION_TTL_SEC,
+    payload.amr,
   );
   const jwt = await signAuthToken(secret, session);
   writeCookie(c, SESSION_COOKIE, jwt, SESSION_TTL_SEC);

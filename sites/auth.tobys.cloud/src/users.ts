@@ -173,7 +173,9 @@ export async function listUsers(kv: KVNamespace): Promise<User[]> {
     for (const key of page.keys) {
       if (
         key.name.startsWith(PASSKEY_KEY_PREFIX) ||
-        key.name.startsWith(RATELIMIT_PREFIX)
+        key.name.startsWith(RATELIMIT_PREFIX) ||
+        key.name.startsWith("oauth:") ||
+        key.name.startsWith("oidc:")
       ) {
         continue;
       }

@@ -7,6 +7,8 @@ export type AuthPayload = {
   typ: TokenTyp;
   iat: number;
   exp: number;
+  /** How the auth.tobys.cloud session was established. */
+  amr?: string[];
 };
 
 const enc = new TextEncoder();
@@ -112,9 +114,18 @@ export function issuePayload(
   perms: string[],
   typ: TokenTyp,
   ttlSec: number,
+  amr?: string[],
 ): AuthPayload {
   const iat = Math.floor(Date.now() / 1000);
-  return { sub: email, aud, perms, typ, iat, exp: iat + ttlSec };
+  return {
+    sub: email,
+    aud,
+    perms,
+    typ,
+    iat,
+    exp: iat + ttlSec,
+    ...(amr && amr.length > 0 ? { amr } : {}),
+  };
 }
 
 export const TICKET_TTL_SEC = 120;

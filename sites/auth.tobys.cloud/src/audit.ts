@@ -9,7 +9,11 @@ export type AuditType =
   | "user.password"
   | "user.delete"
   | "passkey.register"
-  | "passkey.delete";
+  | "passkey.delete"
+  | "oauth.client.create"
+  | "oauth.client.delete"
+  | "oauth.authorize"
+  | "oauth.token";
 
 export type AuditEvent = {
   id: string;
