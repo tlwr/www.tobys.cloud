@@ -20,11 +20,13 @@ import {
 } from "./cache";
 import { applySecurityHeaders } from "./headers";
 import type { Env } from "./env";
+import { handleMcp, protectedResourceMetadata } from "./mcp";
 import {
   flashHtml,
   homeHtml,
   layout,
   notFoundHtml,
+  mcpHelpHtml,
   pictureEditHtml,
   pictureEditLinkHtml,
   pictureNewHtml,
@@ -163,6 +165,21 @@ function publicPage(
 }
 
 app.get("/health", (c) => c.text("healthy"));
+
+app.get("/.well-known/oauth-protected-resource", (c) =>
+  c.json(protectedResourceMetadata(new URL(c.req.url).origin)),
+);
+app.get("/.well-known/oauth-protected-resource/mcp", (c) =>
+  c.json(protectedResourceMetadata(new URL(c.req.url).origin)),
+);
+app.post("/mcp", handleMcp);
+
+app.get("/beheer/chatgpt", (c) => c.redirect("/beheer/mcp", 301));
+
+app.get("/beheer/mcp", requireAuth, async (c) => {
+  c.header("Cache-Control", PRIVATE_NO_STORE);
+  return page(c, mcpHelpHtml(), { title: "MCP" });
+});
 
 app.get("/session-nav", async (c) => {
   c.header("Cache-Control", PRIVATE_NO_STORE);

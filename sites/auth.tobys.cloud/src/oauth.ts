@@ -9,12 +9,26 @@ const CODE_PREFIX = "oauth:code:";
 const KEY_NAME = "oidc:signing-key";
 const CODE_TTL_SEC = 120;
 const TOKEN_TTL_SEC = 3600;
+/** Audience ChatGPT must request, and the only resource this issuer will mint. */
+export const JVNL_MCP_RESOURCE = "https://jasmijnvink.com/mcp";
+const PUBLIC_CLIENT_HOSTS = new Set([
+  "grok.com",
+  "www.grok.com",
+  "x.ai",
+  "chatgpt.com",
+  "openai.com",
+  "platform.openai.com",
+  "claude.ai",
+  "claude.com",
+]);
 
 export type OAuthClient = {
   id: string;
   name: string;
   redirectUris: string[];
   secretHash: string;
+  /** PKCE only. Grok and similar connectors send no client secret. */
+  publicClient?: boolean;
   createdAt: string;
 };
 
@@ -25,6 +39,7 @@ type AuthCode = {
   emailVerified: boolean;
   nonce: string;
   codeChallenge: string;
+  resource: string;
   exp: number;
 };
 
@@ -140,6 +155,107 @@ function parseRedirectList(raw: string): string[] | null {
   return [...new Set(uris)];
 }
 
+type ResolvedClient = {
+  id: string;
+  name: string;
+  redirectUris: string[];
+  publicClient: boolean;
+};
+
+function publicClientRedirect(uri: string): boolean {
+  try {
+    const url = new URL(uri);
+    return (
+      url.protocol === "https:" &&
+      !url.username &&
+      !url.password &&
+      !url.hash &&
+      PUBLIC_CLIENT_HOSTS.has(url.hostname)
+    );
+  } catch {
+    return false;
+  }
+}
+
+/** ChatGPT's client id is an https URL on chatgpt.com. PKCE only, no stored secret. */
+async function resolveCimd(clientId: string): Promise<ResolvedClient | null> {
+  let url: URL;
+  try {
+    url = new URL(clientId);
+  } catch {
+    return null;
+  }
+  if (
+    url.protocol !== "https:" ||
+    !PUBLIC_CLIENT_HOSTS.has(url.hostname) ||
+    url.username ||
+    url.password
+  ) {
+    return null;
+  }
+  let response: Response;
+  try {
+    response = await fetch(url.toString(), { redirect: "manual" });
+  } catch {
+    return null;
+  }
+  if (!response.ok) {
+    return null;
+  }
+  let doc: {
+    client_id?: unknown;
+    client_name?: unknown;
+    redirect_uris?: unknown;
+    token_endpoint_auth_methods_supported?: unknown;
+    token_endpoint_auth_method?: unknown;
+  };
+  try {
+    doc = (await response.json()) as typeof doc;
+  } catch {
+    return null;
+  }
+  if (doc.client_id !== clientId || !Array.isArray(doc.redirect_uris)) {
+    return null;
+  }
+  const methods = Array.isArray(doc.token_endpoint_auth_methods_supported)
+    ? doc.token_endpoint_auth_methods_supported
+    : [];
+  if (!methods.includes("none") && doc.token_endpoint_auth_method !== "none") {
+    return null;
+  }
+  const redirectUris = doc.redirect_uris.filter(
+    (uri): uri is string => typeof uri === "string" && publicClientRedirect(uri),
+  );
+  if (redirectUris.length === 0) {
+    return null;
+  }
+  return {
+    id: clientId,
+    name: typeof doc.client_name === "string" ? doc.client_name : "ChatGPT",
+    redirectUris,
+    publicClient: true,
+  };
+}
+
+async function resolveClient(
+  kv: KVNamespace,
+  id: string,
+): Promise<ResolvedClient | null> {
+  if (id.startsWith("https://")) {
+    return resolveCimd(id);
+  }
+  const client = await readClient(kv, id);
+  if (!client) {
+    return null;
+  }
+  return {
+    id: client.id,
+    name: client.name,
+    redirectUris: client.redirectUris,
+    publicClient: client.publicClient === true,
+  };
+}
+
 async function readClient(kv: KVNamespace, id: string): Promise<OAuthClient | null> {
   if (!id || id.length > 80) {
     return null;
@@ -150,7 +266,10 @@ async function readClient(kv: KVNamespace, id: string): Promise<OAuthClient | nu
   }
   try {
     const parsed = JSON.parse(raw) as OAuthClient;
-    if (!parsed?.id || !parsed.secretHash || !Array.isArray(parsed.redirectUris)) {
+    if (!parsed?.id || !Array.isArray(parsed.redirectUris)) {
+      return null;
+    }
+    if (!parsed.publicClient && !parsed.secretHash) {
       return null;
     }
     return parsed;
@@ -181,10 +300,14 @@ export async function listOAuthClients(kv: KVNamespace): Promise<OAuthClient[]> 
   return out;
 }
 
+const CLIENT_ID_RX = /^oc_[a-z0-9][a-z0-9_-]{0,62}$/;
+
 export async function createOAuthClient(
   kv: KVNamespace,
   name: string,
   redirectRaw: string,
+  publicClient = false,
+  requestedId = "",
 ): Promise<{ client: OAuthClient; secret: string } | { error: string }> {
   const trimmed = name.trim();
   if (trimmed.length < 1 || trimmed.length > 80) {
@@ -196,12 +319,24 @@ export async function createOAuthClient(
       error: "Add 1–10 redirect URIs. Use https, or http on localhost.",
     };
   }
-  const secret = randomId(32);
+  const wanted = requestedId.trim();
+  let id: string;
+  if (!wanted) {
+    id = `oc_${randomId(12)}`;
+  } else if (!CLIENT_ID_RX.test(wanted)) {
+    return { error: "Client ID must look like oc_jasmijnvink." };
+  } else if (await readClient(kv, wanted)) {
+    return { error: "That client ID is already in use." };
+  } else {
+    id = wanted;
+  }
+  const secret = publicClient ? "" : randomId(32);
   const client: OAuthClient = {
-    id: `oc_${randomId(12)}`,
+    id,
     name: trimmed,
     redirectUris,
-    secretHash: await sha256Hex(secret),
+    secretHash: secret ? await sha256Hex(secret) : "",
+    publicClient,
     createdAt: new Date().toISOString(),
   };
   await kv.put(CLIENT_PREFIX + client.id, JSON.stringify(client));
@@ -308,6 +443,7 @@ type AuthorizeQuery = {
   scope: string;
   codeChallenge: string;
   codeChallengeMethod: string;
+  resource: string;
 };
 
 function readAuthorize(source: {
@@ -321,6 +457,7 @@ function readAuthorize(source: {
     scope: source.get("scope") ?? "openid",
     codeChallenge: source.get("code_challenge") ?? "",
     codeChallengeMethod: source.get("code_challenge_method") ?? "",
+    resource: source.get("resource") ?? "",
   };
 }
 
@@ -352,11 +489,18 @@ async function adminPage(c: Context, body: string, title: string): Promise<Respo
   );
 }
 
-function appsHtml(clients: OAuthClient[], issuer: string, secret?: { id: string; secret: string }): string {
-  const created = secret
-    ? `<p class="ok">Copy the client secret now. It will not be shown again.</p>
-       <p><strong>Client ID</strong> <code>${escapeHtml(secret.id)}</code></p>
-       <p><strong>Client secret</strong> <code>${escapeHtml(secret.secret)}</code></p>`
+function appsHtml(
+  clients: OAuthClient[],
+  issuer: string,
+  createdApp?: { id: string; secret: string; publicClient?: boolean },
+): string {
+  const created = createdApp
+    ? createdApp.publicClient
+      ? `<p class="ok">This app uses PKCE only. Leave the client secret blank in the connector.</p>
+       <p><strong>Client ID</strong> <code>${escapeHtml(createdApp.id)}</code></p>`
+      : `<p class="ok">Copy the client secret now. It will not be shown again.</p>
+       <p><strong>Client ID</strong> <code>${escapeHtml(createdApp.id)}</code></p>
+       <p><strong>Client secret</strong> <code>${escapeHtml(createdApp.secret)}</code></p>`
     : "";
   const rows = clients
     .map(
@@ -373,7 +517,7 @@ function appsHtml(clients: OAuthClient[], issuer: string, secret?: { id: string;
     )
     .join("");
   return `<h2>OAuth apps</h2>
-  <p class="muted">Third parties use this issuer for OpenID Connect. Authorization code flow. Every client must send its secret and a PKCE S256 challenge.</p>
+  <p class="muted">Third parties use this issuer for OpenID Connect. Authorization code plus PKCE S256. A PKCE-only app has no client secret. Other apps must send the secret as well.</p>
   <p><strong>Issuer</strong> <code>${escapeHtml(issuer)}</code></p>
   <p><strong>Discovery</strong> <code>${escapeHtml(issuer)}/.well-known/openid-configuration</code></p>
   ${created}
@@ -388,14 +532,25 @@ function appsHtml(clients: OAuthClient[], issuer: string, secret?: { id: string;
       <input id="name" name="name" type="text" required>
     </div>
     <div class="row">
+      <label for="client_id">Client ID</label>
+      <input id="client_id" name="client_id" type="text" placeholder="oc_jasmijnvink">
+    </div>
+    <div class="row">
       <label for="redirect_uris">Redirect URIs</label>
       <input id="redirect_uris" name="redirect_uris" type="text" required placeholder="https://example.com/callback">
+    </div>
+    <div class="row">
+      <label><input type="checkbox" name="public" value="1"> PKCE only, no client secret</label>
     </div>
     <button type="submit">Create app</button>
   </form>`;
 }
 
-function consentHtml(client: OAuthClient, query: AuthorizeQuery, email: string): string {
+function consentHtml(
+  client: { name: string },
+  query: AuthorizeQuery,
+  email: string,
+): string {
   const hidden = (
     [
       ["client_id", query.clientId],
@@ -405,6 +560,7 @@ function consentHtml(client: OAuthClient, query: AuthorizeQuery, email: string):
       ["scope", query.scope],
       ["code_challenge", query.codeChallenge],
       ["code_challenge_method", query.codeChallengeMethod],
+      ["resource", query.resource],
       ["response_type", "code"],
     ] as const
   )
@@ -433,13 +589,17 @@ export async function oauthDiscovery(c: Context): Promise<Response> {
     token_endpoint: `${issuer}/oauth/token`,
     userinfo_endpoint: `${issuer}/oauth/userinfo`,
     jwks_uri: `${issuer}/oauth/jwks`,
+    authorization_response_iss_parameter_supported: true,
+    client_id_metadata_document_supported: true,
+    registration_endpoint: `${issuer}/oauth/register`,
     response_types_supported: ["code"],
     subject_types_supported: ["public"],
     id_token_signing_alg_values_supported: ["RS256"],
-    scopes_supported: ["openid", "email", "profile"],
+    scopes_supported: ["openid", "email", "profile", "jvnl"],
     token_endpoint_auth_methods_supported: [
       "client_secret_basic",
       "client_secret_post",
+      "none",
     ],
     code_challenge_methods_supported: ["S256"],
     claims_supported: ["sub", "email", "email_verified"],
@@ -456,6 +616,71 @@ export async function oauthJwks(c: Context): Promise<Response> {
   return c.json({ keys: [{ kty, n, e, alg, use, kid }] });
 }
 
+export async function oauthRegister(c: Context): Promise<Response> {
+  const blocked = foreignHost(c);
+  if (blocked) {
+    return blocked;
+  }
+  let body: {
+    redirect_uris?: unknown;
+    client_name?: unknown;
+    token_endpoint_auth_method?: unknown;
+  };
+  try {
+    body = (await c.req.json()) as typeof body;
+  } catch {
+    return c.json({ error: "invalid_client_metadata" }, 400);
+  }
+  const redirects = Array.isArray(body.redirect_uris)
+    ? body.redirect_uris.filter((uri): uri is string => typeof uri === "string")
+    : [];
+  if (
+    redirects.length === 0 ||
+    redirects.length > 10 ||
+    redirects.some((uri) => !publicClientRedirect(uri))
+  ) {
+    return c.json({ error: "invalid_redirect_uri" }, 400);
+  }
+  const method =
+    typeof body.token_endpoint_auth_method === "string"
+      ? body.token_endpoint_auth_method
+      : "none";
+  if (method !== "none") {
+    return c.json(
+      {
+        error: "invalid_client_metadata",
+        error_description: "Only PKCE (token_endpoint_auth_method none) is accepted.",
+      },
+      400,
+    );
+  }
+  const name =
+    typeof body.client_name === "string" && body.client_name.trim()
+      ? body.client_name.trim().slice(0, 80)
+      : "MCP client";
+  const created = await createOAuthClient(
+    c.env.USERS,
+    name,
+    redirects.join(" "),
+    true,
+  );
+  if ("error" in created) {
+    return c.json({ error: "invalid_client_metadata", error_description: created.error }, 400);
+  }
+  return c.json(
+    {
+      client_id: created.client.id,
+      client_id_issued_at: Math.floor(Date.now() / 1000),
+      client_name: created.client.name,
+      redirect_uris: created.client.redirectUris,
+      grant_types: ["authorization_code"],
+      response_types: ["code"],
+      token_endpoint_auth_method: "none",
+    },
+    201,
+  );
+}
+
 export async function oauthAppsGet(c: Context): Promise<Response> {
   const clients = await listOAuthClients(c.env.USERS);
   return adminPage(c, appsHtml(clients, issuerFor(c)), "OAuth apps");
@@ -467,6 +692,8 @@ export async function oauthAppsPost(c: Context): Promise<Response> {
     c.env.USERS,
     typeof body.name === "string" ? body.name : "",
     typeof body.redirect_uris === "string" ? body.redirect_uris : "",
+    body.public === "1",
+    typeof body.client_id === "string" ? body.client_id : "",
   );
   const id = await getIdentity(c, "auth");
   if ("error" in created) {
@@ -492,6 +719,7 @@ export async function oauthAppsPost(c: Context): Promise<Response> {
     appsHtml(clients, issuerFor(c), {
       id: created.client.id,
       secret: created.secret,
+      publicClient: created.client.publicClient === true,
     }),
     "OAuth apps",
   );
@@ -521,10 +749,27 @@ async function denyAuthorize(
   }
   const dest = new URL(query.redirectUri);
   dest.searchParams.set("error", error);
+  dest.searchParams.set("iss", issuerFor(c));
   if (query.state) {
     dest.searchParams.set("state", query.state);
   }
-  return c.redirect(dest.toString());
+  return browserRedirect(c, dest.toString());
+}
+
+/** A 302 after the consent form is blocked by form-action 'self'. Navigate instead. */
+function browserRedirect(c: Context, dest: string): Response {
+  const href = escapeHtml(dest);
+  c.header("Cache-Control", "no-store");
+  return c.html(
+    `<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta http-equiv="refresh" content="0;url=${href}"><title>Redirecting</title></head><body><p><a href="${href}">Continue</a></p></body></html>`,
+  );
+}
+
+function resourceAllowed(resource: string, permissions: string[]): boolean {
+  if (!resource) {
+    return true;
+  }
+  return resource === JVNL_MCP_RESOURCE && permissions.includes("jvnl:admin");
 }
 
 export async function oauthAuthorizeGet(c: Context): Promise<Response> {
@@ -536,9 +781,15 @@ export async function oauthAuthorizeGet(c: Context): Promise<Response> {
   if (!pkceAccept(query)) {
     return denyAuthorize(c, query, "invalid_request");
   }
-  const client = await readClient(c.env.USERS, query.clientId);
+  if (query.resource && query.resource !== JVNL_MCP_RESOURCE) {
+    return denyAuthorize(c, query, "invalid_target");
+  }
+  const client = await resolveClient(c.env.USERS, query.clientId);
   if (!client || !client.redirectUris.includes(query.redirectUri)) {
-    return c.text("Unknown client or redirect URI", 400);
+    return c.text(
+      `Unknown client or redirect URI. client_id=${query.clientId.slice(0, 200)} redirect_uri=${query.redirectUri.slice(0, 300)}`,
+      400,
+    );
   }
   if (!query.scope.split(" ").includes("openid")) {
     return denyAuthorize(c, query, "invalid_scope");
@@ -547,6 +798,9 @@ export async function oauthAuthorizeGet(c: Context): Promise<Response> {
   if (!session) {
     const next = new URL(c.req.url).pathname + new URL(c.req.url).search;
     return c.redirect(`/login?next=${encodeURIComponent(next)}`);
+  }
+  if (!resourceAllowed(query.resource, session.perms)) {
+    return denyAuthorize(c, query, "access_denied");
   }
   return adminPage(c, consentHtml(client, query, session.sub), "Authorize");
 }
@@ -567,16 +821,25 @@ export async function oauthAuthorizePost(c: Context): Promise<Response> {
   if (!session) {
     return c.redirect("/login?next=%2Foauth%2Fapps");
   }
-  const client = await readClient(c.env.USERS, query.clientId);
+  const client = await resolveClient(c.env.USERS, query.clientId);
   if (!client || !client.redirectUris.includes(query.redirectUri)) {
-    return c.text("Unknown client or redirect URI", 400);
+    return c.text(
+      `Unknown client or redirect URI. client_id=${query.clientId.slice(0, 200)} redirect_uri=${query.redirectUri.slice(0, 300)}`,
+      400,
+    );
   }
   if (!pkceAccept(query)) {
     return denyAuthorize(c, query, "invalid_request");
   }
+  if (query.resource && query.resource !== JVNL_MCP_RESOURCE) {
+    return denyAuthorize(c, query, "invalid_target");
+  }
   const user = await getUser(c.env.USERS, session.sub);
   if (!user) {
     return c.redirect("/login?next=%2Fme");
+  }
+  if (!resourceAllowed(query.resource, user.permissions)) {
+    return denyAuthorize(c, query, "access_denied");
   }
   const code = randomId(32);
   const record: AuthCode = {
@@ -586,6 +849,7 @@ export async function oauthAuthorizePost(c: Context): Promise<Response> {
     emailVerified: session.amr?.includes("passkey") === true,
     nonce: query.nonce,
     codeChallenge: query.codeChallenge,
+    resource: query.resource,
     exp: Math.floor(Date.now() / 1000) + CODE_TTL_SEC,
   };
   await c.env.USERS.put(CODE_PREFIX + code, JSON.stringify(record), {
@@ -600,10 +864,11 @@ export async function oauthAuthorizePost(c: Context): Promise<Response> {
   });
   const dest = new URL(query.redirectUri);
   dest.searchParams.set("code", code);
+  dest.searchParams.set("iss", issuerFor(c));
   if (query.state) {
     dest.searchParams.set("state", query.state);
   }
-  return c.redirect(dest.toString());
+  return browserRedirect(c, dest.toString());
 }
 
 function tokenError(c: Context, error: string, status: 400 | 401 = 400): Response {
@@ -642,13 +907,17 @@ export async function oauthToken(c: Context): Promise<Response> {
   if (grant !== "authorization_code" || !code) {
     return tokenError(c, "unsupported_grant_type");
   }
-  const client = await readClient(c.env.USERS, creds.id);
+  const client = await resolveClient(c.env.USERS, creds.id);
   if (!client) {
     return tokenError(c, "invalid_client", 401);
   }
+  const storedClient = client.publicClient
+    ? null
+    : await readClient(c.env.USERS, client.id);
   const secretOk =
+    storedClient !== null &&
     creds.secret !== "" &&
-    timingSafeEqual(client.secretHash, await sha256Hex(creds.secret));
+    timingSafeEqual(storedClient.secretHash, await sha256Hex(creds.secret));
   const raw = await c.env.USERS.get(CODE_PREFIX + code);
   if (!raw) {
     return tokenError(c, "invalid_grant");
@@ -662,7 +931,10 @@ export async function oauthToken(c: Context): Promise<Response> {
   ) {
     return tokenError(c, "invalid_grant");
   }
-  if (!secretOk) {
+  if (!client.publicClient && !secretOk) {
+    return tokenError(c, "invalid_client", 401);
+  }
+  if (client.publicClient && creds.secret) {
     return tokenError(c, "invalid_client", 401);
   }
   if (
@@ -685,14 +957,16 @@ export async function oauthToken(c: Context): Promise<Response> {
     email_verified: authCode.emailVerified === true,
     ...(authCode.nonce ? { nonce: authCode.nonce } : {}),
   });
+  const audience = authCode.resource || `${issuer}/oauth/userinfo`;
   const accessToken = await signJwt(stored, {
     iss: issuer,
     sub: authCode.email,
-    aud: `${issuer}/oauth/userinfo`,
+    aud: audience,
     iat: now,
     exp: now + TOKEN_TTL_SEC,
     email: authCode.email,
     email_verified: authCode.emailVerified === true,
+    scope: authCode.resource ? "openid email jvnl" : "openid email",
   });
   await writeAudit(c.env.AUDIT, {
     type: "oauth.token",
@@ -705,7 +979,7 @@ export async function oauthToken(c: Context): Promise<Response> {
     token_type: "Bearer",
     expires_in: TOKEN_TTL_SEC,
     id_token: idToken,
-    scope: "openid email profile",
+    scope: authCode.resource ? "openid email jvnl" : "openid email profile",
   });
 }
 
@@ -721,7 +995,9 @@ export async function oauthUserinfo(c: Context): Promise<Response> {
   const stored = await loadSigningKey(c.env.USERS);
   const claims = await verifyOidcJwt(header.slice(7).trim(), stored.publicJwk);
   const issuer = issuerFor(c);
-  if (!claims || claims.iss !== issuer || claims.aud !== `${issuer}/oauth/userinfo`) {
+  const audienceOk =
+    claims?.aud === `${issuer}/oauth/userinfo` || claims?.aud === JVNL_MCP_RESOURCE;
+  if (!claims || claims.iss !== issuer || !audienceOk) {
     return c.json({ error: "invalid_token" }, 401);
   }
   return c.json({

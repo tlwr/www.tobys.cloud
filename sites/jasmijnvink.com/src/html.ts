@@ -17,6 +17,8 @@ export function sessionNavHtml(): string {
           <span class="sep">|</span>
           <a href="/tags/new" class="underline">tag aanmaken</a>
           <span class="sep">|</span>
+          <a href="/beheer/mcp" class="underline">mcp</a>
+          <span class="sep">|</span>
           <form method="post" action="/uitloggen">
             <button type="submit" class="linkish">uitloggen</button>
           </form>
@@ -29,6 +31,43 @@ export function flashHtml(opts: { notice?: string; alert?: string }): string {
     opts.alert ? `<p class="flash-err">${escapeHtml(opts.alert)}</p>` : "",
   ].filter(Boolean);
   return parts.length > 0 ? `<section>${parts.join("\n")}</section>` : "";
+}
+
+export function mcpHelpHtml(): string {
+  return `<h1>MCP</h1>
+  <p>Een AI-assistent die MCP ondersteunt kan deze site beheren: beelden en tags bekijken, een tag maken of verwijderen, en de tekst of zichtbaarheid van een beeld aanpassen. Een nieuw fotobestand uploaden kan hier nog niet.</p>
+  <h2>Koppelen</h2>
+  <ol>
+    <li>Voeg in je assistent een MCP-server of connector toe.</li>
+    <li>Plak dit adres: <code>https://jasmijnvink.com/mcp</code></li>
+    <li>De assistent registreert zichzelf en stuurt je naar auth.tobys.cloud. Log in met het account dat deze site mag beheren.</li>
+    <li>Kies toestaan. Daarna onthoudt die assistent de koppeling.</li>
+  </ol>
+  <h2>Als de assistent om OAuth-gegevens vraagt</h2>
+  <p>Maak op auth.tobys.cloud een app met “PKCE only, no client secret”. Client ID mag je zelf kiezen, bijvoorbeeld <code>oc_jasmijnvink</code>. Zet deze terugstuuradressen erbij:</p>
+  <ul>
+    <li>Grok: <code>https://grok.com/connectors-oauth-exchange-code/</code></li>
+    <li>ChatGPT: <code>https://chatgpt.com/connector_platform_oauth_redirect</code></li>
+    <li>Claude: <code>https://claude.ai/api/mcp/auth_callback</code></li>
+    <li>Claude: <code>https://claude.com/api/mcp/auth_callback</code></li>
+  </ul>
+  <p>Vul daarna in het formulier van de assistent dit in:</p>
+  <ul>
+    <li>Client ID: <code>oc_jasmijnvink</code> (of de id die je koos)</li>
+    <li>Client secret: leeg laten</li>
+    <li>Authorization endpoint: <code>https://auth.tobys.cloud/oauth/authorize</code></li>
+    <li>Token endpoint: <code>https://auth.tobys.cloud/oauth/token</code></li>
+    <li>Scopes: <code>openid</code>, <code>email</code> en <code>jvnl</code></li>
+    <li>Token auth method: PKCE only, geen secret</li>
+  </ul>
+  <h2>Wat je kunt vragen</h2>
+  <ul>
+    <li>Laat alle beelden zien, ook verborgen beelden.</li>
+    <li>Laat de tags zien, en bij welke beelden ze horen.</li>
+    <li>Maak een tag, of verwijder een tag. Het beeld zelf blijft bestaan.</li>
+    <li>Wijzig de titel, omschrijving, tags of zichtbaarheid van een beeld.</li>
+  </ul>
+  <p class="muted">Voorbeeld: “Zet beeld 12 op onzichtbaar en voeg de tag portret toe.”</p>`;
 }
 
 export function pictureEditLinkHtml(id: string): string {

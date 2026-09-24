@@ -108,6 +108,12 @@ async function s256(verifier: string): Promise<string> {
 
 const VERIFIER = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQ";
 
+async function redirectTarget(res: Response): Promise<URL> {
+  const html = await res.text();
+  const href = html.match(/href="([^"]+)"/)?.[1]?.replace(/&amp;/g, "&") ?? "";
+  return new URL(href);
+}
+
 describe("oidc", () => {
   it("publishes discovery and a signing key", async () => {
     const users = new MemoryKV();
@@ -177,8 +183,8 @@ describe("oidc", () => {
       },
       e,
     );
-    expect(consent.status).toBe(302);
-    const back = new URL(consent.headers.get("location") ?? "");
+    expect(consent.status).toBe(200);
+    const back = await redirectTarget(consent);
     expect(back.origin).toBe("https://notes.example");
     expect(back.searchParams.get("state")).toBe("xyz");
     const code = back.searchParams.get("code") ?? "";
@@ -269,6 +275,241 @@ describe("oidc", () => {
       env(users),
     );
     expect(res.status).toBe(400);
+  });
+
+  it("accepts ChatGPT's public client for the jasmijnvink MCP resource", async () => {
+    const users = new MemoryKV();
+    await users.put(
+      "jasmijn@example.com",
+      JSON.stringify({
+        email: "jasmijn@example.com",
+        hashedPassword: await bcrypt.hash("s3cret", 4),
+        permissions: ["jvnl:admin"],
+      }),
+    );
+    const login = await app.request(
+      "/login",
+      {
+        method: "POST",
+        body: new URLSearchParams({
+          email: "jasmijn@example.com",
+          password: "s3cret",
+        }),
+        headers: { Origin: "http://localhost" },
+      },
+      env(users),
+    );
+    const cookie = (
+      typeof login.headers.getSetCookie === "function"
+        ? login.headers.getSetCookie()
+        : [login.headers.get("set-cookie") ?? ""]
+    )
+      .map((part) => part.split(";")[0])
+      .join("; ");
+    const clientId = "https://chatgpt.com/oauth/client.json";
+    const redirect = "https://chatgpt.com/connector_platform_oauth_redirect";
+    const realFetch = globalThis.fetch;
+    globalThis.fetch = async (input) => {
+      if (String(input) === clientId) {
+        return new Response(
+          JSON.stringify({
+            client_id: clientId,
+            client_name: "ChatGPT",
+            redirect_uris: [redirect],
+            token_endpoint_auth_methods_supported: ["none", "private_key_jwt"],
+          }),
+          { status: 200 },
+        );
+      }
+      return realFetch(input);
+    };
+    try {
+      const challenge = await s256(VERIFIER);
+      const consent = await app.request(
+        "/oauth/authorize",
+        {
+          method: "POST",
+          body: new URLSearchParams({
+            response_type: "code",
+            client_id: clientId,
+            redirect_uri: redirect,
+            scope: "openid email jvnl",
+            state: "st",
+            code_challenge: challenge,
+            code_challenge_method: "S256",
+            resource: "https://jasmijnvink.com/mcp",
+          }),
+          headers: { Origin: "http://localhost", Cookie: cookie },
+        },
+        env(users),
+      );
+      expect(consent.status).toBe(200);
+      const back = await redirectTarget(consent);
+      expect(back.searchParams.get("iss")).toBe("https://auth.tobys.cloud");
+      const code = back.searchParams.get("code") ?? "";
+      const token = await app.request(
+        "/oauth/token",
+        {
+          method: "POST",
+          body: new URLSearchParams({
+            grant_type: "authorization_code",
+            code,
+            redirect_uri: redirect,
+            client_id: clientId,
+            code_verifier: VERIFIER,
+            resource: "https://jasmijnvink.com/mcp",
+          }),
+        },
+        env(users),
+      );
+      expect(token.status).toBe(200);
+      const body = (await token.json()) as { access_token: string; scope: string };
+      expect(body.scope).toContain("jvnl");
+      const jwks = (await (await app.request("/oauth/jwks", {}, env(users))).json()) as {
+        keys: JsonWebKey[];
+      };
+      const access = await verifyOidcJwt(body.access_token, jwks.keys[0]);
+      expect(access?.aud).toBe("https://jasmijnvink.com/mcp");
+      expect(access?.perms).toBeUndefined();
+    } finally {
+      globalThis.fetch = realFetch;
+    }
+  });
+
+  it("lets a PKCE-only app exchange a code without a client secret", async () => {
+    const users = new MemoryKV();
+    const cookie = await adminCookie(users);
+    const created = await app.request(
+      "/oauth/apps",
+      {
+        method: "POST",
+        body: new URLSearchParams({
+          name: "Grok",
+          client_id: "oc_jasmijnvink",
+          redirect_uris: "https://grok.com/connectors-oauth-exchange-code/",
+          public: "1",
+        }),
+        headers: { Origin: "http://localhost", Cookie: cookie },
+      },
+      env(users),
+    );
+    const html = await created.text();
+    expect(html).toContain("PKCE only");
+    expect(html).not.toContain("<strong>Client secret</strong>");
+    const clientId = html.match(/Client ID<\/strong> <code>(oc_[^<]+)/)?.[1] ?? "";
+    expect(clientId).toBe("oc_jasmijnvink");
+    const account = JSON.parse((await users.get("toby@toby.codes")) ?? "{}") as {
+      permissions: string[];
+    };
+    account.permissions = ["auth:admin", "jvnl:admin"];
+    await users.put("toby@toby.codes", JSON.stringify(account));
+    const challenge = await s256(VERIFIER);
+    const consent = await app.request(
+      "/oauth/authorize",
+      {
+        method: "POST",
+        body: new URLSearchParams({
+          response_type: "code",
+          client_id: clientId,
+          redirect_uri: "https://grok.com/connectors-oauth-exchange-code/",
+          scope: "openid email jvnl",
+          code_challenge: challenge,
+          code_challenge_method: "S256",
+          resource: "https://jasmijnvink.com/mcp",
+        }),
+        headers: { Origin: "http://localhost", Cookie: cookie },
+      },
+      env(users),
+    );
+    expect(consent.status).toBe(200);
+    const code = (await redirectTarget(consent)).searchParams.get("code") ?? "";
+    const token = await app.request(
+      "/oauth/token",
+      {
+        method: "POST",
+        body: new URLSearchParams({
+          grant_type: "authorization_code",
+          code,
+          redirect_uri: "https://grok.com/connectors-oauth-exchange-code/",
+          client_id: clientId,
+          code_verifier: VERIFIER,
+          resource: "https://jasmijnvink.com/mcp",
+        }),
+      },
+      env(users),
+    );
+    expect(token.status).toBe(200);
+  });
+
+  it("registers a PKCE-only client for an allowed assistant redirect", async () => {
+    const users = new MemoryKV();
+    const cookie = await adminCookie(users);
+    const e = env(users);
+    const registered = await app.request(
+      "/oauth/register",
+      {
+        method: "POST",
+        body: JSON.stringify({
+          client_name: "Grok",
+          redirect_uris: ["https://grok.com/connectors-oauth-exchange-code/"],
+          token_endpoint_auth_method: "none",
+          grant_types: ["authorization_code"],
+        }),
+        headers: { "content-type": "application/json" },
+      },
+      e,
+    );
+    expect(registered.status).toBe(201);
+    const reg = (await registered.json()) as { client_id: string };
+    expect(reg.client_id).toMatch(/^oc_/);
+
+    const rejected = await app.request(
+      "/oauth/register",
+      {
+        method: "POST",
+        body: JSON.stringify({
+          redirect_uris: ["https://evil.example/callback"],
+        }),
+        headers: { "content-type": "application/json" },
+      },
+      e,
+    );
+    expect(rejected.status).toBe(400);
+
+    const challenge = await s256(VERIFIER);
+    const consent = await app.request(
+      "/oauth/authorize",
+      {
+        method: "POST",
+        body: new URLSearchParams({
+          response_type: "code",
+          client_id: reg.client_id,
+          redirect_uri: "https://grok.com/connectors-oauth-exchange-code/",
+          scope: "openid",
+          code_challenge: challenge,
+          code_challenge_method: "S256",
+        }),
+        headers: { Origin: "http://localhost", Cookie: cookie },
+      },
+      e,
+    );
+    expect(consent.status).toBe(200);
+    const code = (await redirectTarget(consent)).searchParams.get("code") ?? "";
+    const token = await app.request(
+      "/oauth/token",
+      {
+        method: "POST",
+        body: new URLSearchParams({
+          grant_type: "authorization_code",
+          code,
+          redirect_uri: "https://grok.com/connectors-oauth-exchange-code/",
+          client_id: reg.client_id,
+          code_verifier: VERIFIER,
+        }),
+      },
+      e,
+    );
+    expect(token.status).toBe(200);
   });
 
   it("refuses OIDC on a host that is not the issuer", async () => {

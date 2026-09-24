@@ -236,6 +236,7 @@ describe("jasmijnvink.com", () => {
     expect(html).toContain('hx-get="/session-nav"');
     expect(html).toContain("site-nav-primary");
     expect(html).not.toContain("uploaden");
+    expect(html).not.toContain("/beheer/mcp");
     expect(html).not.toContain("uitloggen");
     expect(res.headers.get("cache-control")).toContain("public");
     expect(res.headers.get("set-cookie")).toBeNull();
@@ -342,6 +343,20 @@ describe("jasmijnvink.com", () => {
     expect(navHtml).toContain("uitloggen");
     expect(navHtml).toContain("uploaden");
     expect(navHtml).toContain("site-nav-admin");
+    expect(navHtml).toContain("/beheer/mcp");
+
+    const help = await app.request(
+      "/beheer/mcp",
+      { headers: { Cookie: cookie, Origin: "http://localhost" } },
+      e,
+    );
+    expect(help.status).toBe(200);
+    const helpHtml = await help.text();
+    expect(helpHtml).toContain("https://jasmijnvink.com/mcp");
+    expect(helpHtml).toContain("AI-assistent");
+    expect(helpHtml).toContain("https://grok.com/connectors-oauth-exchange-code/");
+    expect(helpHtml).toContain("oc_jasmijnvink");
+    expect(help.headers.get("cache-control")).toContain("no-store");
 
     const actions = await app.request(
       "/session-page",

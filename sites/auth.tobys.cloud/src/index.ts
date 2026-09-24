@@ -34,6 +34,7 @@ import {
   oauthAuthorizePost,
   oauthDiscovery,
   oauthJwks,
+  oauthRegister,
   oauthToken,
   oauthUserinfo,
 } from "./oauth";
@@ -88,7 +89,8 @@ const app = new Hono<{ Bindings: Bindings; Variables: { cspNonce: string } }>();
 
 app.use("*", async (c, next) => {
   // Token requests come from the third-party server, not this site's origin.
-  if (new URL(c.req.url).pathname === "/oauth/token") {
+  const path = new URL(c.req.url).pathname;
+  if (path === "/oauth/token" || path === "/oauth/register") {
     return next();
   }
   return csrf({
@@ -288,10 +290,12 @@ function cspNonce(c: AuthContext): string {
 app.get("/health", (c) => c.text("healthy"));
 
 app.get("/.well-known/openid-configuration", oauthDiscovery);
+app.get("/.well-known/oauth-authorization-server", oauthDiscovery);
 app.get("/oauth/jwks", oauthJwks);
 app.get("/oauth/authorize", oauthAuthorizeGet);
 app.post("/oauth/authorize", oauthAuthorizePost);
 app.post("/oauth/token", oauthToken);
+app.post("/oauth/register", oauthRegister);
 app.get("/oauth/userinfo", oauthUserinfo);
 app.get("/oauth/apps", requireLocalAuth(), oauthAppsGet);
 app.post("/oauth/apps", requireLocalAuth(), oauthAppsPost);
