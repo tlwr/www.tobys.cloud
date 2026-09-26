@@ -13,7 +13,7 @@ just ci-affected                        # vs origin/main, or BASE=<sha>
 just deploy-affected
 ```
 
-Aliases: `auth`, `toby`, `jvnl`, `utilityroom`, `assets`, `ip`.
+Aliases: `auth`, `toby`, `jvnl`, `utilityroom`, `vink`, `assets`, `ip`.
 
 `just deploy` is local on purpose (uses your Wrangler login). GitHub Actions
 runs `just ci` for affected sites only; it does not deploy.

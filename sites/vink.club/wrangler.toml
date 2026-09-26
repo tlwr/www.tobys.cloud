@@ -1,0 +1,22 @@
+name = "vink-club"
+main = "src/index.ts"
+compatibility_date = "2025-04-02"
+
+# custom_domain creates proxied DNS; zone routes win request routing.
+[[routes]]
+pattern = "vink.club"
+zone_name = "vink.club"
+custom_domain = true
+
+[[routes]]
+pattern = "www.vink.club"
+zone_name = "vink.club"
+custom_domain = true
+
+[[routes]]
+pattern = "vink.club/*"
+zone_name = "vink.club"
+
+[[routes]]
+pattern = "www.vink.club/*"
+zone_name = "vink.club"

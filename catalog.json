@@ -4,6 +4,7 @@
     "toby": "www.toby.codes",
     "jvnl": "jasmijnvink.com",
     "utilityroom": "utilityroom.club",
+    "vink": "vink.club",
     "assets": "assets.tobys.cloud",
     "ip": "what-is-my-ip"
   },
@@ -45,6 +46,14 @@
       "node": "20",
       "install": "npm ci --legacy-peer-deps --ignore-scripts",
       "ci": ["lint", "typecheck", "build", "test"]
+    },
+    {
+      "name": "vink.club",
+      "path": "sites/vink.club",
+      "depends": [],
+      "node": "20",
+      "install": "npm ci",
+      "ci": ["typecheck", "test"]
     },
     {
       "name": "assets.tobys.cloud",
