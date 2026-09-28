@@ -2,8 +2,10 @@
 
 Static pages for [vink.club](https://vink.club), served by a Cloudflare Worker.
 
-- `GET /` and any other path return plaintext `vink.club`
+- `GET /` returns a centred picture of a finch (`/finch.png`, transparent background)
+- any other path returns plaintext `vink.club`
 - `GET /pensioen-feestje` returns the party page
+- `GET /jasmijn` redirects to https://jasmijnvink.com/
 
 Later apps can take a prefix by handling that path before the plaintext default.
 

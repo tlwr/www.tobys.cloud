@@ -2,6 +2,11 @@ name = "vink-club"
 main = "src/index.ts"
 compatibility_date = "2025-04-02"
 
+[assets]
+directory = "./public"
+binding = "ASSETS"
+run_worker_first = false
+
 # custom_domain creates proxied DNS; zone routes win request routing.
 [[routes]]
 pattern = "vink.club"
