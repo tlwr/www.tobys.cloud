@@ -34,6 +34,7 @@
     "@types/node": "^20.0.0",
     "@typescript-eslint/eslint-plugin": "^8.56.0",
     "@typescript-eslint/parser": "^8.56.0",
+    "cf": "^1.0.0-beta.5",
     "esbuild": "^0.19.0",
     "eslint": "^8.57.1",
     "eslint-config-airbnb": "^19.0.4",
@@ -51,6 +52,6 @@
     "tsx": "^4.7.0",
     "typescript": "^5.9.3",
     "vitest": "^4.0.18",
-    "wrangler": "^4.66.0"
+    "wrangler": "^4.143.0"
   }
 }

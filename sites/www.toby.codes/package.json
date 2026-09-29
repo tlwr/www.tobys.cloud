@@ -20,7 +20,6 @@
     "push-posts": "node tools/push-posts.mjs",
     "pull-posts": "node tools/pull-posts.mjs"
   },
-
   "dependencies": {
     "@tobys/auth-client": "file:../../packages/auth-client",
     "hono": "^4.11.10",
@@ -28,9 +27,9 @@
   },
   "devDependencies": {
     "@cloudflare/workers-types": "^5.20260801.1",
+    "cf": "^1.0.0-beta.5",
     "typescript": "^5.9.3",
     "vitest": "^4.0.18",
     "wrangler": "^4.107.0"
   }
 }
-
