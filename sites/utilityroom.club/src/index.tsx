@@ -469,6 +469,7 @@ app.get('/admin', authMiddleware, async (c) => {
 
 app.get('/admin/edit/:slug', authMiddleware, async (c) => {
   const slug = c.req.param('slug')
+  if (!slug) return c.notFound()
   const data = await c.env.PROJECTS.get(slug)
 
   if (!data) {
@@ -536,6 +537,7 @@ app.get('/admin/edit/:slug', authMiddleware, async (c) => {
 
 app.post('/admin/edit/:slug', authMiddleware, async (c) => {
   const slug = c.req.param('slug')
+  if (!slug) return c.notFound()
   const data = await c.env.PROJECTS.get(slug)
 
   if (!data) {
@@ -593,6 +595,7 @@ app.post('/admin/edit/:slug', authMiddleware, async (c) => {
 
 app.post('/admin/edit/:slug/image-upload', authMiddleware, async (c) => {
   const slug = c.req.param('slug')
+  if (!slug) return c.notFound()
   const data = await c.env.PROJECTS.get(slug)
 
   if (!data) {
@@ -666,6 +669,7 @@ app.post('/admin/edit/:slug/image-upload', authMiddleware, async (c) => {
 
 app.get('/admin/project/:slug/images-table', authMiddleware, async (c) => {
   const slug = c.req.param('slug')
+  if (!slug) return c.notFound()
   const data = await c.env.PROJECTS.get(slug)
 
   if (!data) {
@@ -719,6 +723,7 @@ app.get('/admin/project/:slug/images-table', authMiddleware, async (c) => {
 
 app.get('/admin/project/:slug/image-upload-form', authMiddleware, async (c) => {
   const slug = c.req.param('slug')
+  if (!slug) return c.notFound()
 
   const html = render(
     <form
@@ -748,6 +753,7 @@ app.get('/admin/project/:slug/image-upload-form', authMiddleware, async (c) => {
 app.delete('/admin/edit/:slug/image/:imageHash', authMiddleware, async (c) => {
   const slug = c.req.param('slug')
   const imageHash = c.req.param('imageHash')
+  if (!slug || !imageHash) return c.notFound()
 
   const data = await c.env.PROJECTS.get(slug)
 
