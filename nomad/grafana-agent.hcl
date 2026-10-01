@@ -26,13 +26,13 @@ job "grafana-agent" {
             global:
               scrape_interval: 60s
 
+              {{ with nomadVar "nomad/jobs/grafana-agent" }}
               remote_write:
-                - url: https://grafana-cloud-remote.tlwr.workers.dev/api/prom/push
+                - url: https://{{ .grafana_cloud_hostname }}/api/prom/push
                   basic_auth:
-                    {{ with nomadVar "nomad/jobs/grafana-agent" }}
                     username: '{{ .grafana_cloud_remote_username }}'
                     password: '{{ .grafana_cloud_remote_password }}'
-                    {{ end }}
+              {{ end }}
 
             configs:
               - name: smartmeter
