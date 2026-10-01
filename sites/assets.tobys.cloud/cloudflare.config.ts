@@ -4,6 +4,11 @@ export default defineConfig({
 	worker: {
 		name: "assets-tobys-cloud",
 		compatibilityDate: "2025-04-02",
+		observability: {
+			issues: {
+				enabled: true,
+			},
+		},
 		entrypoint: "src/index.ts",
 		triggers: [
 			triggers.fetch({

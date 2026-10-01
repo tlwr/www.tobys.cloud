@@ -11,6 +11,9 @@ bazel-*
 .cursor/
 .cursor/**
 
+.cloudflare/
+.cloudflare/**
+
 **/node_modules
 **/.wrangler
 **/dist

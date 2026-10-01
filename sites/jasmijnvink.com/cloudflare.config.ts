@@ -9,6 +9,11 @@ export default defineConfig({
 	worker: {
 		name: "jasmijnvink-com",
 		compatibilityDate: "2025-04-02",
+		observability: {
+			issues: {
+				enabled: true,
+			},
+		},
 		entrypoint: "src/index.ts",
 		cache: {
 			enabled: true,

@@ -4,6 +4,11 @@ compatibility_date = "2025-04-02"
 
 # Cache the default entrypoint (HTML). A named Public gateway + [assets]
 # does not engage Workers Cache (Cf-Cache-Status missing, Cache-Tag leaked).
+
+# Exceptions are sent to Discord #alerts through the shared Workers Issues destination.
+[observability.issues]
+enabled = true
+
 [cache]
 enabled = true
 cross_version_cache = true

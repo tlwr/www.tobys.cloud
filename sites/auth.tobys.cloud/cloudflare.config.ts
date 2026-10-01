@@ -9,6 +9,11 @@ export default defineConfig({
 	worker: {
 		name: "auth-tobys-cloud",
 		compatibilityDate: "2025-04-02",
+		observability: {
+			issues: {
+				enabled: true,
+			},
+		},
 		compatibilityFlags: [
 			"nodejs_compat",
 		],

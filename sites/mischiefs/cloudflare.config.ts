@@ -4,6 +4,11 @@ export default defineConfig({
 	worker: {
 		name: "mischiefs",
 		compatibilityDate: "2025-04-02",
+		observability: {
+			issues: {
+				enabled: true,
+			},
+		},
 		entrypoint: "src/index.ts",
 		assets: {
 			notFoundHandling: "404-page",

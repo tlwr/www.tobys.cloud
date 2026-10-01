@@ -2,6 +2,10 @@ name = "utilityroom-club"
 main = "src/index.tsx"
 compatibility_date = "2025-04-02"
 
+# Exceptions are sent to Discord #alerts through the shared Workers Issues destination.
+[observability.issues]
+enabled = true
+
 [build]
 jsx_factory = "h"
 
