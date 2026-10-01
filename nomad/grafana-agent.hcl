@@ -65,6 +65,23 @@ job "grafana-agent" {
                         type: A
                         port: 2112
 
+              - name: nomad
+                scrape_configs:
+                  - job_name: nomad
+                    scrape_interval: 30s
+                    scrape_timeout: 10s
+                    metrics_path: /v1/metrics
+                    params:
+                      format: ['prometheus']
+                    dns_sd_configs:
+                      - names: [thinkcentre.finch-barb.ts.net]
+                        type: A
+                        port: 4646
+                    relabel_configs:
+                      - source_labels: [__meta_dns_name]
+                        target_label: server
+                        regex: '(.*)[.]finch-barb[.]ts[.]net'
+
               - name: node-exporter
                 scrape_configs:
                   - job_name: node-exporter-baremetal
