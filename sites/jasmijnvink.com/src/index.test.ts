@@ -203,6 +203,31 @@ describe("jasmijnvink.com", () => {
     expect(await res.text()).toBe(css);
   });
 
+  it("404s scanner paths without fetching them from assets", async () => {
+    const fetched: string[] = [];
+    const assets = {
+      fetch: async (input: RequestInfo) => {
+        fetched.push(new URL(new Request(input).url).pathname);
+        return new Response("secret", { status: 200 });
+      },
+    } as unknown as Fetcher;
+    for (const path of [
+      "/.env",
+      "/wp-login.php",
+      "/wp-admin/css/colors/ectoplasm/a8.php",
+      "/%2f%2eenv",
+    ]) {
+      const res = await app.request(
+        path,
+        {},
+        { ...env(users, pictures, tags, images), ASSETS: assets },
+      );
+      expect(res.status, path).toBe(404);
+      expect(await res.text()).toContain("404");
+    }
+    expect(fetched).toEqual([]);
+  });
+
   it("passes an asset 304 through instead of turning it into a 500", async () => {
     const asset = new Response(null, {
       status: 304,
@@ -488,5 +513,16 @@ describe("jasmijnvink.com", () => {
     expect(await tags.get("portret")).toBeNull();
     expect(await pictures.get("1")).not.toContain("portret");
     expect(await pictures.get("1")).toContain("Zichtbaar");
+  });
+
+  it("returns the CSRF 403 for an unsafe request with no origin", async () => {
+    const res = await app.request(
+      "/inngest",
+      { method: "DELETE" },
+      env(new MemoryKV(), new MemoryKV(), new MemoryKV()),
+    );
+    expect(res.status).toBe(403);
+    expect(await res.text()).toBe("Forbidden");
+    expect(res.headers.get("cache-control")).toContain("no-store");
   });
 });

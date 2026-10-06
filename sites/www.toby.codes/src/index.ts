@@ -1,6 +1,8 @@
 import { originAllowed } from "@tobys/auth-client";
+import { isStaticAssetPath } from "../../../packages/static-asset-path/index";
 import { Hono } from "hono";
 import { csrf } from "hono/csrf";
+import { HTTPException } from "hono/http-exception";
 import { marked } from "marked";
 import {
   getIsLoggedIn,
@@ -364,18 +366,39 @@ function replaceAsset(asset: Response): Response {
 }
 
 app.notFound(async (c) => {
-  // Fetch by URL only. Cloning the incoming request keeps If-None-Match in
-  // workerd, so a cached error revalidates with 304 and is served forever.
+  // A fresh request drops If-None-Match. Cloning the client request keeps it
+  // in workerd, so a cached error revalidates with 304 and is served forever.
+  // Scanner paths are not fetched: that subrequest is a high-risk Workers Issue.
   const assetUrl = new URL(c.req.url);
   assetUrl.search = "";
-  const asset = await c.env.ASSETS.fetch(assetUrl.toString());
-  if (asset.status !== 404) {
-    return replaceAsset(asset);
+  assetUrl.hash = "";
+  if (
+    (c.req.method === "GET" || c.req.method === "HEAD") &&
+    isStaticAssetPath(assetUrl.pathname)
+  ) {
+    const asset = await c.env.ASSETS.fetch(
+      new Request(assetUrl.toString(), {
+        method: c.req.method === "HEAD" ? "HEAD" : "GET",
+      }),
+    );
+    if (asset.status !== 404) {
+      return replaceAsset(asset);
+    }
   }
   return c.html(layout("<h2>404 NOT FOUND</h2>"), 404);
 });
 
-app.onError(async (_err, c) => {
+app.onError(async (err, c) => {
+  if (err instanceof HTTPException) {
+    const res = err.getResponse();
+    const headers = new Headers(res.headers);
+    headers.set("cache-control", "no-store");
+    return new Response(res.body, {
+      status: res.status,
+      statusText: res.statusText,
+      headers,
+    });
+  }
   c.header("Cache-Control", "no-store");
   return c.html(layout("<h2>500 SERVER ERROR</h2>"), 500);
 });

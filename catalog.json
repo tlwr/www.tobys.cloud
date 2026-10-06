@@ -12,6 +12,10 @@
     {
       "name": "auth-client",
       "path": "packages/auth-client"
+    },
+    {
+      "name": "static-asset-path",
+      "path": "packages/static-asset-path"
     }
   ],
   "sites": [
@@ -26,7 +30,7 @@
     {
       "name": "www.toby.codes",
       "path": "sites/www.toby.codes",
-      "depends": ["auth-client"],
+      "depends": ["auth-client", "static-asset-path"],
       "node": "20",
       "install": "npm ci",
       "ci": ["typecheck", "test"]
@@ -34,7 +38,7 @@
     {
       "name": "jasmijnvink.com",
       "path": "sites/jasmijnvink.com",
-      "depends": ["auth-client"],
+      "depends": ["auth-client", "static-asset-path"],
       "node": "20",
       "install": "npm ci",
       "ci": ["typecheck", "test"]
@@ -58,18 +62,18 @@
     {
       "name": "assets.tobys.cloud",
       "path": "sites/assets.tobys.cloud",
-      "depends": [],
+      "depends": ["static-asset-path"],
       "node": "20",
       "install": "npm ci",
-      "ci": ["typecheck"]
+      "ci": ["typecheck", "test"]
     },
     {
       "name": "mischiefs",
       "path": "sites/mischiefs",
-      "depends": [],
+      "depends": ["static-asset-path"],
       "node": "20",
       "install": "npm ci",
-      "ci": ["typecheck"]
+      "ci": ["typecheck", "test"]
     },
     {
       "name": "nines",
@@ -93,7 +97,7 @@
       "depends": [],
       "node": "20",
       "install": "npm ci",
-      "ci": ["typecheck"]
+      "ci": ["typecheck", "test"]
     },
     {
       "name": "what-is-my-ip",

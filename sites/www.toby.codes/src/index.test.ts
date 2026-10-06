@@ -152,4 +152,55 @@ describe("post routes", () => {
     expect(res.status).toBe(404);
     expect(await res.text()).toContain("404");
   });
+
+  it("serves an image from assets without forwarding validators", async () => {
+    let seen = "";
+    let conditional = false;
+    const res = await app.request(
+      "/images/sidecar-manager.png",
+      { headers: { "If-None-Match": '"poison"' } },
+      {
+        ...env(),
+        ASSETS: {
+          fetch: async (input: RequestInfo) => {
+            const forwarded = new Request(input);
+            seen = new URL(forwarded.url).pathname;
+            conditional = forwarded.headers.has("If-None-Match");
+            return new Response("png", {
+              status: 200,
+              headers: { "content-type": "image/png", etag: '"png"' },
+            });
+          },
+        } as unknown as Fetcher,
+      },
+    );
+    expect(conditional).toBe(false);
+    expect(seen).toBe("/images/sidecar-manager.png");
+    expect(res.status).toBe(200);
+    expect(res.headers.get("etag")).toBeNull();
+    expect(res.headers.get("cache-control")).toContain("max-age=3600");
+  });
+
+  it("404s scanner paths without fetching them from assets", async () => {
+    const fetched: string[] = [];
+    const assets = {
+      fetch: async (input: RequestInfo) => {
+        fetched.push(new URL(new Request(input).url).pathname);
+        return new Response("secret", { status: 200 });
+      },
+    } as unknown as Fetcher;
+    for (const path of ["/.env", "/wp-admin/install.php", "/%2f%2eenv", "/.git/config"]) {
+      const res = await app.request(path, {}, { ...env(), ASSETS: assets });
+      expect(res.status, path).toBe(404);
+      expect(await res.text()).toContain("404");
+    }
+    expect(fetched).toEqual([]);
+  });
+
+  it("returns the CSRF 403 for an unsafe request with no origin", async () => {
+    const res = await app.request("/inngest", { method: "DELETE" }, env());
+    expect(res.status).toBe(403);
+    expect(await res.text()).toBe("Forbidden");
+    expect(res.headers.get("cache-control")).toContain("no-store");
+  });
 });

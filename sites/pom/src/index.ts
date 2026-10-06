@@ -30,9 +30,33 @@ function render(body: string): string {
   return baseTemplate[0] + body + baseTemplate[1] + baseTemplate[2];
 }
 
+function plain(status: number, body: string): Response {
+  return new Response(body, {
+    status,
+    headers: {
+      "content-type": "text/plain; charset=utf-8",
+      "cache-control": "no-store",
+    },
+  });
+}
+
+function isForm(request: Request): boolean {
+  const type = request.headers.get("content-type") ?? "";
+  return (
+    type.startsWith("application/x-www-form-urlencoded") ||
+    type.startsWith("multipart/form-data")
+  );
+}
+
 export default {
   async fetch(request: Request): Promise<Response> {
+    const url = new URL(request.url);
+    const pathname = url.pathname;
+
     if (request.method === "POST") {
+      if (pathname !== "/") return plain(404, "Not found");
+      if (!isForm(request)) return plain(415, "Unsupported media type");
+
       const form = await request.formData();
       let minutes = parseInt(String(form.get("minutes") ?? "25"), 10);
       if (Number.isNaN(minutes)) {
@@ -40,14 +64,16 @@ export default {
       }
 
       const finished = new Date(Date.now() + 1000 * 60 * minutes);
-      const host = new URL(request.url).host;
-      return Response.redirect(`https://${host}/${finished.getTime()}`, 302);
+      return Response.redirect(`https://${url.host}/${finished.getTime()}`, 302);
     }
 
-    const pathname = new URL(request.url).pathname;
+    if (request.method !== "GET" && request.method !== "HEAD") {
+      return plain(404, "Not found");
+    }
+
     let body: string;
 
-    if (/^\/done/.test(pathname)) {
+    if (pathname === "/done") {
       body = `
             done
 
@@ -111,7 +137,7 @@ export default {
                 <button>reset</button>
             </form>
             `;
-    } else {
+    } else if (pathname === "/") {
       body = `
                 <form method="POST">
                 <label for="minutes">Time (minutes)</label>
@@ -121,6 +147,8 @@ export default {
                 <button id="start">start</button>
                 </form>
             `;
+    } else {
+      return plain(404, "Not found");
     }
 
     return new Response(render(body), {
