@@ -106,6 +106,14 @@
       "node": "20",
       "install": "npm ci",
       "ci": ["typecheck", "test"]
+    },
+    {
+      "name": "issues-discord",
+      "path": "sites/issues-discord",
+      "depends": [],
+      "node": "20",
+      "install": "npm ci",
+      "ci": ["typecheck", "test"]
     }
   ]
 }

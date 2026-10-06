@@ -1,0 +1,20 @@
+name = "issues-discord"
+main = "src/index.ts"
+compatibility_date = "2025-04-02"
+workers_dev = false
+
+# This Worker's own failures still notify #alerts, after this same filter.
+[observability.issues]
+enabled = true
+
+# custom_domain creates the DNS record. The zone route is required because
+# page-404's *.tobys.cloud/* route would otherwise win over the custom domain.
+# Browser Integrity Check is disabled for this hostname by a tobys.cloud
+# configuration rule. Cloudflare's webhook client is not a browser.
+[[routes]]
+pattern = "issues-discord.tobys.cloud"
+custom_domain = true
+
+[[routes]]
+pattern = "issues-discord.tobys.cloud/*"
+zone_name = "tobys.cloud"
