@@ -1,4 +1,5 @@
 import { webcrypto } from 'node:crypto'
+import fs from 'node:fs'
 import { describe, it, expect } from 'vitest'
 import { Miniflare } from 'miniflare'
 import * as esbuild from 'esbuild'
@@ -55,17 +56,83 @@ export async function getAuthenticatedHeaders(): Promise<
   }
 }
 
+// Miniflare 5 builds the outbound request with the undici it bundles. That
+// copy stringifies Node's FormData to "[object FormData]" (text/plain), so
+// the Worker sees no multipart body. Encode with Node's Request first.
+type DispatchInit = Parameters<Miniflare['dispatchFetch']>[1]
+
+function headerPairs(
+  headers: NonNullable<DispatchInit>['headers'],
+): [string, string][] {
+  if (headers === undefined) return []
+  if (Symbol.iterator in headers) {
+    return [...(headers as Iterable<[string, string]>)]
+  }
+  return Object.entries(headers).flatMap(([key, value]) =>
+    typeof value === 'string' ? ([[key, value]] as [string, string][]) : [],
+  )
+}
+
 export async function setupMiniflare(): Promise<Miniflare> {
-  return new Miniflare({
-    compatibilityDate: '2025-04-02',
-    modules: [{ type: 'ESModule', path: 'dist/index.js' }],
-    kvNamespaces: ['PROJECTS'],
-    r2Buckets: ['ASSETS'],
-    bindings: {
-      AUTH_JWT_SECRET: TEST_JWT_SECRET,
-      AUTH_ISSUER: 'https://auth.tobys.cloud',
-    },
+  const distDir = path.resolve(__dirname, '../dist')
+  const mf = new Miniflare({
+    workers: [
+      {
+        config: {
+          name: 'utilityroom',
+          compatibilityDate: '2025-04-02',
+          manifest: {
+            mainModule: 'index.js',
+            modulesRoot: distDir,
+            modules: {
+              'index.js': {
+                type: 'esm',
+                contents: fs.readFileSync(path.join(distDir, 'index.js')),
+              },
+            },
+          },
+          env: {
+            PROJECTS: { type: 'kv' },
+            ASSETS: { type: 'r2' },
+            AUTH_JWT_SECRET: { type: 'text', value: TEST_JWT_SECRET },
+            AUTH_ISSUER: {
+              type: 'text',
+              value: 'https://auth.tobys.cloud',
+            },
+          },
+        },
+      },
+    ],
   })
+  const dispatchFetch = mf.dispatchFetch.bind(mf)
+  mf.dispatchFetch = async (input, init) => {
+    const body = init?.body
+    if (
+      typeof input === 'string' &&
+      typeof FormData !== 'undefined' &&
+      body instanceof FormData
+    ) {
+      const prepared = new Request(input, {
+        method: init?.method ?? 'POST',
+        body,
+      })
+      const contentType = prepared.headers.get('content-type')
+      const headers = headerPairs(init?.headers)
+      if (
+        contentType !== null &&
+        !headers.some(([key]) => key.toLowerCase() === 'content-type')
+      ) {
+        headers.push(['content-type', contentType])
+      }
+      return dispatchFetch(input, {
+        ...init,
+        body: await prepared.arrayBuffer(),
+        headers,
+      })
+    }
+    return dispatchFetch(input, init)
+  }
+  return mf
 }
 
 export async function seedTestData(mf: Miniflare): Promise<void> {
