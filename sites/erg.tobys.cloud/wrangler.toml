@@ -1,0 +1,20 @@
+name = "erg"
+main = "src/index.ts"
+compatibility_date = "2025-04-02"
+workers_dev = false
+
+# Exceptions are sent to Discord #alerts through the shared Workers Issues destination.
+[observability.issues]
+enabled = true
+
+# custom_domain creates the DNS record. The zone route is required because
+# page-404's *.tobys.cloud/* route would otherwise win over the custom domain.
+# Browser Integrity Check is disabled for this hostname by a tobys.cloud
+# configuration rule. MCP clients are not browsers.
+[[routes]]
+pattern = "erg.tobys.cloud"
+custom_domain = true
+
+[[routes]]
+pattern = "erg.tobys.cloud/*"
+zone_name = "tobys.cloud"

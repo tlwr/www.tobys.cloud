@@ -9,8 +9,14 @@ const CODE_PREFIX = "oauth:code:";
 const KEY_NAME = "oidc:signing-key";
 const CODE_TTL_SEC = 120;
 const TOKEN_TTL_SEC = 3600;
-/** Audience ChatGPT must request, and the only resource this issuer will mint. */
+/** Audience an MCP client must request. Each resource needs its own permission. */
 export const JVNL_MCP_RESOURCE = "https://jasmijnvink.com/mcp";
+export const ERG_MCP_RESOURCE = "https://erg.tobys.cloud/mcp";
+
+export const MCP_RESOURCES: Record<string, { permission: string; scope: string }> = {
+  [JVNL_MCP_RESOURCE]: { permission: "jvnl:admin", scope: "jvnl" },
+  [ERG_MCP_RESOURCE]: { permission: "erg:read", scope: "erg" },
+};
 const PUBLIC_CLIENT_HOSTS = new Set([
   "grok.com",
   "www.grok.com",
@@ -595,7 +601,12 @@ export async function oauthDiscovery(c: Context): Promise<Response> {
     response_types_supported: ["code"],
     subject_types_supported: ["public"],
     id_token_signing_alg_values_supported: ["RS256"],
-    scopes_supported: ["openid", "email", "profile", "jvnl"],
+    scopes_supported: [
+      "openid",
+      "email",
+      "profile",
+      ...Object.values(MCP_RESOURCES).map((resource) => resource.scope),
+    ],
     token_endpoint_auth_methods_supported: [
       "client_secret_basic",
       "client_secret_post",
@@ -769,7 +780,13 @@ function resourceAllowed(resource: string, permissions: string[]): boolean {
   if (!resource) {
     return true;
   }
-  return resource === JVNL_MCP_RESOURCE && permissions.includes("jvnl:admin");
+  const mcp = MCP_RESOURCES[resource];
+  return mcp !== undefined && permissions.includes(mcp.permission);
+}
+
+function tokenScope(resource: string, plain: string): string {
+  const mcp = MCP_RESOURCES[resource];
+  return mcp ? `openid email ${mcp.scope}` : plain;
 }
 
 export async function oauthAuthorizeGet(c: Context): Promise<Response> {
@@ -781,7 +798,7 @@ export async function oauthAuthorizeGet(c: Context): Promise<Response> {
   if (!pkceAccept(query)) {
     return denyAuthorize(c, query, "invalid_request");
   }
-  if (query.resource && query.resource !== JVNL_MCP_RESOURCE) {
+  if (query.resource && !MCP_RESOURCES[query.resource]) {
     return denyAuthorize(c, query, "invalid_target");
   }
   const client = await resolveClient(c.env.USERS, query.clientId);
@@ -831,7 +848,7 @@ export async function oauthAuthorizePost(c: Context): Promise<Response> {
   if (!pkceAccept(query)) {
     return denyAuthorize(c, query, "invalid_request");
   }
-  if (query.resource && query.resource !== JVNL_MCP_RESOURCE) {
+  if (query.resource && !MCP_RESOURCES[query.resource]) {
     return denyAuthorize(c, query, "invalid_target");
   }
   const user = await getUser(c.env.USERS, session.sub);
@@ -966,7 +983,7 @@ export async function oauthToken(c: Context): Promise<Response> {
     exp: now + TOKEN_TTL_SEC,
     email: authCode.email,
     email_verified: authCode.emailVerified === true,
-    scope: authCode.resource ? "openid email jvnl" : "openid email",
+    scope: tokenScope(authCode.resource, "openid email"),
   });
   await writeAudit(c.env.AUDIT, {
     type: "oauth.token",
@@ -979,7 +996,7 @@ export async function oauthToken(c: Context): Promise<Response> {
     token_type: "Bearer",
     expires_in: TOKEN_TTL_SEC,
     id_token: idToken,
-    scope: authCode.resource ? "openid email jvnl" : "openid email profile",
+    scope: tokenScope(authCode.resource, "openid email profile"),
   });
 }
 
@@ -996,7 +1013,8 @@ export async function oauthUserinfo(c: Context): Promise<Response> {
   const claims = await verifyOidcJwt(header.slice(7).trim(), stored.publicJwk);
   const issuer = issuerFor(c);
   const audienceOk =
-    claims?.aud === `${issuer}/oauth/userinfo` || claims?.aud === JVNL_MCP_RESOURCE;
+    claims?.aud === `${issuer}/oauth/userinfo` ||
+    (typeof claims?.aud === "string" && MCP_RESOURCES[claims.aud] !== undefined);
   if (!claims || claims.iss !== issuer || !audienceOk) {
     return c.json({ error: "invalid_token" }, 401);
   }

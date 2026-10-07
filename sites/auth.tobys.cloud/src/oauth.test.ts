@@ -441,6 +441,94 @@ describe("oidc", () => {
     expect(token.status).toBe(200);
   });
 
+  it("mints an erg MCP token only for a user with erg:read", async () => {
+    const users = new MemoryKV();
+    const cookie = await adminCookie(users);
+    const created = await app.request(
+      "/oauth/apps",
+      {
+        method: "POST",
+        body: new URLSearchParams({
+          name: "Grok erg",
+          client_id: "oc_erg",
+          redirect_uris: "https://grok.com/connectors-oauth-exchange-code/",
+          public: "1",
+        }),
+        headers: { Origin: "http://localhost", Cookie: cookie },
+      },
+      env(users),
+    );
+    expect(created.status).toBe(200);
+    const challenge = await s256(VERIFIER);
+    const denied = await app.request(
+      "/oauth/authorize",
+      {
+        method: "POST",
+        body: new URLSearchParams({
+          response_type: "code",
+          client_id: "oc_erg",
+          redirect_uri: "https://grok.com/connectors-oauth-exchange-code/",
+          scope: "openid email erg",
+          code_challenge: challenge,
+          code_challenge_method: "S256",
+          resource: "https://erg.tobys.cloud/mcp",
+        }),
+        headers: { Origin: "http://localhost", Cookie: cookie },
+      },
+      env(users),
+    );
+    expect((await redirectTarget(denied)).searchParams.get("error")).toBe(
+      "access_denied",
+    );
+    const account = JSON.parse((await users.get("toby@toby.codes")) ?? "{}") as {
+      permissions: string[];
+    };
+    account.permissions = ["auth:admin", "erg:read"];
+    await users.put("toby@toby.codes", JSON.stringify(account));
+    const consent = await app.request(
+      "/oauth/authorize",
+      {
+        method: "POST",
+        body: new URLSearchParams({
+          response_type: "code",
+          client_id: "oc_erg",
+          redirect_uri: "https://grok.com/connectors-oauth-exchange-code/",
+          scope: "openid email erg",
+          code_challenge: challenge,
+          code_challenge_method: "S256",
+          resource: "https://erg.tobys.cloud/mcp",
+        }),
+        headers: { Origin: "http://localhost", Cookie: cookie },
+      },
+      env(users),
+    );
+    const code = (await redirectTarget(consent)).searchParams.get("code") ?? "";
+    const token = await app.request(
+      "/oauth/token",
+      {
+        method: "POST",
+        body: new URLSearchParams({
+          grant_type: "authorization_code",
+          code,
+          redirect_uri: "https://grok.com/connectors-oauth-exchange-code/",
+          client_id: "oc_erg",
+          code_verifier: VERIFIER,
+          resource: "https://erg.tobys.cloud/mcp",
+        }),
+      },
+      env(users),
+    );
+    expect(token.status).toBe(200);
+    const body = (await token.json()) as { access_token: string; scope: string };
+    expect(body.scope).toBe("openid email erg");
+    const jwks = (await (await app.request("/oauth/jwks", {}, env(users))).json()) as {
+      keys: JsonWebKey[];
+    };
+    const access = await verifyOidcJwt(body.access_token, jwks.keys[0]);
+    expect(access?.aud).toBe("https://erg.tobys.cloud/mcp");
+    expect(access?.scope).toBe("openid email erg");
+  });
+
   it("registers a PKCE-only client for an allowed assistant redirect", async () => {
     const users = new MemoryKV();
     const cookie = await adminCookie(users);

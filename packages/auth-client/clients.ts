@@ -1,4 +1,4 @@
-export type AuthClientId = "auth" | "toby-codes" | "jvnl" | "utilityroom";
+export type AuthClientId = "auth" | "toby-codes" | "jvnl" | "utilityroom" | "erg";
 
 export type AuthClient = {
   id: AuthClientId;
@@ -53,6 +53,13 @@ export const AUTH_CLIENTS: Record<AuthClientId, AuthClient> = {
     label: "utilityroom.club",
     permission: "utilityroom:admin",
     origins: ["https://utilityroom.club"],
+    devOrigins: APP_DEV_ORIGINS,
+  },
+  erg: {
+    id: "erg",
+    label: "erg.tobys.cloud",
+    permission: "erg:read",
+    origins: ["https://erg.tobys.cloud"],
     devOrigins: APP_DEV_ORIGINS,
   },
 };

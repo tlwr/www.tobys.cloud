@@ -114,6 +114,14 @@
       "node": "20",
       "install": "npm ci",
       "ci": ["typecheck", "test"]
+    },
+    {
+      "name": "erg.tobys.cloud",
+      "path": "sites/erg.tobys.cloud",
+      "depends": [],
+      "node": "20",
+      "install": "npm ci",
+      "ci": ["typecheck", "test"]
     }
   ]
 }
