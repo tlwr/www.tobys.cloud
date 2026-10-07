@@ -6,9 +6,18 @@ import { getUser } from "./users";
 
 const CLIENT_PREFIX = "oauth:client:";
 const CODE_PREFIX = "oauth:code:";
+const REFRESH_PREFIX = "oauth:refresh:";
+const REFRESH_GRACE_PREFIX = "oauth:refresh-grace:";
 const KEY_NAME = "oidc:signing-key";
 const CODE_TTL_SEC = 120;
 const TOKEN_TTL_SEC = 3600;
+/** Connectors keep working across access-token expiry. The user signs in again after this. */
+const REFRESH_TTL_SEC = 30 * 24 * 60 * 60;
+/**
+ * A retry inside this window is given the same successor.
+ * A later presentation of the old token revokes that successor.
+ */
+const REFRESH_REUSE_SEC = 120;
 /** Audience an MCP client must request. Each resource needs its own permission. */
 export const JVNL_MCP_RESOURCE = "https://jasmijnvink.com/mcp";
 export const ERG_MCP_RESOURCE = "https://erg.tobys.cloud/mcp";
@@ -47,6 +56,16 @@ type AuthCode = {
   codeChallenge: string;
   resource: string;
   exp: number;
+};
+
+type RefreshRecord = {
+  clientId: string;
+  email: string;
+  emailVerified: boolean;
+  resource: string;
+  exp: number;
+  /** SHA-256 of the successor. Set when this token is rotated. */
+  replacedBy?: string;
 };
 
 type Jwk = JsonWebKey & {
@@ -353,6 +372,44 @@ export async function deleteOAuthClient(kv: KVNamespace, id: string): Promise<vo
   await kv.delete(CLIENT_PREFIX + id);
 }
 
+function sameRedirects(a: string[], b: string[]): boolean {
+  if (a.length !== b.length) {
+    return false;
+  }
+  const left = [...a].sort();
+  const right = [...b].sort();
+  return left.every((uri, i) => uri === right[i]);
+}
+
+/** Grok registers again on each sign-in. The redirect set is the public client's identity. */
+async function findPublicClient(
+  kv: KVNamespace,
+  redirectUris: string[],
+): Promise<OAuthClient | null> {
+  const matches = (await listOAuthClients(kv)).filter(
+    (client) => client.publicClient === true && sameRedirects(client.redirectUris, redirectUris),
+  );
+  matches.sort(
+    (a, b) => a.createdAt.localeCompare(b.createdAt) || a.id.localeCompare(b.id),
+  );
+  return matches[0] ?? null;
+}
+
+function registrationDocument(client: OAuthClient) {
+  const issued = Date.parse(client.createdAt);
+  return {
+    client_id: client.id,
+    client_id_issued_at: Number.isFinite(issued)
+      ? Math.floor(issued / 1000)
+      : Math.floor(Date.now() / 1000),
+    client_name: client.name,
+    redirect_uris: client.redirectUris,
+    grant_types: ["authorization_code", "refresh_token"],
+    response_types: ["code"],
+    token_endpoint_auth_method: "none" as const,
+  };
+}
+
 async function loadSigningKey(kv: KVNamespace): Promise<SigningKey> {
   const raw = await kv.get(KEY_NAME);
   if (raw) {
@@ -523,7 +580,7 @@ function appsHtml(
     )
     .join("");
   return `<h2>OAuth apps</h2>
-  <p class="muted">Third parties use this issuer for OpenID Connect. Authorization code plus PKCE S256. A PKCE-only app has no client secret. Other apps must send the secret as well.</p>
+  <p class="muted">Third parties use this issuer for OpenID Connect. Authorization code plus PKCE S256. A PKCE-only app has no client secret. Other apps must send the secret as well. Registering the same redirect URIs again returns the existing PKCE app.</p>
   <p><strong>Issuer</strong> <code>${escapeHtml(issuer)}</code></p>
   <p><strong>Discovery</strong> <code>${escapeHtml(issuer)}/.well-known/openid-configuration</code></p>
   ${created}
@@ -599,6 +656,7 @@ export async function oauthDiscovery(c: Context): Promise<Response> {
     client_id_metadata_document_supported: true,
     registration_endpoint: `${issuer}/oauth/register`,
     response_types_supported: ["code"],
+    grant_types_supported: ["authorization_code", "refresh_token"],
     subject_types_supported: ["public"],
     id_token_signing_alg_values_supported: ["RS256"],
     scopes_supported: [
@@ -643,7 +701,11 @@ export async function oauthRegister(c: Context): Promise<Response> {
     return c.json({ error: "invalid_client_metadata" }, 400);
   }
   const redirects = Array.isArray(body.redirect_uris)
-    ? body.redirect_uris.filter((uri): uri is string => typeof uri === "string")
+    ? [
+        ...new Set(
+          body.redirect_uris.filter((uri): uri is string => typeof uri === "string"),
+        ),
+      ]
     : [];
   if (
     redirects.length === 0 ||
@@ -665,6 +727,10 @@ export async function oauthRegister(c: Context): Promise<Response> {
       400,
     );
   }
+  const existing = await findPublicClient(c.env.USERS, redirects);
+  if (existing) {
+    return c.json(registrationDocument(existing), 200);
+  }
   const name =
     typeof body.client_name === "string" && body.client_name.trim()
       ? body.client_name.trim().slice(0, 80)
@@ -678,18 +744,7 @@ export async function oauthRegister(c: Context): Promise<Response> {
   if ("error" in created) {
     return c.json({ error: "invalid_client_metadata", error_description: created.error }, 400);
   }
-  return c.json(
-    {
-      client_id: created.client.id,
-      client_id_issued_at: Math.floor(Date.now() / 1000),
-      client_name: created.client.name,
-      redirect_uris: created.client.redirectUris,
-      grant_types: ["authorization_code"],
-      response_types: ["code"],
-      token_endpoint_auth_method: "none",
-    },
-    201,
-  );
+  return c.json(registrationDocument(created.client), 201);
 }
 
 export async function oauthAppsGet(c: Context): Promise<Response> {
@@ -892,6 +947,187 @@ function tokenError(c: Context, error: string, status: 400 | 401 = 400): Respons
   return c.json({ error }, status);
 }
 
+async function issueRefreshToken(
+  kv: KVNamespace,
+  fields: Omit<RefreshRecord, "exp" | "replacedBy">,
+): Promise<string> {
+  const token = randomId(32);
+  const exp = Math.floor(Date.now() / 1000) + REFRESH_TTL_SEC;
+  const record: RefreshRecord = { ...fields, exp };
+  await kv.put(REFRESH_PREFIX + (await sha256Hex(token)), JSON.stringify(record), {
+    expirationTtl: REFRESH_TTL_SEC,
+  });
+  return token;
+}
+
+async function revokeRefreshChain(kv: KVNamespace, hash: string): Promise<void> {
+  let current: string | undefined = hash;
+  for (let i = 0; i < 8 && current; i++) {
+    const raw: string | null = await kv.get(REFRESH_PREFIX + current);
+    await kv.delete(REFRESH_PREFIX + current);
+    await kv.delete(REFRESH_GRACE_PREFIX + current);
+    if (!raw) {
+      return;
+    }
+    try {
+      current = (JSON.parse(raw) as RefreshRecord).replacedBy;
+    } catch {
+      return;
+    }
+  }
+}
+
+async function refreshStillAllowed(kv: KVNamespace, record: RefreshRecord): Promise<boolean> {
+  const user = await getUser(kv, record.email);
+  return user !== null && resourceAllowed(record.resource, user.permissions);
+}
+
+async function mintedTokens(
+  c: Context,
+  client: ResolvedClient,
+  email: string,
+  emailVerified: boolean,
+  resource: string,
+  nonce: string,
+  refreshToken: string,
+): Promise<Response> {
+  const stored = await loadSigningKey(c.env.USERS);
+  const now = Math.floor(Date.now() / 1000);
+  const issuer = issuerFor(c);
+  const idToken = await signJwt(stored, {
+    iss: issuer,
+    sub: email,
+    aud: client.id,
+    iat: now,
+    exp: now + TOKEN_TTL_SEC,
+    email,
+    email_verified: emailVerified,
+    ...(nonce ? { nonce } : {}),
+  });
+  const audience = resource || `${issuer}/oauth/userinfo`;
+  const accessToken = await signJwt(stored, {
+    iss: issuer,
+    sub: email,
+    aud: audience,
+    iat: now,
+    exp: now + TOKEN_TTL_SEC,
+    email,
+    email_verified: emailVerified,
+    scope: tokenScope(resource, "openid email"),
+  });
+  await writeAudit(c.env.AUDIT, {
+    type: "oauth.token",
+    email,
+    detail: client.id,
+    ...auditMeta(c),
+  });
+  return c.json({
+    access_token: accessToken,
+    token_type: "Bearer",
+    expires_in: TOKEN_TTL_SEC,
+    refresh_token: refreshToken,
+    id_token: idToken,
+    scope: tokenScope(resource, "openid email profile"),
+  });
+}
+
+async function oauthRefresh(
+  c: Context,
+  body: Record<string, unknown>,
+  creds: { id: string; secret: string },
+): Promise<Response> {
+  const presented = typeof body.refresh_token === "string" ? body.refresh_token : "";
+  if (!presented) {
+    return tokenError(c, "invalid_grant");
+  }
+  const client = await resolveClient(c.env.USERS, creds.id);
+  if (!client) {
+    return tokenError(c, "invalid_client", 401);
+  }
+  if (client.publicClient) {
+    if (creds.secret) {
+      return tokenError(c, "invalid_client", 401);
+    }
+  } else {
+    const storedClient = await readClient(c.env.USERS, client.id);
+    const secretOk =
+      storedClient !== null &&
+      creds.secret !== "" &&
+      timingSafeEqual(storedClient.secretHash, await sha256Hex(creds.secret));
+    if (!secretOk) {
+      return tokenError(c, "invalid_client", 401);
+    }
+  }
+  const hash = await sha256Hex(presented);
+  const raw = await c.env.USERS.get(REFRESH_PREFIX + hash);
+  if (!raw) {
+    return tokenError(c, "invalid_grant");
+  }
+  let record: RefreshRecord;
+  try {
+    record = JSON.parse(raw) as RefreshRecord;
+  } catch {
+    await c.env.USERS.delete(REFRESH_PREFIX + hash);
+    return tokenError(c, "invalid_grant");
+  }
+  const now = Math.floor(Date.now() / 1000);
+  if (!record.clientId || !record.email || typeof record.exp !== "number" || record.exp <= now) {
+    await revokeRefreshChain(c.env.USERS, hash);
+    return tokenError(c, "invalid_grant");
+  }
+  if (record.clientId !== client.id) {
+    return tokenError(c, "invalid_grant");
+  }
+  const requested = typeof body.resource === "string" ? body.resource : "";
+  if (requested && requested !== record.resource) {
+    return tokenError(c, "invalid_target");
+  }
+  if (!(await refreshStillAllowed(c.env.USERS, record))) {
+    await revokeRefreshChain(c.env.USERS, hash);
+    return tokenError(c, "invalid_grant");
+  }
+  if (record.replacedBy) {
+    const grace = await c.env.USERS.get(REFRESH_GRACE_PREFIX + hash);
+    if (typeof grace === "string" && grace) {
+      return mintedTokens(
+        c,
+        client,
+        record.email,
+        record.emailVerified === true,
+        record.resource,
+        "",
+        grace,
+      );
+    }
+    await revokeRefreshChain(c.env.USERS, hash);
+    return tokenError(c, "invalid_grant");
+  }
+  const successor = await issueRefreshToken(c.env.USERS, {
+    clientId: record.clientId,
+    email: record.email,
+    emailVerified: record.emailVerified === true,
+    resource: record.resource,
+  });
+  const remain = Math.max(60, record.exp - now);
+  await c.env.USERS.put(
+    REFRESH_PREFIX + hash,
+    JSON.stringify({ ...record, replacedBy: await sha256Hex(successor) } satisfies RefreshRecord),
+    { expirationTtl: remain },
+  );
+  await c.env.USERS.put(REFRESH_GRACE_PREFIX + hash, successor, {
+    expirationTtl: REFRESH_REUSE_SEC,
+  });
+  return mintedTokens(
+    c,
+    client,
+    record.email,
+    record.emailVerified === true,
+    record.resource,
+    "",
+    successor,
+  );
+}
+
 function clientCredentials(
   c: Context,
   body: Record<string, unknown>,
@@ -921,6 +1157,9 @@ export async function oauthToken(c: Context): Promise<Response> {
   const redirectUri = typeof body.redirect_uri === "string" ? body.redirect_uri : "";
   const verifier = typeof body.code_verifier === "string" ? body.code_verifier : "";
   const creds = clientCredentials(c, body);
+  if (grant === "refresh_token") {
+    return oauthRefresh(c, body, creds);
+  }
   if (grant !== "authorization_code" || !code) {
     return tokenError(c, "unsupported_grant_type");
   }
@@ -961,43 +1200,21 @@ export async function oauthToken(c: Context): Promise<Response> {
   ) {
     return tokenError(c, "invalid_grant");
   }
-  const stored = await loadSigningKey(c.env.USERS);
-  const now = Math.floor(Date.now() / 1000);
-  const issuer = issuerFor(c);
-  const idToken = await signJwt(stored, {
-    iss: issuer,
-    sub: authCode.email,
-    aud: client.id,
-    iat: now,
-    exp: now + TOKEN_TTL_SEC,
+  const refreshToken = await issueRefreshToken(c.env.USERS, {
+    clientId: client.id,
     email: authCode.email,
-    email_verified: authCode.emailVerified === true,
-    ...(authCode.nonce ? { nonce: authCode.nonce } : {}),
+    emailVerified: authCode.emailVerified === true,
+    resource: authCode.resource,
   });
-  const audience = authCode.resource || `${issuer}/oauth/userinfo`;
-  const accessToken = await signJwt(stored, {
-    iss: issuer,
-    sub: authCode.email,
-    aud: audience,
-    iat: now,
-    exp: now + TOKEN_TTL_SEC,
-    email: authCode.email,
-    email_verified: authCode.emailVerified === true,
-    scope: tokenScope(authCode.resource, "openid email"),
-  });
-  await writeAudit(c.env.AUDIT, {
-    type: "oauth.token",
-    email: authCode.email,
-    detail: client.id,
-    ...auditMeta(c),
-  });
-  return c.json({
-    access_token: accessToken,
-    token_type: "Bearer",
-    expires_in: TOKEN_TTL_SEC,
-    id_token: idToken,
-    scope: tokenScope(authCode.resource, "openid email profile"),
-  });
+  return mintedTokens(
+    c,
+    client,
+    authCode.email,
+    authCode.emailVerified === true,
+    authCode.resource,
+    authCode.nonce,
+    refreshToken,
+  );
 }
 
 export async function oauthUserinfo(c: Context): Promise<Response> {

@@ -123,9 +123,14 @@ describe("oidc", () => {
       env(users),
     );
     expect(discovery.status).toBe(200);
-    const doc = (await discovery.json()) as { issuer: string; jwks_uri: string };
+    const doc = (await discovery.json()) as {
+      issuer: string;
+      jwks_uri: string;
+      grant_types_supported: string[];
+    };
     expect(doc.issuer).toBe("https://auth.tobys.cloud");
     expect(doc.jwks_uri).toBe("https://auth.tobys.cloud/oauth/jwks");
+    expect(doc.grant_types_supported).toEqual(["authorization_code", "refresh_token"]);
     const jwks = await app.request("/oauth/jwks", {}, env(users));
     const body = (await jwks.json()) as { keys: { kty: string; alg: string }[] };
     expect(body.keys[0]?.kty).toBe("RSA");
@@ -598,6 +603,337 @@ describe("oidc", () => {
       e,
     );
     expect(token.status).toBe(200);
+    const issued = (await token.json()) as { refresh_token?: string; expires_in?: number };
+    expect(issued.expires_in).toBe(3600);
+    expect(issued.refresh_token).toBeTruthy();
+  });
+
+  it("returns the oldest public client when the same redirect is registered again", async () => {
+    const users = new MemoryKV();
+    const redirect = ["https://grok.com/connectors-oauth-exchange-code/"];
+    const stored = {
+      name: "Grok",
+      redirectUris: redirect,
+      secretHash: "",
+      publicClient: true,
+    };
+    await users.put(
+      "oauth:client:oc_secretold",
+      JSON.stringify({
+        id: "oc_secretold",
+        name: "Confidential",
+        redirectUris: redirect,
+        secretHash: "hashed-secret",
+        createdAt: "2020-01-01T00:00:00.000Z",
+      }),
+    );
+    await users.put(
+      "oauth:client:oc_newer",
+      JSON.stringify({
+        ...stored,
+        id: "oc_newer",
+        createdAt: "2026-10-07T00:00:00.000Z",
+      }),
+    );
+    await users.put(
+      "oauth:client:oc_older",
+      JSON.stringify({
+        ...stored,
+        id: "oc_older",
+        createdAt: "2026-10-01T00:00:00.000Z",
+      }),
+    );
+    const again = await app.request(
+      "/oauth/register",
+      {
+        method: "POST",
+        body: JSON.stringify({
+          client_name: "Grok again",
+          redirect_uris: redirect,
+          token_endpoint_auth_method: "none",
+        }),
+        headers: { "content-type": "application/json" },
+      },
+      env(users),
+    );
+    expect(again.status).toBe(200);
+    const body = (await again.json()) as {
+      client_id: string;
+      client_name: string;
+      grant_types: string[];
+    };
+    expect(body.client_id).toBe("oc_older");
+    expect(body.client_name).toBe("Grok");
+    expect(body.grant_types).toEqual(["authorization_code", "refresh_token"]);
+
+    const claude = await app.request(
+      "/oauth/register",
+      {
+        method: "POST",
+        body: JSON.stringify({
+          redirect_uris: [
+            "https://claude.com/api/mcp/auth_callback",
+            "https://claude.ai/api/mcp/auth_callback",
+          ],
+          token_endpoint_auth_method: "none",
+        }),
+        headers: { "content-type": "application/json" },
+      },
+      env(users),
+    );
+    expect(claude.status).toBe(201);
+    const created = (await claude.json()) as { client_id: string };
+    const reordered = await app.request(
+      "/oauth/register",
+      {
+        method: "POST",
+        body: JSON.stringify({
+          redirect_uris: [
+            "https://claude.ai/api/mcp/auth_callback",
+            "https://claude.com/api/mcp/auth_callback",
+          ],
+          token_endpoint_auth_method: "none",
+        }),
+        headers: { "content-type": "application/json" },
+      },
+      env(users),
+    );
+    expect(reordered.status).toBe(200);
+    expect(((await reordered.json()) as { client_id: string }).client_id).toBe(created.client_id);
+  });
+
+  it("refreshes an MCP token and revokes it when the old refresh token is reused", async () => {
+    const users = new MemoryKV();
+    const cookie = await adminCookie(users);
+    const saved = JSON.parse((await users.get("toby@toby.codes")) ?? "{}") as {
+      permissions: string[];
+    };
+    saved.permissions = ["auth:admin", "erg:read"];
+    await users.put("toby@toby.codes", JSON.stringify(saved));
+    const e = env(users);
+    const registered = await app.request(
+      "/oauth/register",
+      {
+        method: "POST",
+        body: JSON.stringify({
+          client_name: "Grok",
+          redirect_uris: ["https://grok.com/connectors-oauth-exchange-code/"],
+          token_endpoint_auth_method: "none",
+        }),
+        headers: { "content-type": "application/json" },
+      },
+      e,
+    );
+    const clientId = ((await registered.json()) as { client_id: string }).client_id;
+    const other = await app.request(
+      "/oauth/register",
+      {
+        method: "POST",
+        body: JSON.stringify({
+          redirect_uris: ["https://claude.ai/api/mcp/auth_callback"],
+          token_endpoint_auth_method: "none",
+        }),
+        headers: { "content-type": "application/json" },
+      },
+      e,
+    );
+    const otherId = ((await other.json()) as { client_id: string }).client_id;
+    const consent = await app.request(
+      "/oauth/authorize",
+      {
+        method: "POST",
+        body: new URLSearchParams({
+          response_type: "code",
+          client_id: clientId,
+          redirect_uri: "https://grok.com/connectors-oauth-exchange-code/",
+          scope: "openid email",
+          code_challenge: await s256(VERIFIER),
+          code_challenge_method: "S256",
+          resource: "https://erg.tobys.cloud/mcp",
+        }),
+        headers: { Origin: "http://localhost", Cookie: cookie },
+      },
+      e,
+    );
+    const code = (await redirectTarget(consent)).searchParams.get("code") ?? "";
+    const token = await app.request(
+      "/oauth/token",
+      {
+        method: "POST",
+        body: new URLSearchParams({
+          grant_type: "authorization_code",
+          code,
+          redirect_uri: "https://grok.com/connectors-oauth-exchange-code/",
+          client_id: clientId,
+          code_verifier: VERIFIER,
+          resource: "https://erg.tobys.cloud/mcp",
+        }),
+      },
+      e,
+    );
+    const first = (await token.json()) as { refresh_token: string; access_token: string };
+    const refresh = (refreshToken: string, extra?: Record<string, string>) =>
+      app.request(
+        "/oauth/token",
+        {
+          method: "POST",
+          body: new URLSearchParams({
+            grant_type: "refresh_token",
+            refresh_token: refreshToken,
+            client_id: clientId,
+            ...extra,
+          }),
+        },
+        e,
+      );
+
+    const wrongResource = await refresh(first.refresh_token, {
+      resource: "https://jasmijnvink.com/mcp",
+    });
+    expect(wrongResource.status).toBe(400);
+    expect(((await wrongResource.json()) as { error: string }).error).toBe("invalid_target");
+
+    const withSecret = await refresh(first.refresh_token, { client_secret: "nope" });
+    expect(withSecret.status).toBe(401);
+
+    const wrongClient = await app.request(
+      "/oauth/token",
+      {
+        method: "POST",
+        body: new URLSearchParams({
+          grant_type: "refresh_token",
+          refresh_token: first.refresh_token,
+          client_id: otherId,
+        }),
+      },
+      e,
+    );
+    expect(wrongClient.status).toBe(400);
+
+    const rotated = await refresh(first.refresh_token);
+    expect(rotated.status).toBe(200);
+    const second = (await rotated.json()) as {
+      refresh_token: string;
+      access_token: string;
+      scope: string;
+    };
+    expect(second.refresh_token).not.toBe(first.refresh_token);
+    expect(second.scope).toBe("openid email erg");
+    const jwks = (await (await app.request("/oauth/jwks", {}, e)).json()) as {
+      keys: JsonWebKey[];
+    };
+    const access = await verifyOidcJwt(second.access_token, jwks.keys[0]);
+    expect(access?.aud).toBe("https://erg.tobys.cloud/mcp");
+    expect(access?.scope).toBe("openid email erg");
+
+    const replay = await refresh(first.refresh_token);
+    expect(replay.status).toBe(200);
+    expect(((await replay.json()) as { refresh_token: string }).refresh_token).toBe(
+      second.refresh_token,
+    );
+
+    const digest = await crypto.subtle.digest(
+      "SHA-256",
+      new TextEncoder().encode(first.refresh_token),
+    );
+    const hash = [...new Uint8Array(digest)]
+      .map((b) => b.toString(16).padStart(2, "0"))
+      .join("");
+    await users.delete(`oauth:refresh-grace:${hash}`);
+    const reused = await refresh(first.refresh_token);
+    expect(reused.status).toBe(400);
+    expect(((await reused.json()) as { error: string }).error).toBe("invalid_grant");
+    const successor = await refresh(second.refresh_token);
+    expect(successor.status).toBe(400);
+  });
+
+  it("refuses a refresh after erg:read is removed", async () => {
+    const users = new MemoryKV();
+    const cookie = await adminCookie(users);
+    const saved = JSON.parse((await users.get("toby@toby.codes")) ?? "{}") as {
+      permissions: string[];
+    };
+    saved.permissions = ["auth:admin", "erg:read"];
+    await users.put("toby@toby.codes", JSON.stringify(saved));
+    const e = env(users);
+    const registered = await app.request(
+      "/oauth/register",
+      {
+        method: "POST",
+        body: JSON.stringify({
+          client_name: "Grok",
+          redirect_uris: ["https://grok.com/connectors-oauth-exchange-code/"],
+          token_endpoint_auth_method: "none",
+        }),
+        headers: { "content-type": "application/json" },
+      },
+      e,
+    );
+    const clientId = ((await registered.json()) as { client_id: string }).client_id;
+    const consent = await app.request(
+      "/oauth/authorize",
+      {
+        method: "POST",
+        body: new URLSearchParams({
+          response_type: "code",
+          client_id: clientId,
+          redirect_uri: "https://grok.com/connectors-oauth-exchange-code/",
+          scope: "openid",
+          code_challenge: await s256(VERIFIER),
+          code_challenge_method: "S256",
+          resource: "https://erg.tobys.cloud/mcp",
+        }),
+        headers: { Origin: "http://localhost", Cookie: cookie },
+      },
+      e,
+    );
+    const code = (await redirectTarget(consent)).searchParams.get("code") ?? "";
+    const token = await app.request(
+      "/oauth/token",
+      {
+        method: "POST",
+        body: new URLSearchParams({
+          grant_type: "authorization_code",
+          code,
+          redirect_uri: "https://grok.com/connectors-oauth-exchange-code/",
+          client_id: clientId,
+          code_verifier: VERIFIER,
+        }),
+      },
+      e,
+    );
+    const refreshToken = ((await token.json()) as { refresh_token: string }).refresh_token;
+    saved.permissions = ["auth:admin"];
+    await users.put("toby@toby.codes", JSON.stringify(saved));
+    const denied = await app.request(
+      "/oauth/token",
+      {
+        method: "POST",
+        body: new URLSearchParams({
+          grant_type: "refresh_token",
+          refresh_token: refreshToken,
+          client_id: clientId,
+        }),
+      },
+      e,
+    );
+    expect(denied.status).toBe(400);
+    expect(((await denied.json()) as { error: string }).error).toBe("invalid_grant");
+    saved.permissions = ["auth:admin", "erg:read"];
+    await users.put("toby@toby.codes", JSON.stringify(saved));
+    const again = await app.request(
+      "/oauth/token",
+      {
+        method: "POST",
+        body: new URLSearchParams({
+          grant_type: "refresh_token",
+          refresh_token: refreshToken,
+          client_id: clientId,
+        }),
+      },
+      e,
+    );
+    expect(again.status).toBe(400);
   });
 
   it("refuses OIDC on a host that is not the issuer", async () => {
