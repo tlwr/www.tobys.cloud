@@ -35,16 +35,6 @@ job "grafana-agent" {
               {{ end }}
 
             configs:
-              - name: smartmeter
-                scrape_configs:
-                  - job_name: kleidijk
-                    scrape_interval: 30s
-                    scrape_timeout: 20s
-                    dns_sd_configs:
-                      - names: [kleipower.finch-barb.ts.net]
-                        type: A
-                        port: 9220
-
               - name: unpoller
                 scrape_configs:
                   - job_name: 63-unifi
