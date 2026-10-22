@@ -37,7 +37,7 @@ serve() {
 serve
 # serve returns after installing the config. Re-apply in case tailscaled restarts.
 while true; do
-  sleep 300
+  sleep 3600
   serve
 done
 EOH

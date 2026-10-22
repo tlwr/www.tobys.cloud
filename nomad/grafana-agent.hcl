@@ -86,6 +86,40 @@ job "grafana-agent" {
                         target_label: server
                         regex: '(.*)[.]finch-barb[.]ts[.]net'
 
+              - name: snmp
+                scrape_configs:
+                  - job_name: snmp
+                    scrape_interval: 60s
+                    scrape_timeout: 30s
+                    metrics_path: /snmp
+                    params:
+                      # v1 uses GETNEXT. This Brother drops GETBULK, so public_v2 times out.
+                      auth: [public_v1]
+                    static_configs:
+                      - targets: [192.168.1.49]
+                        labels:
+                          module: printer_mib
+                          name: brother-printer
+                    relabel_configs:
+                      - source_labels: [__address__]
+                        target_label: __param_target
+                      - source_labels: [module]
+                        target_label: __param_module
+                      - source_labels: [__param_target]
+                        target_label: instance
+                      - target_label: __address__
+                        replacement: 127.0.0.1:9116
+
+              - name: brother-toner
+                scrape_configs:
+                  - job_name: brother-toner
+                    scrape_interval: 60s
+                    scrape_timeout: 10s
+                    static_configs:
+                      - targets: [127.0.0.1:9117]
+                        labels:
+                          name: brother-printer
+
               - name: node-exporter
                 scrape_configs:
                   - job_name: node-exporter-baremetal
