@@ -1,7 +1,7 @@
-# HTTP on se-01's Tailscale address, for the acceptance test on thinkcentre.
-# This job does not listen on the public address or the anycast prefix.
+# HTTP on se-01's Tailscale address, for any Host on that listener.
+# MagicDNS and the IP both get this response. Public addresses are not bound.
 #   nomad job run nomad/se-01-web.hcl
-#   curl http://100.119.1.82/
+#   curl http://se-01.finch-barb.ts.net/
 
 job "se-01-web" {
   datacenters = ["se"]
@@ -28,7 +28,7 @@ job "se-01-web" {
   auto_https off
 }
 
-http://{{ sockaddr "GetInterfaceIP \"tailscale0\"" }} {
+http:// {
   bind {{ sockaddr "GetInterfaceIP \"tailscale0\"" }}
   header X-Backend {$NODE_NAME}
   respond <<BODY
