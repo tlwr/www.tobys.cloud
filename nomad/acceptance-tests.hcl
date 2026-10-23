@@ -21,6 +21,10 @@ job "acceptance-tests" {
     task "rspec" {
       driver = "docker"
 
+      env {
+        SE01_URL = "http://100.119.1.82"
+      }
+
       config {
         image      = "ghcr.io/tlwr/www-tobys-cloud-acceptance:latest"
         force_pull = true

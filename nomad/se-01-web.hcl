@@ -1,9 +1,7 @@
-# Tiny public HTTP on se-01 for BGP anycast checks.
-# DNS: se-01.tobys.cloud AAAA → 2a0e:97c0:450:: (HTTP-01 Let's Encrypt).
-#
-# Host must have that address locally, and 80/443 open.
+# HTTP on se-01's Tailscale address, for the acceptance test on thinkcentre.
+# This job does not listen on the public address or the anycast prefix.
 #   nomad job run nomad/se-01-web.hcl
-#   curl -6 https://se-01.tobys.cloud/
+#   curl http://100.119.1.82/
 
 job "se-01-web" {
   datacenters = ["se"]
@@ -27,17 +25,14 @@ job "se-01-web" {
         destination = "local/Caddyfile"
         data        = <<-EOH
 {
-  email toby@toby.codes
-  default_bind [::]
-  default_sni se-01.tobys.cloud
+  auto_https off
 }
 
-se-01.tobys.cloud {
-  bind [::]
-  encode gzip
+http://{{ sockaddr "GetInterfaceIP \"tailscale0\"" }} {
+  bind {{ sockaddr "GetInterfaceIP \"tailscale0\"" }}
   header X-Backend {$NODE_NAME}
   respond <<BODY
-ok se-01.tobys.cloud {$NODE_NAME}
+ok se-01 {$NODE_NAME}
 BODY
 }
 EOH

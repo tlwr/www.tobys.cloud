@@ -15,7 +15,7 @@ Acceptance tests (Ruby / live sites):
 - `make acceptance-tests` — `cd acceptance && bundle exec rspec`
 - Image build/push: `make build-acceptance-tests` / `make push-acceptance-tests`
 - Scheduled run: Nomad periodic batch `nomad/acceptance-tests.hcl` on thinkcentre (`*/30`)
-- BGP smoke: `nomad/se-01-web.hcl` (Caddy + HTTP-01 on se-01, `https://se-01.tobys.cloud/`)
+- se-01 check: `nomad/se-01-web.hcl` (Caddy HTTP on the Tailscale address). Acceptance reads `SE01_URL` (`http://100.119.1.82`).
 
 ## Code Style Guidelines
 
