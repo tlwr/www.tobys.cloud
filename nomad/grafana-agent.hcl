@@ -12,6 +12,10 @@ job "grafana-agent" {
     task "agent" {
       driver = "docker"
 
+      env {
+        NODE_NAME = "${node.unique.name}"
+      }
+
       template {
         destination = "local/agent.yaml"
         env         = false
@@ -139,6 +143,23 @@ job "grafana-agent" {
                       - source_labels: [__meta_dns_name]
                         target_label: server
                         regex: '(.*)[.]finch-barb[.]ts[.]net'
+
+              # Remote-write counters for this process. Kept small so Grafana
+              # can alert when samples stop leaving the host.
+              - name: self
+                scrape_configs:
+                  - job_name: grafana-agent
+                    scrape_interval: 60s
+                    scrape_timeout: 10s
+                    static_configs:
+                      - targets: ['127.0.0.1:12345']
+                        labels:
+                          server: {{ env "NODE_NAME" }}
+                          datacenter: jvg
+                    metric_relabel_configs:
+                      - source_labels: [__name__]
+                        regex: 'prometheus_remote_storage_(samples_total|samples_failed_total|samples_dropped_total|bytes_total|samples_pending|queue_highest_sent_timestamp_seconds)'
+                        action: keep
         EOH
       }
 

@@ -6,6 +6,8 @@
 #
 # Host, user, and password come from nomad/jobs/grafana-agent. Loki has its own
 # host and user. The password is the same access-policy token as the metrics agent.
+# The metrics block scrapes this process on 127.0.0.1:12347 and remote-writes
+# the promtail send/drop counters to the same Prometheus endpoint as grafana-agent.
 
 job "grafana-agent-logs" {
   datacenters = ["se", "jvg"]
@@ -26,6 +28,35 @@ job "grafana-agent-logs" {
         data        = <<-EOH
           server:
             log_level: info
+
+          metrics:
+            wal_directory: /var/lib/agent/wal
+
+            global:
+              scrape_interval: 60s
+              {{ with nomadVar "nomad/jobs/grafana-agent" }}
+              remote_write:
+                - url: https://{{ .grafana_cloud_hostname }}/api/prom/push
+                  basic_auth:
+                    username: '{{ .grafana_cloud_remote_username }}'
+                    password: '{{ .grafana_cloud_remote_password }}'
+              {{ end }}
+
+            configs:
+              - name: self
+                scrape_configs:
+                  - job_name: grafana-agent-logs
+                    scrape_interval: 60s
+                    scrape_timeout: 10s
+                    static_configs:
+                      - targets: ['127.0.0.1:12347']
+                        labels:
+                          server: {{ env "NODE_NAME" }}
+                          datacenter: {{ env "NOMAD_DC" }}
+                    metric_relabel_configs:
+                      - source_labels: [__name__]
+                        regex: 'promtail_(journal_target_lines_total|sent_entries_total|sent_bytes_total|dropped_entries_total|dropped_bytes_total)'
+                        action: keep
 
           logs:
             configs:
@@ -86,7 +117,7 @@ job "grafana-agent-logs" {
 
       resources {
         cpu    = 50
-        memory = 128
+        memory = 192
       }
     }
   }
