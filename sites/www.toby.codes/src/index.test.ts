@@ -30,6 +30,28 @@ function env(): Env {
   };
 }
 
+describe("public pages", () => {
+  it("links to posts and does not serve /work", async () => {
+    const home = await app.request("/", {}, env());
+    expect(home.status).toBe(200);
+    const homeHtml = await home.text();
+    expect(homeHtml).toContain('href="/posts"');
+    expect(homeHtml).not.toContain('href="/work"');
+    expect(homeHtml).not.toContain("work-grafana-power-usage");
+
+    const posts = await app.request("/posts", {}, env());
+    expect(posts.status).toBe(200);
+    expect(await posts.text()).not.toContain('href="/work"');
+
+    const work = await app.request("/work", {}, env());
+    expect(work.status).toBe(404);
+    const workHtml = await work.text();
+    expect(workHtml).toContain("404 NOT FOUND");
+    expect(workHtml).not.toContain("Power measurement");
+    expect(workHtml).not.toContain('href="/work"');
+  });
+});
+
 describe("post routes", () => {
   it("serves HTML post with link to .md above content", async () => {
     const res = await app.request(

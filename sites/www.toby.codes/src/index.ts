@@ -22,7 +22,6 @@ import type { Env } from "./env";
 import { isValidTag, parsePost } from "./frontmatter";
 import {
   INDEX_HTML,
-  WORK_HTML,
   adminIndexHtml,
   adminPostEditHtml,
   adminPostNewHtml,
@@ -88,11 +87,6 @@ app.get("/robots.txt", (c) => {
 app.get("/", (c) => {
   setPublicCache(c, ["home"]);
   return c.html(layout(INDEX_HTML));
-});
-
-app.get("/work", (c) => {
-  setPublicCache(c, ["work"]);
-  return c.html(layout(WORK_HTML));
 });
 
 app.get("/posts", async (c) => {
