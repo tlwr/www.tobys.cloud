@@ -167,6 +167,50 @@ job "grafana-agent" {
             scrape_timeout  = "10s"
           }
 
+          // kleidijk-meter on kleipower:80 checks the P1 telegram. Blackbox
+          // runs on this host and is scraped at 127.0.0.1:9115.
+          discovery.relabel "blackbox" {
+            targets = [{
+              __address__ = "http://kleipower.finch-barb.ts.net/",
+              module      = "http_kleipower_meter",
+              name        = "kleipower-meter",
+            }]
+
+            rule {
+              source_labels = ["__address__"]
+              target_label  = "__param_target"
+            }
+
+            rule {
+              source_labels = ["module"]
+              target_label  = "__param_module"
+            }
+
+            rule {
+              source_labels = ["name"]
+              target_label  = "instance"
+            }
+
+            rule {
+              source_labels = ["__param_target"]
+              target_label  = "target"
+            }
+
+            rule {
+              target_label = "__address__"
+              replacement  = "127.0.0.1:9115"
+            }
+          }
+
+          prometheus.scrape "blackbox" {
+            targets         = discovery.relabel.blackbox.output
+            forward_to      = [prometheus.remote_write.metrics.receiver]
+            job_name        = "blackbox"
+            scrape_interval = "60s"
+            scrape_timeout  = "20s"
+            metrics_path    = "/probe"
+          }
+
           discovery.dns "node_exporter" {
             names = [
               "kleipower.finch-barb.ts.net",
