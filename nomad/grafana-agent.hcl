@@ -140,7 +140,7 @@ job "grafana-agent" {
 
             rule {
               target_label = "__address__"
-              replacement  = "127.0.0.1:9116"
+              replacement  = "thinkcentre.finch-barb.ts.net:9116"
             }
           }
 
@@ -156,9 +156,31 @@ job "grafana-agent" {
             }
           }
 
+          // zot on thinkcentre. Keep registry series and drop the Go runtime set.
+          prometheus.scrape "zot" {
+            targets = [{
+              __address__ = "thinkcentre.finch-barb.ts.net:5000",
+            }]
+            forward_to      = [prometheus.relabel.zot.receiver]
+            job_name        = "zot"
+            scrape_interval = "60s"
+            scrape_timeout  = "10s"
+            metrics_path    = "/metrics"
+          }
+
+          prometheus.relabel "zot" {
+            forward_to = [prometheus.remote_write.metrics.receiver]
+
+            rule {
+              source_labels = ["__name__"]
+              regex         = "up|zot_.*"
+              action        = "keep"
+            }
+          }
+
           prometheus.scrape "brother_toner" {
             targets = [{
-              __address__ = "127.0.0.1:9117",
+              __address__ = "thinkcentre.finch-barb.ts.net:9117",
               name        = "brother-printer",
             }]
             forward_to      = [prometheus.remote_write.metrics.receiver]
@@ -168,7 +190,7 @@ job "grafana-agent" {
           }
 
           // kleidijk-meter on kleipower:80 checks the P1 telegram. Blackbox
-          // runs on this host and is scraped at 127.0.0.1:9115.
+          // runs on thinkcentre.
           discovery.relabel "blackbox" {
             targets = [{
               __address__ = "http://kleipower.finch-barb.ts.net/",
@@ -198,7 +220,7 @@ job "grafana-agent" {
 
             rule {
               target_label = "__address__"
-              replacement  = "127.0.0.1:9115"
+              replacement  = "thinkcentre.finch-barb.ts.net:9115"
             }
           }
 

@@ -26,7 +26,9 @@ job "acceptance-tests" {
       }
 
       config {
-        image      = "ghcr.io/tlwr/www-tobys-cloud-acceptance:latest"
+        # zot on this host. The Tailscale name does not resolve here, and
+        # Docker already allows plain HTTP for loopback.
+        image      = "127.0.0.1:5000/www-tobys-cloud-acceptance:latest"
         force_pull = true
         work_dir   = "/acceptance"
         command    = "bundle"

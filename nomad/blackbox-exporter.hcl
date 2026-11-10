@@ -1,5 +1,6 @@
 # Blackbox exporter on thinkcentre. Grafana Agent passes each target.
-# Probes stay on the host network and the agent scrapes 127.0.0.1:9115.
+# Probes stay on the host network. The agent scrapes
+# thinkcentre.finch-barb.ts.net:9115.
 # Another probe is another static target in nomad/grafana-agent.hcl.
 #   nomad job run nomad/blackbox-exporter.hcl
 
@@ -40,7 +41,7 @@ EOH
 
         args = [
           "--config.file=/etc/blackbox/blackbox.yml",
-          "--web.listen-address=127.0.0.1:9115",
+          "--web.listen-address=0.0.0.0:9115",
         ]
 
         volumes = [

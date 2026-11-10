@@ -1,8 +1,8 @@
 # SNMP exporter for LAN devices. Grafana Agent passes each target.
 # The image ships modules including printer_mib, if_mib, and system.
 # Another device is another static target in nomad/grafana-agent.hcl,
-# with a module label. SNMP stays on the LAN; the agent scrapes
-# 127.0.0.1:9116 because both tasks use the host network.
+# with a module label. SNMP stays on the LAN. The exporter listens on
+# every interface, and the agent scrapes thinkcentre.finch-barb.ts.net:9116.
 #   nomad job run nomad/snmp-exporter.hcl
 
 job "snmp-exporter" {

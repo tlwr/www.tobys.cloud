@@ -2,7 +2,8 @@
 # Printer-MIB prtMarkerSuppliesLevel is the sentinel -3 (some remaining),
 # and the max capacity is unknown. The percent is record 0x81 in
 # brInfoMaintenance (1.3.6.1.4.1.2435.2.3.9.4.2.1.5.5.8.0), a whole
-# number from 0 to 100. Grafana Agent scrapes 127.0.0.1:9117.
+# number from 0 to 100. Grafana Agent scrapes
+# thinkcentre.finch-barb.ts.net:9117.
 #   nomad job run nomad/brother-toner.hcl
 
 job "brother-toner" {
@@ -30,7 +31,7 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 PRINTER = "192.168.1.49"
 COMMUNITY = "public"
 OID = "1.3.6.1.4.1.2435.2.3.9.4.2.1.5.5.8.0"
-LISTEN = ("127.0.0.1", 9117)
+LISTEN = ("0.0.0.0", 9117)
 TONER_ID = 0x81
 
 
