@@ -22,7 +22,7 @@
     "@simplewebauthn/server": "^14.0.1",
     "@tobys/auth-client": "file:../../packages/auth-client",
     "bcryptjs": "^2.4.3",
-    "hono": "^4.11.10"
+    "hono": "^4.13.16"
   },
   "devDependencies": {
     "@cloudflare/workers-types": "^5.20260801.1",
