@@ -22,7 +22,7 @@
   },
   "dependencies": {
     "@tobys/auth-client": "file:../../packages/auth-client",
-    "hono": "^4.11.10",
+    "hono": "^4.13.16",
     "marked": "^17.0.3"
   },
   "devDependencies": {
