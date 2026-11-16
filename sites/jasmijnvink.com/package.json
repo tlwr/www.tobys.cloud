@@ -16,7 +16,7 @@
   },
   "dependencies": {
     "@tobys/auth-client": "file:../../packages/auth-client",
-    "hono": "^4.11.10"
+    "hono": "^4.13.16"
   },
   "devDependencies": {
     "@cloudflare/workers-types": "^5.20260801.1",
