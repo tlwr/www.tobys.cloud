@@ -4,8 +4,10 @@
 # kd stays out: kleipower is arm64 and has no Docker. jvg is thinkcentre only.
 #   nomad job run nomad/grafana-agent-logs.hcl
 #
-# Host, user, and password come from nomad/jobs/grafana-agent. Loki has its own
-# host and user. The password is the same access-policy token as the metrics agent.
+# Host, user, and password come from nomad/jobs/grafana-agent-logs. Loki has
+# its own host and user. The password is the same access-policy token as the
+# metrics agent. This variable is separate from the metrics agent's variable
+# so the task can read it with its own workload identity.
 #
 # Alloy static mode cannot be used here. Its converter drops journal matches,
 # so both sources would forward the whole journal. This River file keeps
@@ -35,7 +37,7 @@ job "grafana-agent-logs" {
         data        = <<-EOH
           prometheus.remote_write "metrics" {
             endpoint {
-              {{ with nomadVar "nomad/jobs/grafana-agent" }}
+              {{ with nomadVar "nomad/jobs/grafana-agent-logs" }}
               url = "https://{{ .grafana_cloud_hostname }}/api/prom/push"
 
               basic_auth {
@@ -70,7 +72,7 @@ job "grafana-agent-logs" {
 
           loki.write "auth" {
             endpoint {
-              {{ with nomadVar "nomad/jobs/grafana-agent" }}
+              {{ with nomadVar "nomad/jobs/grafana-agent-logs" }}
               url = "https://{{ .grafana_cloud_loki_hostname }}/loki/api/v1/push"
 
               basic_auth {

@@ -40,3 +40,7 @@ telemetry {
   publish_allocation_metrics = true
   publish_node_metrics       = true
 }
+
+acl {
+  enabled = true
+}

@@ -89,6 +89,17 @@ job "grafana-agent" {
             params          = {
               format = ["prometheus"],
             }
+            {{/* nomadVarExists takes only a path on Nomad 1.11, so a missing key is skipped by ranging the map. */}}
+            {{ with nomadVar "nomad/jobs/grafana-agent" }}
+            {{ range $k, $v := . }}
+            {{ if eq $k "nomad_acl_token" }}
+            authorization {
+              type        = "Bearer"
+              credentials = `{{ $v }}`
+            }
+            {{ end }}
+            {{ end }}
+            {{ end }}
           }
 
           discovery.dns "tailscale" {
