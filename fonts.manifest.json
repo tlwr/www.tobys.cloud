@@ -2,6 +2,12 @@
   "bucket": "tobys-cloud-fonts",
   "files": [
     {
+      "key": "Alas-Black.woff2",
+      "sha256": "a93d73d9d5bfadaccfe2a11d7f2856c5c769300fb7dd82b5640d220e7b618d17",
+      "bytes": 151576,
+      "contentType": "font/woff2"
+    },
+    {
       "key": "BerkeleyMono-Bold.woff",
       "sha256": "979a9500c39b25962b4037f55d7a9d062a0cadd42cb10b940fcfcc0e526fe763",
       "bytes": 41832,
