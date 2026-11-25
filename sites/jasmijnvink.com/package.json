@@ -20,10 +20,10 @@
   },
   "devDependencies": {
     "@cloudflare/workers-types": "^5.20260801.1",
-    "cf": "^1.0.0-beta.5",
+    "cf": "^1.0.0-rc.5",
     "typescript": "^5.9.3",
     "vitest": "^4.0.18",
-    "wrangler": "^4.107.0"
+    "wrangler": "^4.168.0"
   },
   "overrides": {
     "sharp": "0.35.5"
