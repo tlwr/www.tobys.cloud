@@ -16,6 +16,6 @@
     "forceConsistentCasingInFileNames": true,
     "isolatedModules": true
   },
-  "include": ["src/**/*", "../../packages/auth-client/**/*"],
+  "include": ["src/**/*", "../../packages/auth-client/**/*", "../../packages/ui/**/*"],
   "exclude": ["node_modules"]
 }

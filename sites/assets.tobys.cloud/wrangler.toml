@@ -9,6 +9,14 @@ enabled = true
 [assets]
 directory = "./public"
 binding = "ASSETS"
+# The Worker adds CORS and cache headers. Without this, existing files are
+# served by the asset layer and those headers never run.
+run_worker_first = true
+
+# Licensed webfonts. Not in git. `node tools/fonts.mjs push` fills the bucket.
+[[r2_buckets]]
+binding = "FONTS"
+bucket_name = "tobys-cloud-fonts"
 
 # Use an explicit zone Route (not only a Custom Domain). page-404 binds
 # `*.tobys.cloud/*`; Cloudflare gives Routes precedence over Custom Domains,

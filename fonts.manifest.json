@@ -1,0 +1,89 @@
+{
+  "bucket": "tobys-cloud-fonts",
+  "files": [
+    {
+      "key": "BerkeleyMono-Bold.woff",
+      "sha256": "979a9500c39b25962b4037f55d7a9d062a0cadd42cb10b940fcfcc0e526fe763",
+      "bytes": 41832,
+      "contentType": "font/woff"
+    },
+    {
+      "key": "BerkeleyMono-Bold.woff2",
+      "sha256": "fa6b05631fa4586434d119c3edfdfa034f466b4524a2df9b43a4802725f53488",
+      "bytes": 38664,
+      "contentType": "font/woff2"
+    },
+    {
+      "key": "BerkeleyMono-BoldItalic.woff",
+      "sha256": "37ac46f5b2eff933350020da5b5328cd5fe959f3b99f81b819de46d85a2d7173",
+      "bytes": 42540,
+      "contentType": "font/woff"
+    },
+    {
+      "key": "BerkeleyMono-BoldItalic.woff2",
+      "sha256": "c1543d96ed258faf8e51a3eef09480a0ac71c7da5300758f319350477c266aee",
+      "bytes": 39400,
+      "contentType": "font/woff2"
+    },
+    {
+      "key": "BerkeleyMono-Regular.woff",
+      "sha256": "5360f0f4e9271a7e188cb9d40f18d6449e3509e36716dfad257ae2bb9f7f655f",
+      "bytes": 40732,
+      "contentType": "font/woff"
+    },
+    {
+      "key": "BerkeleyMono-Regular.woff2",
+      "sha256": "16b4d62b0e66266086ba7561805e1c8906ecc4fdd016c8742141164c4b5653d2",
+      "bytes": 37980,
+      "contentType": "font/woff2"
+    },
+    {
+      "key": "jasmijn/BerkeleyMono-Black-Oblique.woff2",
+      "sha256": "ca8daa157a3241a6f34679beea4816e24f9a34fb120549bc4959b6fa44d7415e",
+      "bytes": 25756,
+      "contentType": "font/woff2"
+    },
+    {
+      "key": "jasmijn/BerkeleyMono-Black.woff2",
+      "sha256": "e1fc04cab1b52ea7986abe7d283c8938b524ef52476b4f1c53776441116039b3",
+      "bytes": 24392,
+      "contentType": "font/woff2"
+    },
+    {
+      "key": "jasmijn/BerkeleyMono-Bold-Oblique.woff2",
+      "sha256": "4cd4eac70b45dbe172432c428c41d36d74001ba463a95c7d6fd813bb5d722311",
+      "bytes": 25920,
+      "contentType": "font/woff2"
+    },
+    {
+      "key": "jasmijn/BerkeleyMono-Bold.woff2",
+      "sha256": "988a2bb8093990be4e2284771780b54d10ff25022fb500c85c0add4be0a37189",
+      "bytes": 24364,
+      "contentType": "font/woff2"
+    },
+    {
+      "key": "jasmijn/BerkeleyMono-Light-Oblique.woff2",
+      "sha256": "2ac862bdd1f81119d59abae0e9e27b22962a62ce318fd85bfc672023fe3c9d0c",
+      "bytes": 26192,
+      "contentType": "font/woff2"
+    },
+    {
+      "key": "jasmijn/BerkeleyMono-Light.woff2",
+      "sha256": "81b83cc895580c089d42efc653e1c18fdf2da957bca2db65c1f424dadbb43bde",
+      "bytes": 24476,
+      "contentType": "font/woff2"
+    },
+    {
+      "key": "jasmijn/BerkeleyMono-Oblique.woff2",
+      "sha256": "1edfd39c1970576cf64c2937f961861ca56b8c14cefd967bd256eb404d785deb",
+      "bytes": 25568,
+      "contentType": "font/woff2"
+    },
+    {
+      "key": "jasmijn/BerkeleyMono-Regular.woff2",
+      "sha256": "1bb73c0865923b4bd5d011bd0395dd24de269abe01b0fbbca3e7b681f664d288",
+      "bytes": 24036,
+      "contentType": "font/woff2"
+    }
+  ]
+}

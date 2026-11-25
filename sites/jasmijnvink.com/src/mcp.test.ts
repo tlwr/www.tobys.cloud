@@ -32,6 +32,7 @@ function env(pictures: MemoryKV, tags: MemoryKV): Env {
     PICTURES: pictures as unknown as KVNamespace,
     TAGS: tags as unknown as KVNamespace,
     IMAGES: { get: async () => null, put: async () => {}, delete: async () => {} } as unknown as R2Bucket,
+    FONTS: { get: async () => null } as unknown as R2Bucket,
     ASSETS: { fetch: async () => new Response("missing", { status: 404 }) } as unknown as Fetcher,
     AUTH_ISSUER: "https://auth.tobys.cloud",
   };

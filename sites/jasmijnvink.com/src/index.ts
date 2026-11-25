@@ -493,6 +493,15 @@ app.post("/pictures/:id/delete", requireAuth, async (c) => {
   return c.redirect("/pictures");
 });
 
+/** `/fonts/<file>.woff2` is stored as `jasmijn/<file>.woff2` in the shared font bucket. */
+function jasmijnFontKey(pathname: string): string | null {
+  const prefix = "/fonts/";
+  if (!pathname.startsWith(prefix)) return null;
+  const name = pathname.slice(prefix.length);
+  if (!/^[A-Za-z0-9._~-]+\.woff2$/.test(name)) return null;
+  return `jasmijn/${name}`;
+}
+
 /** Drop validators so a cached error that shares the file ETag cannot stick. */
 function replaceAsset(asset: Response): Response {
   if (asset.status === 304 || asset.status === 204) {
@@ -523,6 +532,23 @@ app.notFound(async (c) => {
     (c.req.method === "GET" || c.req.method === "HEAD") &&
     isStaticAssetPath(assetUrl.pathname)
   ) {
+    const font = jasmijnFontKey(assetUrl.pathname);
+    if (font) {
+      const object = await c.env.FONTS.get(font);
+      if (!object) {
+        return c.html(layout(notFoundHtml()), 404);
+      }
+      const headers = new Headers();
+      headers.set("content-type", "font/woff2");
+      headers.set("cache-control", "public, max-age=86400");
+      if (typeof object.size === "number") {
+        headers.set("content-length", String(object.size));
+      }
+      return new Response(c.req.method === "HEAD" ? null : object.body, {
+        status: 200,
+        headers,
+      });
+    }
     const asset = await c.env.ASSETS.fetch(
       new Request(assetUrl.toString(), {
         method: c.req.method === "HEAD" ? "HEAD" : "GET",

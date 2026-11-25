@@ -1,3 +1,5 @@
+import { stylesheetLink } from "@tobys/ui";
+
 export const HTMX_SCRIPT = `\n    <script src="https://cdnjs.cloudflare.com/ajax/libs/htmx/1.9.12/htmx.min.js" integrity="sha512-JvpjarJlOl4sW26MnEb3IdSAcGdeTeOaAlu2gUZtfFrRgnChdzELOZKl0mN6ZvI0X+xiX5UMvxjK2Rx2z/fliw==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>`;
 
 export function sessionNavHtml(): string {
@@ -36,7 +38,7 @@ export function layout(
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="robots" content="${robots}">
-    <link rel="stylesheet" href="https://assets.tobys.cloud/styles.css" type="text/css">
+    ${stylesheetLink()}
     <link rel="icon" href="https://assets.tobys.cloud/favicon.ico">
     <title>Toby Lorne</title>
     <style>

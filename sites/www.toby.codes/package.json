@@ -22,6 +22,7 @@
   },
   "dependencies": {
     "@tobys/auth-client": "file:../../packages/auth-client",
+    "@tobys/ui": "file:../../packages/ui",
     "hono": "^4.13.16",
     "marked": "^17.0.3"
   },

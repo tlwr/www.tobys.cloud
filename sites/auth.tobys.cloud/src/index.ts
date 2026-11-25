@@ -44,8 +44,10 @@ import {
   noteLoginSuccess,
 } from "./ratelimit";
 import type { Env } from "./env";
+import { flash } from "@tobys/ui";
 import {
   auditHtml,
+  escapeHtml,
   forbiddenHtml,
   layout,
   loginHtml,
@@ -337,7 +339,7 @@ app.get("/audit", requireLocalAuth(), async (c) => {
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
     console.error("audit list failed", err);
-    return page(c, `<h2>Audit log</h2><p class="err">${msg}</p>`, {
+    return page(c, `<h2>Audit log</h2>${flash("error", escapeHtml(msg))}`, {
       title: "Audit",
     });
   }

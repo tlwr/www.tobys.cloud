@@ -45,6 +45,54 @@ describe("assets.tobys.cloud", () => {
     expect(fetched).toEqual([]);
   });
 
+  it("serves the style guide and v1 sheet", async () => {
+    const { env, fetched } = assets();
+    const guide = await worker.fetch(
+      new Request("https://assets.tobys.cloud/v1"),
+      env,
+    );
+    const sheet = await worker.fetch(
+      new Request("https://assets.tobys.cloud/v1/toby.css"),
+      env,
+    );
+    expect(guide.status).toBe(200);
+    expect(sheet.status).toBe(200);
+    expect(sheet.headers.get("access-control-allow-origin")).toBe("*");
+    expect(fetched).toEqual(["/v1/index.html GET", "/v1/toby.css GET"]);
+  });
+
+  it("serves a webfont from R2 and not the asset bucket", async () => {
+    const { env, fetched } = assets();
+    const keys: string[] = [];
+    env.FONTS = {
+      get: async (key: string) => {
+        keys.push(key);
+        return { key, size: 4, body: new TextEncoder().encode("font") };
+      },
+    } as unknown as Env["FONTS"];
+    const res = await worker.fetch(
+      new Request("https://assets.tobys.cloud/BerkeleyMono-Regular.woff2"),
+      env,
+    );
+    expect(res.status).toBe(200);
+    expect(res.headers.get("content-type")).toBe("font/woff2");
+    expect(res.headers.get("access-control-allow-origin")).toBe("*");
+    expect(await res.text()).toBe("font");
+    expect(keys).toEqual(["BerkeleyMono-Regular.woff2"]);
+    expect(fetched).toEqual([]);
+  });
+
+  it("does not read the asset bucket when a font is missing", async () => {
+    const { env, fetched } = assets();
+    env.FONTS = { get: async () => null } as unknown as Env["FONTS"];
+    const res = await worker.fetch(
+      new Request("https://assets.tobys.cloud/BerkeleyMono-Regular.woff2"),
+      env,
+    );
+    expect(res.status).toBe(404);
+    expect(fetched).toEqual([]);
+  });
+
   it("answers OPTIONS for a static file without fetching it", async () => {
     const { env, fetched } = assets();
     const res = await worker.fetch(

@@ -1,4 +1,5 @@
 import { getIdentity, hasPermission } from "@tobys/auth-client";
+import { flash } from "@tobys/ui";
 import type { Context } from "hono";
 import { auditMeta, writeAudit } from "./audit";
 import { escapeHtml, layout } from "./html";
@@ -559,9 +560,9 @@ function appsHtml(
 ): string {
   const created = createdApp
     ? createdApp.publicClient
-      ? `<p class="ok">This app uses PKCE only. Leave the client secret blank in the connector.</p>
+      ? `${flash("ok", "This app uses PKCE only. Leave the client secret blank in the connector.")}
        <p><strong>Client ID</strong> <code>${escapeHtml(createdApp.id)}</code></p>`
-      : `<p class="ok">Copy the client secret now. It will not be shown again.</p>
+      : `${flash("ok", "Copy the client secret now. It will not be shown again.")}
        <p><strong>Client ID</strong> <code>${escapeHtml(createdApp.id)}</code></p>
        <p><strong>Client secret</strong> <code>${escapeHtml(createdApp.secret)}</code></p>`
     : "";
@@ -766,7 +767,7 @@ export async function oauthAppsPost(c: Context): Promise<Response> {
     const clients = await listOAuthClients(c.env.USERS);
     return c.html(
       layout(
-        `<p class="err">${escapeHtml(created.error)}</p>${appsHtml(clients, issuerFor(c))}`,
+        `${flash("error", escapeHtml(created.error))}${appsHtml(clients, issuerFor(c))}`,
         { email: id?.sub, isAdmin: true, title: "OAuth apps" },
       ),
       400,

@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>tobys.cloud</title>
+  <link rel="stylesheet" href="/v1/toby.css">
+  <style>
+    body { margin: 0; }
+    .guide {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      min-height: 100vh;
+    }
+    .guide > section { padding: 2rem 1.5rem 3rem; }
+    .guide .row { display: flex; flex-wrap: wrap; gap: 0.6rem; margin: 0 0 1rem; }
+    @media (max-width: 52em) {
+      .guide { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <div class="guide">
+    <section data-theme="light">
+      <p class="label">Light</p>
+      <header class="site-header">
+        <h1>Toby Lorne</h1>
+        <nav class="nav">
+          <a href="#light-about">About</a>
+          <a href="#light-posts">Posts</a>
+          <a href="#light-auth">Auth</a>
+        </nav>
+      </header>
+      <p id="light-about">Paper is the field. Titles use the display stack. Interface text stays mono.</p>
+      <p class="shift"><span class="shift-left">Left</span> <span class="shift-right">Right</span> <span class="sku">SKU</span></p>
+      <div class="row">
+        <button type="button" class="btn">Chrome</button>
+        <button type="button" class="btn btn-primary">Primary</button>
+      </div>
+      <div class="flash flash-ok" role="status"><span class="flash-legend">OK</span>Saved.</div>
+      <div class="flash flash-error" role="alert"><span class="flash-legend">ERROR</span>Could not save.</div>
+      <div class="region">
+        <p class="label">Region</p>
+        <label for="light-name">Name</label>
+        <input class="field" id="light-name" name="name" type="text" value="toby">
+      </div>
+      <table class="data">
+        <thead><tr><th>Host</th><th>Status</th></tr></thead>
+        <tbody><tr><td>pom</td><td>up</td></tr></tbody>
+      </table>
+      <div class="viewport"><span class="mark">12:41</span> steady</div>
+    </section>
+    <section data-theme="dark">
+      <p class="label">Dark</p>
+      <header class="site-header">
+        <h1>Toby Lorne</h1>
+        <nav class="nav">
+          <a href="#dark-about">About</a>
+          <a href="#dark-posts">Posts</a>
+          <a href="#dark-auth">Auth</a>
+        </nav>
+      </header>
+      <p id="dark-about">The viewport is the field. Marks are turquoise. Flashes stay the same fill.</p>
+      <p class="shift"><span class="shift-left">Left</span> <span class="shift-right">Right</span> <span class="sku">SKU</span></p>
+      <div class="row">
+        <button type="button" class="btn">Chrome</button>
+        <button type="button" class="btn btn-primary">Primary</button>
+      </div>
+      <div class="flash flash-ok" role="status"><span class="flash-legend">OK</span>Saved.</div>
+      <div class="flash flash-error" role="alert"><span class="flash-legend">ERROR</span>Could not save.</div>
+      <div class="region">
+        <p class="label">Region</p>
+        <label for="dark-name">Name</label>
+        <input class="field" id="dark-name" name="name" type="text" value="toby">
+      </div>
+      <table class="data">
+        <thead><tr><th>Host</th><th>Status</th></tr></thead>
+        <tbody><tr><td>pom</td><td>up</td></tr></tbody>
+      </table>
+      <div class="viewport"><span class="mark">12:41</span> steady</div>
+    </section>
+  </div>
+</body>
+</html>

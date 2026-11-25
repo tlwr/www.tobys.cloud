@@ -1,4 +1,5 @@
 import { ALL_PERMISSIONS, AUTH_CLIENTS } from "@tobys/auth-client";
+import { flash, nav, siteHeader, stylesheetLink } from "@tobys/ui";
 import type { AuditEvent } from "./audit";
 import type { User } from "./users";
 
@@ -26,19 +27,19 @@ export function layout(
         <a href="/audit">Audit</a>
         <a href="/users/new">New user</a>`
     : "";
-  const nav = opts.email
-    ? `<nav>
-        ${adminNav}
+  const navigation = nav(
+    opts.email
+      ? `${adminNav}
         <a href="/me">Me</a>
-        <form method="post" action="/logout" style="display:inline">
+        <form method="post" action="/logout" class="inline">
           <button type="submit">Log out</button>
         </form>
-        <span class="who">${escapeHtml(opts.email)}</span>
-      </nav>`
-    : `<nav></nav>`;
-  const flash = [
-    opts.notice ? `<p class="ok">${escapeHtml(opts.notice)}</p>` : "",
-    opts.alert ? `<p class="err">${escapeHtml(opts.alert)}</p>` : "",
+        <span class="who">${escapeHtml(opts.email)}</span>`
+      : "",
+  );
+  const flashes = [
+    opts.notice ? flash("ok", escapeHtml(opts.notice)) : "",
+    opts.alert ? flash("error", escapeHtml(opts.alert)) : "",
   ]
     .filter(Boolean)
     .join("");
@@ -49,42 +50,23 @@ export function layout(
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="robots" content="noindex">
   <title>${escapeHtml(opts.title ?? "Auth")}</title>
+  ${stylesheetLink()}
   <style>
-    :root { --dark: #111; --light: #f2f0ec; }
-    @media (prefers-color-scheme: dark) {
-      :root { --dark: #f2f0ec; --light: #111; }
-    }
-    body { font-family: ui-monospace, "Berkeley Mono", monospace; background: var(--light); color: var(--dark); margin: 0; line-height: 1.5; }
     .wrap { max-width: min(88rem, 96vw); margin: 0 auto; padding: 2rem 1rem; overflow-x: auto; }
-    h1 { font-style: italic; text-transform: uppercase; }
-    nav { display: flex; gap: 1rem; align-items: center; flex-wrap: wrap; margin-bottom: 1.5rem; }
-    nav a, a { color: var(--dark); }
-    nav .who { margin-left: auto; opacity: 0.7; }
-    button, input, select { font: inherit; }
-    button { background: var(--light); color: var(--dark); border: 2px solid var(--dark); border-radius: 5px; padding: 0.3rem 0.7rem; cursor: pointer; }
-    button:hover { background: var(--dark); color: var(--light); }
-    input[type=email], input[type=password], input[type=text] {
-      width: 100%; box-sizing: border-box; padding: 0.4rem; border: 1px solid var(--dark);
-      background: var(--light); color: var(--dark);
-    }
-    .row { margin-bottom: 1rem; }
-    .ok { background: #dcfce7; color: #166534; padding: 0.75rem; }
-    .err { background: #fee2e2; color: #991b1b; padding: 0.75rem; }
-    table { width: 100%; border-collapse: collapse; }
-    th, td { text-align: left; padding: 0.4rem 0.5rem; border-bottom: 1px dotted var(--dark); vertical-align: top; white-space: nowrap; }
-    .checks label { display: block; margin: 0.25rem 0; }
-    .muted { opacity: 0.7; }
+    nav .who { margin-left: auto; color: var(--muted); }
+    th, td { white-space: nowrap; }
+    .checks label { display: block; margin: 0.25rem 0; font-size: 1rem; font-weight: 400; letter-spacing: 0; text-transform: none; }
     form.inline { display: inline; }
-    .or { display: flex; align-items: center; gap: 0.75rem; margin: 1.25rem 0; opacity: 0.7; }
-    .or::before, .or::after { content: ""; flex: 1; border-bottom: 1px dotted var(--dark); }
+    .or { display: flex; align-items: center; gap: 0.75rem; margin: 1.25rem 0; color: var(--muted); }
+    .or::before, .or::after { content: ""; flex: 1; border-bottom: 1px solid var(--border); }
     .stack { display: flex; flex-direction: column; align-items: flex-start; gap: 0.75rem; }
+    .row { margin-bottom: 1rem; }
   </style>
 </head>
 <body>
   <div class="wrap">
-    <h1>Auth</h1>
-    ${nav}
-    ${flash}
+    ${siteHeader("Auth", navigation)}
+    ${flashes}
     ${body}
   </div>
 </body>
@@ -98,13 +80,13 @@ export function loginHtml(opts: {
   error?: string;
   nonce?: string;
 }): string {
-  const err = opts.error ? `<p class="err">${escapeHtml(opts.error)}</p>` : "";
+  const err = opts.error ? flash("error", escapeHtml(opts.error)) : "";
   const next = escapeHtml(opts.next ?? "/me");
   const client = escapeHtml(opts.client ?? "");
   const redirect = escapeHtml(opts.redirect ?? "");
   return `<h2>Log in</h2>
   ${err}
-  <p id="passkey-error" class="err" hidden></p>
+  <div id="passkey-error" class="flash flash-error" role="alert" hidden><span class="flash-legend">ERROR</span><span class="flash-body"></span></div>
   <form method="post" action="/login">
     <input type="hidden" name="next" value="${next}">
     <input type="hidden" name="client" value="${client}">
@@ -117,7 +99,7 @@ export function loginHtml(opts: {
       <label for="password">Password</label>
       <input id="password" type="password" name="password" autocomplete="current-password" required>
     </div>
-    <button type="submit">Log in</button>
+    <button class="btn-primary" type="submit">Log in</button>
   </form>
   <p class="or">or</p>
   <button type="button" id="passkey-login"
@@ -131,7 +113,8 @@ export function loginHtml(opts: {
     if (!btn) return;
     function show(msg) {
       if (!err) return;
-      err.textContent = msg;
+      var body = err.querySelector(".flash-body");
+      if (body) body.textContent = msg;
       err.hidden = false;
     }
     btn.addEventListener("click", async function () {
@@ -207,7 +190,7 @@ export function usersIndexHtml(users: User[]): string {
 }
 
 export function userNewHtml(opts: { email?: string; error?: string } = {}): string {
-  const err = opts.error ? `<p class="err">${escapeHtml(opts.error)}</p>` : "";
+  const err = opts.error ? flash("error", escapeHtml(opts.error)) : "";
   return `<h2>New user</h2>
   ${err}
   <form method="post" action="/users/new">
@@ -219,7 +202,7 @@ export function userNewHtml(opts: { email?: string; error?: string } = {}): stri
       <label for="password">Password</label>
       <input id="password" type="password" name="password" required minlength="8">
     </div>
-    <div class="row checks">
+    <div class="row checks region">
       <p>Permissions</p>
       ${permChecks([])}
     </div>
@@ -228,12 +211,12 @@ export function userNewHtml(opts: { email?: string; error?: string } = {}): stri
 }
 
 export function userEditHtml(user: User, opts: { error?: string } = {}): string {
-  const err = opts.error ? `<p class="err">${escapeHtml(opts.error)}</p>` : "";
+  const err = opts.error ? flash("error", escapeHtml(opts.error)) : "";
   const action = `/users/${encodeURIComponent(user.email)}`;
   return `<h2>${escapeHtml(user.email)}</h2>
   ${err}
   <form method="post" action="${action}/permissions">
-    <div class="row checks">
+    <div class="row checks region">
       ${permChecks(user.permissions)}
     </div>
     <button type="submit">Save permissions</button>

@@ -1,0 +1,296 @@
+@import "./tokens.css";
+
+@font-face {
+  font-family: "Berkeley Mono";
+  src: url("../BerkeleyMono-Regular.woff2") format("woff2"),
+       url("../BerkeleyMono-Regular.woff") format("woff");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Berkeley Mono";
+  src: url("../BerkeleyMono-Bold.woff2") format("woff2"),
+       url("../BerkeleyMono-Bold.woff") format("woff");
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Berkeley Mono";
+  src: url("../BerkeleyMono-BoldItalic.woff2") format("woff2"),
+       url("../BerkeleyMono-BoldItalic.woff") format("woff");
+  font-weight: 700;
+  font-style: italic;
+  font-display: swap;
+}
+
+:root { color-scheme: light; }
+[data-theme="light"] { color-scheme: light; }
+[data-theme="dark"] { color-scheme: dark; }
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) { color-scheme: dark; }
+}
+
+*, *::before, *::after { box-sizing: border-box; }
+
+html, body, [data-theme] {
+  background: var(--bg);
+  color: var(--fg);
+}
+
+body {
+  margin: 0;
+  font-family: var(--font-ui);
+  font-size: 1rem;
+  line-height: 1.5;
+  font-synthesis: none;
+  overflow-y: scroll;
+}
+
+.container {
+  max-width: 52em;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+h1, .title {
+  font-family: var(--font-display);
+  font-weight: 900;
+  font-size: 2.5rem;
+  line-height: 1.05;
+  text-transform: uppercase;
+  font-feature-settings: "calt" 1;
+  font-variant-ligatures: contextual;
+  font-synthesis: none;
+  letter-spacing: 0;
+  margin: 0 0 0.35rem;
+}
+
+h2, h3, h4, h5, h6 {
+  font-family: var(--font-ui);
+  font-weight: 700;
+  line-height: 1.3;
+  margin: 1.25rem 0 0.4rem;
+}
+
+h2 { font-size: 1.25rem; }
+h3 { font-size: 1.05rem; }
+h4, h5, h6 { font-size: 1rem; }
+
+p { margin: 0 0 1rem; }
+
+a {
+  color: var(--fg);
+  text-decoration: none;
+  border-bottom: 1px dotted var(--fg);
+}
+
+header, .site-header {
+  border-bottom: 1px solid var(--border);
+  padding-bottom: 0.75rem;
+  margin-bottom: 1.25rem;
+  background: transparent;
+}
+
+nav, .nav {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.75rem 1.25rem;
+  margin-top: 0.75rem;
+  padding: 0;
+  border: 0;
+  background: transparent;
+}
+
+nav a, .nav a {
+  font-size: 0.8125rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+label, .label, .shift, .flash-legend {
+  font-family: var(--font-ui);
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+label { display: block; margin-bottom: 0.25rem; }
+
+button,
+.btn,
+input,
+select,
+textarea,
+table,
+th,
+td,
+img,
+.panel,
+.flash,
+.region,
+.viewport {
+  border-radius: var(--radius);
+  box-shadow: none;
+}
+
+button,
+.btn,
+input:not([type="checkbox"]):not([type="radio"]):not([type="hidden"]):not([type="submit"]):not([type="button"]),
+select,
+textarea {
+  appearance: none;
+  -webkit-appearance: none;
+}
+
+button, .btn {
+  font-family: var(--font-ui);
+  font-size: 0.8125rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  background: var(--chrome);
+  color: var(--fg);
+  border: 1px solid var(--border);
+  padding: 0.45rem 0.8rem;
+  cursor: pointer;
+}
+
+button.btn-primary, .btn-primary, .flash-ok {
+  background: var(--accent);
+  color: var(--accent-text);
+  border: 1px solid var(--ink);
+}
+
+.flash {
+  padding: 0.7rem 0.8rem 0.75rem;
+  margin: 0 0 1rem;
+}
+
+.flash-error {
+  background: var(--danger);
+  color: var(--danger-text);
+  border: 1px solid var(--ink);
+}
+
+.flash-legend { display: block; font-size: 11px; letter-spacing: 0.1em; margin-bottom: 0.25rem; }
+.flash a { color: inherit; border-bottom-color: currentColor; }
+
+input:not([type="checkbox"]):not([type="radio"]):not([type="hidden"]):not([type="submit"]):not([type="button"]),
+select,
+textarea,
+.field {
+  display: block;
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+  background: var(--field);
+  color: var(--fg);
+  border: 1px solid var(--border);
+  padding: 0.45rem 0.5rem;
+  font: inherit;
+}
+
+input[type="checkbox"], input[type="radio"] {
+  accent-color: var(--accent);
+  border-radius: 0;
+}
+
+select {
+  background-image: linear-gradient(45deg, transparent 50%, var(--fg) 50%),
+    linear-gradient(135deg, var(--fg) 50%, transparent 50%);
+  background-position: calc(100% - 1rem) 55%, calc(100% - 0.65rem) 55%;
+  background-size: 0.35rem 0.35rem, 0.35rem 0.35rem;
+  background-repeat: no-repeat;
+  padding-right: 1.75rem;
+}
+
+table, .data {
+  width: 100%;
+  border-collapse: collapse;
+  border-spacing: 0;
+  border: 1px solid var(--border);
+}
+
+th, td {
+  text-align: left;
+  padding: 0.4rem 0.5rem;
+  border: 1px solid var(--border);
+  font-family: var(--font-ui);
+  vertical-align: top;
+}
+
+.region {
+  border: 2px solid var(--region-blue);
+  padding: 0.9rem 1rem;
+}
+
+.shift-left { color: var(--shift-left); }
+.shift-right { color: var(--shift-right); }
+.sku { color: var(--gold); }
+
+.viewport {
+  background: var(--lcd-bg);
+  color: var(--lcd-fg);
+  border: 1px solid var(--border);
+  padding: 0.8rem 1rem;
+  font-family: var(--font-ui);
+}
+
+.viewport .mark, .mark { color: var(--mark); }
+.muted { color: var(--muted); }
+
+:focus-visible {
+  outline: 1px solid var(--accent);
+  outline-offset: 2px;
+}
+
+::selection, ::-moz-selection {
+  background: var(--accent);
+  color: var(--accent-text);
+}
+
+p img, figure img, img { max-width: 100%; }
+
+figure { margin-inline: 0; }
+figcaption { font-style: italic; }
+
+pre, code { font-family: var(--font-ui); }
+pre {
+  padding: 1em 0;
+  border-top: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+  background: var(--chrome);
+  white-space: pre-wrap;
+}
+code { white-space: pre-wrap; }
+
+hr {
+  height: 0;
+  border: 0;
+  border-bottom: 1px solid var(--border);
+}
+
+p.term {
+  white-space: pre-wrap;
+  font-family: var(--font-ui);
+}
+
+ul.no-bullet {
+  list-style: none;
+  padding-left: 0;
+}
+
+@media (max-width: 52em) {
+  header, .site-header, main.homepage {
+    padding-left: 1.25rem;
+    padding-right: 1.25rem;
+  }
+}

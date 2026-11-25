@@ -33,6 +33,11 @@ id = "8ea662cf4ce24b7f8a79b7b48f36eddd"
 binding = "IMAGES"
 bucket_name = "jasmijnvink-com-images"
 
+# Same bucket as assets.tobys.cloud. Keys are jasmijn/<file>.
+[[r2_buckets]]
+binding = "FONTS"
+bucket_name = "tobys-cloud-fonts"
+
 # custom_domain creates proxied DNS; zone routes win request routing.
 [[routes]]
 pattern = "jasmijnvink.com"

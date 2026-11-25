@@ -16,13 +16,17 @@
     {
       "name": "static-asset-path",
       "path": "packages/static-asset-path"
+    },
+    {
+      "name": "ui",
+      "path": "packages/ui"
     }
   ],
   "sites": [
     {
       "name": "auth.tobys.cloud",
       "path": "sites/auth.tobys.cloud",
-      "depends": ["auth-client"],
+      "depends": ["auth-client", "ui"],
       "node": "20",
       "install": "npm ci",
       "ci": ["typecheck", "test"]
@@ -30,7 +34,7 @@
     {
       "name": "www.toby.codes",
       "path": "sites/www.toby.codes",
-      "depends": ["auth-client", "static-asset-path"],
+      "depends": ["auth-client", "static-asset-path", "ui"],
       "node": "20",
       "install": "npm ci",
       "ci": ["typecheck", "test"]
@@ -86,7 +90,7 @@
     {
       "name": "page-404",
       "path": "sites/page-404",
-      "depends": [],
+      "depends": ["ui"],
       "node": "20",
       "install": "npm ci",
       "ci": ["typecheck"]
@@ -94,7 +98,7 @@
     {
       "name": "pom",
       "path": "sites/pom",
-      "depends": [],
+      "depends": ["ui"],
       "node": "20",
       "install": "npm ci",
       "ci": ["typecheck", "test"]

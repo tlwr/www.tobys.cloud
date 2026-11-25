@@ -100,12 +100,14 @@ function env(
   pictures: MemoryKV,
   tags: MemoryKV,
   images?: MemoryR2,
+  fonts?: MemoryR2,
 ): Env {
   return {
     ASSETS: assets404,
     PICTURES: pictures as unknown as KVNamespace,
     TAGS: tags as unknown as KVNamespace,
     IMAGES: (images ?? new MemoryR2()) as unknown as R2Bucket,
+    FONTS: (fonts ?? new MemoryR2()) as unknown as R2Bucket,
     AUTH_JWT_SECRET: JWT,
     AUTH_ISSUER: "https://auth.tobys.cloud",
   };
@@ -160,6 +162,19 @@ describe("jasmijnvink.com", () => {
     await images.put("pictures/3", svg, {
       httpMetadata: { contentType: "image/svg+xml" },
     });
+  });
+
+  it("serves a webfont from the shared font bucket", async () => {
+    const fonts = new MemoryR2();
+    await fonts.put("jasmijn/BerkeleyMono-Regular.woff2", "woff2-bytes");
+    const res = await app.request(
+      "https://jasmijnvink.com/fonts/BerkeleyMono-Regular.woff2",
+      {},
+      env(users, pictures, tags, images, fonts),
+    );
+    expect(res.status).toBe(200);
+    expect(res.headers.get("content-type")).toBe("font/woff2");
+    expect(await res.text()).toBe("woff2-bytes");
   });
 
   it("serves styles.css from assets even when those headers are immutable", async () => {

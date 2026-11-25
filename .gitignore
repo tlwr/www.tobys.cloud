@@ -20,6 +20,9 @@ bazel-*
 
 .DS_Store
 
+# Licensed webfonts. Sync with `node tools/fonts.mjs`. Names and hashes are in fonts.manifest.json.
+/fonts/
+
 # Local secrets (Wrangler / dotenv). Keep *.example files.
 .dev.vars
 .dev.env

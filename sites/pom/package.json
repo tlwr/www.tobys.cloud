@@ -10,6 +10,9 @@
     "typecheck": "tsc --noEmit",
     "test": "vitest run"
   },
+  "dependencies": {
+    "@tobys/ui": "file:../../packages/ui"
+  },
   "devDependencies": {
     "@cloudflare/workers-types": "^5.20260801.1",
     "cf": "^1.0.0-beta.26",

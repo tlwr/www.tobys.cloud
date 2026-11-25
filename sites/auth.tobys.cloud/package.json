@@ -21,6 +21,7 @@
   "dependencies": {
     "@simplewebauthn/server": "^14.0.1",
     "@tobys/auth-client": "file:../../packages/auth-client",
+    "@tobys/ui": "file:../../packages/ui",
     "bcryptjs": "^2.4.3",
     "hono": "^4.13.16"
   },

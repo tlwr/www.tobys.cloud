@@ -64,6 +64,14 @@ deploy-affected:
 acceptance-tests:
     cd acceptance && bundle exec rspec
 
+# Download gitignored webfonts from the tobys-cloud-fonts R2 bucket
+fonts-pull:
+    node tools/fonts.mjs pull
+
+# Upload fonts/ to the tobys-cloud-fonts R2 bucket and refresh fonts.manifest.json
+fonts-push:
+    node tools/fonts.mjs push
+
 [private]
 _each action *sites:
     #!/usr/bin/env bash

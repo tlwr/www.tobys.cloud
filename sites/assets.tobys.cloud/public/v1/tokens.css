@@ -1,0 +1,84 @@
+:root {
+  /* Absolute palette — do not invert these in dark mode */
+  --paper: #f2f0ec;
+  --ink: #111111;
+  --wash: #dedcd8;
+  --chrome-light: #d6d6d6;
+  --accent: #22b197;
+  --accent-text: #111111;
+  --accent-dark: #288381;
+  --shift-left: #8686be;
+  --shift-right: #34b0af;
+  --region-blue: #22ade7;
+  --region-green: #84ba81;
+  --danger-sampled: #c8452e; /* historical 41CX swatch; not a fill */
+  --danger: #c3402e;
+  --danger-text: #f2f0ec;
+  --attention: #daaa38;
+  --gold: #ffb700;
+  --sodium: #f3ac6c;
+  --amber: #c97339;
+  --hud: #3aa7c8;
+  --lcd-wash: #c5d4b8;
+  --lcd-figure: #1a332c;
+  --viewport: #111111;
+  --viewport-ink: #f2f0ec;
+  --muted-light: #555555;
+  --muted-dark: #b8b4ae; /* from the approved mockup captions / muted nav */
+  --chrome-dark: #2a2a2a; /* from the approved mockup buttons */
+  --field-dark: #0d0d0d;  /* from the approved mockup fields */
+
+  --radius: 0;
+  --font-ui: "Berkeley Mono", "IBM Plex Mono", "DejaVu Sans Mono", "Liberation Mono", ui-monospace, monospace;
+  --font-display: "Alas", "Alas Black", "Liberation Serif", "DejaVu Serif", Georgia, "Times New Roman", serif;
+
+  /* Light theme surfaces */
+  --bg: var(--paper);
+  --fg: var(--ink);
+  --muted: var(--muted-light);
+  --border: var(--ink);
+  --chrome: var(--chrome-light);
+  --field: var(--paper);
+  --lcd-bg: var(--lcd-wash);
+  --lcd-fg: var(--lcd-figure);
+  --mark: var(--lcd-figure);
+}
+
+/* Pins a light column when the host prefers dark. The media query below only inspects :root. */
+[data-theme="light"] {
+  --bg: var(--paper);
+  --fg: var(--ink);
+  --muted: var(--muted-light);
+  --border: var(--ink);
+  --chrome: var(--chrome-light);
+  --field: var(--paper);
+  --lcd-bg: var(--lcd-wash);
+  --lcd-fg: var(--lcd-figure);
+  --mark: var(--lcd-figure);
+}
+
+[data-theme="dark"] {
+  --bg: var(--viewport);
+  --fg: var(--viewport-ink);
+  --muted: var(--muted-dark);
+  --border: var(--viewport-ink);
+  --chrome: var(--chrome-dark);
+  --field: var(--field-dark);
+  --lcd-bg: var(--viewport);
+  --lcd-fg: var(--viewport-ink);
+  --mark: var(--accent);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: var(--viewport);
+    --fg: var(--viewport-ink);
+    --muted: var(--muted-dark);
+    --border: var(--viewport-ink);
+    --chrome: var(--chrome-dark);
+    --field: var(--field-dark);
+    --lcd-bg: var(--viewport);
+    --lcd-fg: var(--viewport-ink);
+    --mark: var(--accent);
+  }
+}

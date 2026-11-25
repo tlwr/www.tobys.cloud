@@ -1,3 +1,5 @@
+import { stylesheetLink } from "@tobys/ui";
+
 const NOT_FOUND_HTML = `<!DOCTYPE html>
 <html lang="en-GB">
   <head>
@@ -5,105 +7,7 @@ const NOT_FOUND_HTML = `<!DOCTYPE html>
     <meta name="viewport" content="width=device-width, initial-scale=1">
 
     <title>404 Not Found</title>
-
-    <style>
-      :root {
-        --dark: #2d2d2d;
-        --light: #f2f0ec;
-        --highlight: mediumseagreen;
-      }
-
-      @media (prefers-color-scheme: dark) {
-        :root {
-          --light: #2d2d2d;
-          --dark: #f2f0ec;
-          --highlight: mediumseagreen;
-        }
-      }
-
-      body{
-        background-color: var(--light);
-        color: var(--dark);
-        font-family: 'd-dinregular', monospace;
-        font-size: 100%;
-        line-height: 1.5;
-        margin: 0;
-        overflow-y: scroll;
-      }
-
-      h1, h2, h3, h4, h5, h6 {
-        font-weight: bold;
-        line-height: 1.25;
-        margin-top: 1em;
-        margin-bottom: .5em;
-      }
-
-      p {
-        margin-top: 0;
-        margin-bottom: 1rem;
-      }
-
-      h1 { font-size: 2rem }
-      h2 { font-size: 1.5rem }
-      h3 { font-size: 1.25rem }
-      h4 { font-size: 1rem }
-      h5 { font-size: .875rem }
-      h6 { font-size: .75rem }
-
-      .container {
-        max-width: 52em;
-        margin-left: auto;
-        margin-right: auto;
-      }
-
-      ::selection {
-        background: var(--highlight);
-        color: var(--light);
-      }
-      ::-moz-selection {
-        background: var(--highlight);
-        color: var(--light);
-      }
-
-      a {
-        color: var(--dark);
-        text-decoration-color: transparent;
-        border-bottom: 1px dotted var(--dark);
-      }
-
-      p.term {
-        white-space: pre-wrap;
-        font-family: monospace;
-      }
-
-      ul.no-bullet {
-        list-style-type: none;
-        padding-left: 0;
-      }
-
-      @media (min-width: 600px) {
-        p.term.mobile {
-          display: none;
-        }
-        p.term.no-mobile {
-          display: block;
-        }
-      }
-
-      @media (max-width: 600px) {
-        p.term.mobile {
-          display: block;
-        }
-        p.term.no-mobile { display: none; }
-      }
-
-      @media (max-width: 52em) {
-        header, main.homepage {
-          padding-left: 2rem;
-          padding-right: 2rem;
-        }
-      }
-    </style>
+    ${stylesheetLink()}
   </head>
 
 

@@ -1,10 +1,12 @@
+import { stylesheetLink } from "@tobys/ui";
+
 const baseTemplate = [
   `<!doctype html>
 <html>
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <link rel="stylesheet" href="https://assets.tobys.cloud/styles.css" type="text/css">
+    ${stylesheetLink()}
     <link rel="icon" href="https://assets.tobys.cloud/favicon.ico">
     <title>pom.tobys.cloud</title>
   </head>

@@ -11,6 +11,6 @@
     "forceConsistentCasingInFileNames": true,
     "isolatedModules": true
   },
-  "include": ["src/**/*"],
+  "include": ["src/**/*", "../../packages/ui/**/*"],
   "exclude": ["node_modules"]
 }

@@ -1,0 +1,6 @@
+{
+  "name": "@tobys/ui",
+  "private": true,
+  "type": "module",
+  "exports": "./index.ts"
+}
