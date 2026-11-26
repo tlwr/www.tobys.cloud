@@ -35,7 +35,7 @@ export function flashHtml(opts: { notice?: string; alert?: string }): string {
 
 export function mcpHelpHtml(): string {
   return `<h1>MCP</h1>
-  <p>Een AI-assistent die MCP ondersteunt kan deze site beheren: beelden en tags bekijken, een tag maken of verwijderen, en de tekst of zichtbaarheid van een beeld aanpassen. Een nieuw fotobestand uploaden kan hier nog niet.</p>
+  <p>Een AI-assistent die MCP ondersteunt kan deze site beheren: beelden en tags bekijken, een tag maken of verwijderen, de tekst of zichtbaarheid van een beeld aanpassen, en een nieuw beeld uploaden als de assistent bestanden via MCP kan sturen.</p>
   <h2>Koppelen</h2>
   <ol>
     <li>Voeg in je assistent een MCP-server of connector toe.</li>
@@ -49,6 +49,7 @@ export function mcpHelpHtml(): string {
     <li>Laat de tags zien, en bij welke beelden ze horen.</li>
     <li>Maak een tag, of verwijder een tag. Het beeld zelf blijft bestaan.</li>
     <li>Wijzig de titel, omschrijving, tags of zichtbaarheid van een beeld.</li>
+    <li>Upload een nieuw beeld. Geef een titel mee. JPEG, PNG, GIF, WebP of SVG, maximaal 10 MB.</li>
   </ul>
   <p class="muted">Voorbeeld: “Zet beeld 12 op onzichtbaar en voeg de tag portret toe.”</p>`;
 }
