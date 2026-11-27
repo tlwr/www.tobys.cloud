@@ -7,6 +7,13 @@ import {
   type Picture,
 } from "./pictures";
 import {
+  FILES_EXTENSION,
+  filesCapability,
+  McpProtocolError,
+  uploadPicture,
+  uploadPictureTool,
+} from "./mcp-upload";
+import {
   createTag,
   deleteTag,
   isValidTag,
@@ -113,21 +120,188 @@ function wwwAuthenticate(origin: string): string {
   return `Bearer resource_metadata="${metadata}", scope="jvnl"`;
 }
 
-function rpcResult(id: unknown, result: unknown): Response {
-  return Response.json({ jsonrpc: "2.0", id, result });
+type RpcParams = {
+  name?: string;
+  uri?: string;
+  arguments?: Record<string, unknown>;
+  requestState?: unknown;
+  protocolVersion?: string;
+  _meta?: Record<string, unknown>;
+};
+
+type RpcMessage = {
+  jsonrpc?: string;
+  id?: unknown;
+  method?: string;
+  params?: RpcParams;
+};
+
+function rpcResult(id: unknown, result: unknown, status = 200): Response {
+  return Response.json({ jsonrpc: "2.0", id, result }, { status });
 }
 
-function toolText(text: string, isError = false): unknown {
+function rpcError(
+  id: unknown,
+  code: number,
+  message: string,
+  status = 200,
+  data?: unknown,
+): Response {
+  const error: Record<string, unknown> = { code, message };
+  if (data !== undefined) {
+    error.data = data;
+  }
+  return Response.json({ jsonrpc: "2.0", id, error }, { status });
+}
+
+function toolText(text: string, isError = false, modern = false): unknown {
+  if (!modern) {
+    return {
+      content: [{ type: "text", text }],
+      isError,
+    };
+  }
   return {
+    resultType: "complete",
     content: [{ type: "text", text }],
-    isError,
+    ...(isError ? { isError: true } : {}),
   };
 }
+
+function shown(value: string): string {
+  return value.replace(/[\r\n]/g, "").slice(0, 80);
+}
+
+function decodeMcpHeader(value: string): string | null {
+  const sentinel = value.match(/^=\?base64\?([A-Za-z0-9+/]+={0,2})\?=$/);
+  if (sentinel) {
+    try {
+      const bin = atob(sentinel[1]);
+      const bytes = new Uint8Array(bin.length);
+      for (let i = 0; i < bin.length; i++) {
+        bytes[i] = bin.charCodeAt(i);
+      }
+      return new TextDecoder("utf-8", { fatal: true, ignoreBOM: true }).decode(bytes);
+    } catch {
+      return null;
+    }
+  }
+  if (value.startsWith("=?base64?") || /[^\t\x20-\x7e]/.test(value)) {
+    return null;
+  }
+  return value;
+}
+
+function negotiate(
+  c: Context,
+  message: RpcMessage,
+): { modern: boolean } | Response {
+  const id = message.id ?? null;
+  const header = (c.req.header("mcp-protocol-version") ?? "").trim();
+  const fromMeta = message.params?._meta?.[PROTOCOL_VERSION_META];
+  const metaVersion = typeof fromMeta === "string" ? fromMeta : "";
+  if (header && metaVersion && header !== metaVersion) {
+    return rpcError(
+      id,
+      -32020,
+      `Header mismatch: MCP-Protocol-Version header value '${shown(header)}' does not match body value '${shown(metaVersion)}'`,
+      400,
+    );
+  }
+  const requested = header || metaVersion;
+  if (requested && !SUPPORTED_VERSIONS.includes(requested)) {
+    return rpcError(id, -32022, "Unsupported protocol version", 400, {
+      supported: SUPPORTED_VERSIONS,
+      requested,
+    });
+  }
+  if (requested !== "2026-07-28") {
+    return { modern: false };
+  }
+  if (!header) {
+    return rpcError(id, -32020, "Header mismatch: MCP-Protocol-Version header is missing.", 400);
+  }
+  if (!metaVersion) {
+    return rpcError(
+      id,
+      -32020,
+      "Header mismatch: MCP-Protocol-Version is missing from the body.",
+      400,
+    );
+  }
+  const methodHeader = c.req.header("mcp-method");
+  if (!methodHeader) {
+    return rpcError(id, -32020, "Header mismatch: Mcp-Method header is missing.", 400);
+  }
+  if (methodHeader !== (message.method ?? "")) {
+    return rpcError(
+      id,
+      -32020,
+      `Header mismatch: Mcp-Method header value '${shown(methodHeader)}' does not match body value '${shown(message.method ?? "")}'`,
+      400,
+    );
+  }
+  if (
+    message.method === "tools/call" ||
+    message.method === "resources/read" ||
+    message.method === "prompts/get"
+  ) {
+    const rawName = c.req.header("mcp-name");
+    if (!rawName) {
+      return rpcError(id, -32020, "Header mismatch: Mcp-Name header is missing.", 400);
+    }
+    const decoded = decodeMcpHeader(rawName);
+    if (decoded === null) {
+      return rpcError(id, -32020, "Header mismatch: Mcp-Name header value is malformed.", 400);
+    }
+    const bodyName =
+      message.method === "tools/call" ? message.params?.name ?? "" : message.params?.uri ?? "";
+    if (decoded !== bodyName) {
+      return rpcError(
+        id,
+        -32020,
+        `Header mismatch: Mcp-Name header value '${shown(decoded)}' does not match body value '${shown(bodyName)}'`,
+        400,
+      );
+    }
+  }
+  return { modern: true };
+}
+
+function uploadDeclared(params: RpcParams | undefined, modern: boolean): boolean {
+  if (!modern) {
+    return false;
+  }
+  const capabilities = params?._meta?.[CLIENT_CAPABILITIES_META];
+  if (!capabilities || typeof capabilities !== "object" || Array.isArray(capabilities)) {
+    return false;
+  }
+  const extensions = (capabilities as Record<string, unknown>).extensions;
+  if (!extensions || typeof extensions !== "object" || Array.isArray(extensions)) {
+    return false;
+  }
+  const settings = (extensions as Record<string, unknown>)[FILES_EXTENSION];
+  if (!settings || typeof settings !== "object" || Array.isArray(settings)) {
+    return false;
+  }
+  if ("revision" in settings) {
+    return false;
+  }
+  const upload = (settings as Record<string, unknown>).upload;
+  return upload !== null && typeof upload === "object" && !Array.isArray(upload);
+}
+
+const SERVER_VERSION = "1.3";
+const SUPPORTED_VERSIONS = ["2026-07-28", "2025-06-18"];
+const PROTOCOL_VERSION_META = "io.modelcontextprotocol/protocolVersion";
+const CLIENT_CAPABILITIES_META = "io.modelcontextprotocol/clientCapabilities";
 
 const INSTRUCTIONS = [
   "When the user asks which tags exist, or for a list of tags, call list_tags.",
   "Do not answer a tag question from list_pictures. Pictures only repeat tags they already use, and they omit empty tags.",
-  "list_tags is the catalog. Use it before create_tag or delete_tag.",
+  "list_tags is the catalog. Use it before create_tag, delete_tag, or upload_picture.",
+  "When the user asks to upload or add a picture, call upload_picture with a title and one image file. Do not use update_picture to upload bytes.",
+  "upload_picture accepts JPEG, PNG, GIF, WebP, and SVG, up to 10 MB.",
   "When you mention a picture, always give both its numeric id and its title, written like #12 Mistige kabelbaan.",
   "Use the id when calling update_picture. Use the title so the person knows which photo you mean.",
 ].join(" ");
@@ -187,6 +361,7 @@ const TOOLS = [
       additionalProperties: false,
     },
   },
+  uploadPictureTool(),
 ];
 
 function pictureLabel(id: string, title: string): string {
@@ -194,6 +369,34 @@ function pictureLabel(id: string, title: string): string {
 }
 
 async function callTool(
+  c: Context,
+  name: string,
+  args: Record<string, unknown>,
+  origin: string,
+  call: {
+    modern: boolean;
+    upload: boolean;
+    principal: string;
+    requestState: unknown;
+    hasRequestState: boolean;
+  },
+): Promise<unknown> {
+  if (name === "upload_picture") {
+    return uploadPicture(
+      c,
+      call.principal,
+      args,
+      call.requestState,
+      call.hasRequestState,
+      call.upload,
+      origin,
+    );
+  }
+  const result = await callExistingTool(c, name, args, origin);
+  return toolText(result.text, result.isError === true, call.modern);
+}
+
+async function callExistingTool(
   c: Context,
   name: string,
   args: Record<string, unknown>,
@@ -328,43 +531,96 @@ export async function handleMcp(c: Context): Promise<Response> {
       headers: { "www-authenticate": wwwAuthenticate(origin) },
     });
   }
-  let message: { jsonrpc?: string; id?: unknown; method?: string; params?: unknown };
+  let message: RpcMessage;
   try {
-    message = (await c.req.json()) as typeof message;
+    message = (await c.req.json()) as RpcMessage;
   } catch {
     return Response.json(
       { jsonrpc: "2.0", id: null, error: { code: -32700, message: "Parse error" } },
       { status: 400 },
     );
   }
+  const negotiated = negotiate(c, message);
+  if (negotiated instanceof Response) {
+    return negotiated;
+  }
+  const modern = negotiated.modern;
   const id = message.id ?? null;
-  const params = (message.params ?? {}) as { name?: string; arguments?: Record<string, unknown> };
+  const params = message.params ?? {};
   if (message.method === "initialize") {
+    const requested =
+      typeof params.protocolVersion === "string" ? params.protocolVersion : "";
+    const version = requested === "2026-07-28" ? "2026-07-28" : "2025-06-18";
     return rpcResult(id, {
-      protocolVersion: "2025-06-18",
-      capabilities: { tools: { listChanged: false } },
-      serverInfo: { name: "jasmijnvink", version: "1.2" },
+      protocolVersion: version,
+      capabilities:
+        version === "2026-07-28"
+          ? {
+              tools: { listChanged: false },
+              extensions: { [FILES_EXTENSION]: filesCapability() },
+            }
+          : { tools: { listChanged: false } },
+      serverInfo: { name: "jasmijnvink", version: SERVER_VERSION },
       instructions: INSTRUCTIONS,
     });
   }
+  if (message.method === "server/discover") {
+    return rpcResult(id, {
+      resultType: "complete",
+      supportedVersions: SUPPORTED_VERSIONS,
+      capabilities: {
+        tools: { listChanged: false },
+        extensions: { [FILES_EXTENSION]: filesCapability() },
+      },
+      _meta: {
+        "io.modelcontextprotocol/serverInfo": {
+          name: "jasmijnvink",
+          version: SERVER_VERSION,
+        },
+      },
+      instructions: INSTRUCTIONS,
+      ttlMs: 3_600_000,
+      cacheScope: "public",
+    });
+  }
   if (message.method === "tools/list") {
-    return rpcResult(id, { tools: TOOLS });
+    if (!modern) {
+      return rpcResult(id, { tools: TOOLS });
+    }
+    return rpcResult(id, {
+      resultType: "complete",
+      tools: TOOLS,
+      ttlMs: 0,
+      cacheScope: "private",
+    });
   }
   if (message.method === "tools/call") {
     const name = params.name ?? "";
     const args = params.arguments ?? {};
-    const result = await callTool(c, name, args, origin);
-    return rpcResult(id, toolText(result.text, result.isError));
+    try {
+      const result = await callTool(c, name, args, origin, {
+        modern,
+        upload: uploadDeclared(params, modern),
+        principal: caller.email,
+        requestState: params.requestState,
+        hasRequestState: Object.prototype.hasOwnProperty.call(params, "requestState"),
+      });
+      return rpcResult(id, result);
+    } catch (error) {
+      if (error instanceof McpProtocolError) {
+        return rpcError(id, error.code, error.message, error.status, error.data);
+      }
+      return rpcResult(
+        id,
+        toolText("The tool failed. It might have done part of its work.", true, modern),
+      );
+    }
   }
   if (message.method === "ping") {
-    return rpcResult(id, {});
+    return rpcResult(id, modern ? { resultType: "complete" } : {});
   }
   if (message.id === undefined) {
     return new Response(null, { status: 202 });
   }
-  return Response.json({
-    jsonrpc: "2.0",
-    id,
-    error: { code: -32601, message: "Method not found" },
-  });
+  return rpcError(id, -32601, "Method not found", modern ? 404 : 200);
 }

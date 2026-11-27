@@ -2,3 +2,10 @@
 # Must match sites/auth.tobys.cloud/.dev.vars AUTH_JWT_SECRET.
 AUTH_JWT_SECRET=replace-me-with-the-same-value-as-auth
 AUTH_ISSUER=http://localhost:8788
+
+# Optional. Needed only to exercise MCP picture upload locally.
+# R2_ACCOUNT_ID is the 32-character Cloudflare account id (the S3 endpoint host).
+# The API token needs PutObject on jasmijnvink-com-images. Do not commit real values.
+# R2_ACCOUNT_ID=
+# R2_ACCESS_KEY_ID=
+# R2_SECRET_ACCESS_KEY=
